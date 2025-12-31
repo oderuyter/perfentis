@@ -37,36 +37,40 @@ export default function Home() {
           transition={{ delay: 0.1 }}
         >
           <Link to={`/workout/${todayWorkout.id}`} className="block">
-            <div className="bg-card rounded-2xl p-5 shadow-card border border-border/50 active:scale-[0.98] transition-transform">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-xs font-medium text-accent-foreground uppercase tracking-wide">
-                    Today's Workout
-                  </p>
-                  <h2 className="text-xl font-semibold mt-1">
-                    {todayWorkout.name}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm">{todayWorkout.duration} min</span>
-                    <span className="text-muted-foreground/40">•</span>
-                    <span className="text-sm capitalize">{todayWorkout.type}</span>
+            <div className="gradient-card-accent rounded-2xl p-5 shadow-card border border-accent/20 active:scale-[0.98] transition-transform relative overflow-hidden">
+              {/* Subtle gradient overlay */}
+              <div className="absolute inset-0 gradient-metric opacity-30" />
+              <div className="relative">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <p className="text-xs font-medium text-accent-foreground uppercase tracking-wide">
+                      Today's Workout
+                    </p>
+                    <h2 className="text-xl font-semibold mt-1">
+                      {todayWorkout.name}
+                    </h2>
+                    <div className="flex items-center gap-2 mt-2 text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm">{todayWorkout.duration} min</span>
+                      <span className="text-muted-foreground/40">•</span>
+                      <span className="text-sm capitalize">{todayWorkout.type}</span>
+                    </div>
+                  </div>
+                  <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center shadow-sm">
+                    <Play className="h-5 w-5 text-accent-foreground ml-0.5" />
                   </div>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-accent-subtle flex items-center justify-center">
-                  <Play className="h-5 w-5 text-accent-foreground ml-0.5" />
-                </div>
+                
+                <Button 
+                  className="w-full h-12 rounded-xl font-semibold text-base"
+                  onClick={(e) => e.stopPropagation()}
+                  asChild
+                >
+                  <Link to={`/workout/${todayWorkout.id}/active`}>
+                    Start Workout
+                  </Link>
+                </Button>
               </div>
-              
-              <Button 
-                className="w-full h-12 rounded-xl font-semibold text-base"
-                onClick={(e) => e.stopPropagation()}
-                asChild
-              >
-                <Link to={`/workout/${todayWorkout.id}/active`}>
-                  Start Workout
-                </Link>
-              </Button>
             </div>
           </Link>
         </motion.div>
