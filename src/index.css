@@ -6,126 +6,231 @@
 
 /* 
   FLOW - Premium Fitness Training App
-  Design System: Calm, minimal, flat with soft depth
+  Design System: Token-based, theme-aware, calm & premium
+  
+  Accent colors are user-selectable and applied via CSS custom properties.
+  All colors use HSL format for consistency.
 */
 
 @layer base {
   :root {
-    /* Core palette - warm neutrals with sage accent */
-    --background: 40 20% 98%;
-    --foreground: 30 10% 12%;
-
-    --card: 40 15% 99%;
-    --card-foreground: 30 10% 12%;
-
-    --popover: 40 15% 99%;
-    --popover-foreground: 30 10% 12%;
-
-    /* Sage/mint accent - calm and premium */
-    --primary: 158 35% 45%;
-    --primary-foreground: 0 0% 100%;
-
-    /* Subtle secondary - warm gray */
-    --secondary: 35 12% 93%;
-    --secondary-foreground: 30 10% 25%;
-
-    --muted: 35 10% 95%;
-    --muted-foreground: 30 8% 50%;
-
-    --accent: 158 25% 92%;
-    --accent-foreground: 158 35% 30%;
-
-    --destructive: 0 70% 55%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 35 15% 90%;
-    --input: 35 15% 88%;
-    --ring: 158 35% 45%;
-
-    --radius: 1rem;
-
-    /* Custom tokens */
-    --surface-elevated: 40 20% 100%;
-    --surface-sunken: 35 15% 96%;
+    /* ============================================
+       ACCENT COLOR PALETTE (User-Selectable)
+       Default: Sage/Mint - calm and premium
+       ============================================ */
+    --accent-h: 158;
+    --accent-s: 35%;
+    --accent-l: 45%;
     
-    /* Heart rate zones */
+    /* Accent color tokens derived from user selection */
+    --accent-primary: var(--accent-h) var(--accent-s) var(--accent-l);
+    --accent-primary-soft: var(--accent-h) calc(var(--accent-s) * 0.7) calc(var(--accent-l) + 40%);
+    --accent-primary-subtle: var(--accent-h) calc(var(--accent-s) * 0.5) 94%;
+    --accent-on-primary: 0 0% 100%;
+    
+    /* ============================================
+       SURFACE & BACKGROUND TOKENS
+       Soft, health-focused surfaces
+       ============================================ */
+    --surface-bg-primary: 40 20% 98%;
+    --surface-bg-secondary: 35 15% 96%;
+    --surface-card: 40 15% 99%;
+    --surface-elevated: 40 20% 100%;
+    --surface-sunken: 35 15% 94%;
+    --surface-overlay: 0 0% 100%;
+    
+    /* ============================================
+       TEXT TOKENS (Semantic roles)
+       ============================================ */
+    --text-primary: 30 10% 12%;
+    --text-secondary: 30 8% 35%;
+    --text-muted: 30 8% 50%;
+    --text-inverse: 0 0% 100%;
+    --text-accent: var(--accent-h) var(--accent-s) calc(var(--accent-l) - 10%);
+    
+    /* ============================================
+       GRADIENT TOKENS (Theme-aware)
+       Subtle, low-contrast gradients
+       ============================================ */
+    --gradient-card: linear-gradient(135deg, hsl(40 20% 99%) 0%, hsl(35 15% 97%) 100%);
+    --gradient-card-accent: linear-gradient(135deg, hsl(var(--accent-primary-subtle)) 0%, hsl(40 15% 98%) 100%);
+    --gradient-progress: linear-gradient(90deg, hsl(var(--accent-primary)) 0%, hsl(var(--accent-h) calc(var(--accent-s) + 10%) calc(var(--accent-l) + 8%)) 100%);
+    --gradient-metric: linear-gradient(180deg, hsl(var(--accent-primary-subtle)) 0%, transparent 100%);
+    --gradient-chart-fill: linear-gradient(180deg, hsl(var(--accent-primary) / 0.2) 0%, hsl(var(--accent-primary) / 0.02) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(40 20% 98%) 0%, hsl(35 15% 96%) 100%);
+    
+    /* ============================================
+       ELEVATION & SHADOW TOKENS
+       Soft, diffused shadows
+       ============================================ */
+    --elevation-none: none;
+    --elevation-low: 0 1px 3px 0 hsl(30 10% 12% / 0.04), 0 2px 6px -1px hsl(30 10% 12% / 0.06);
+    --elevation-medium: 0 4px 12px -2px hsl(30 10% 12% / 0.08), 0 8px 24px -4px hsl(30 10% 12% / 0.1);
+    --elevation-high: 0 8px 24px -4px hsl(30 10% 12% / 0.12), 0 16px 48px -8px hsl(30 10% 12% / 0.14);
+    
+    /* ============================================
+       SHAPE & RADIUS TOKENS
+       Rounded, friendly shapes
+       ============================================ */
+    --radius-small: 0.5rem;
+    --radius-medium: 1rem;
+    --radius-large: 1.5rem;
+    --radius-full: 9999px;
+    
+    /* ============================================
+       CHART & DATA VISUALIZATION TOKENS
+       ============================================ */
+    --chart-line-primary: var(--accent-primary);
+    --chart-fill-gradient: var(--gradient-chart-fill);
+    --chart-axis-muted: 30 8% 75%;
+    --chart-bar-active: var(--accent-primary);
+    --chart-bar-inactive: 35 10% 88%;
+    
+    /* ============================================
+       MOTION TOKENS
+       Gentle, calming transitions
+       ============================================ */
+    --motion-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-standard: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* ============================================
+       BORDER TOKENS
+       ============================================ */
+    --border-subtle: 35 15% 92%;
+    --border-default: 35 15% 88%;
+    --border-strong: 35 12% 80%;
+    
+    /* ============================================
+       HEART RATE ZONE TOKENS
+       ============================================ */
     --hr-zone-1: 200 60% 55%;
     --hr-zone-2: 158 50% 50%;
     --hr-zone-3: 45 85% 55%;
     --hr-zone-4: 25 90% 55%;
     --hr-zone-5: 0 75% 55%;
-
-    /* Shadows */
-    --shadow-soft: 0 2px 8px -2px hsl(30 10% 12% / 0.06), 
-                   0 4px 16px -4px hsl(30 10% 12% / 0.08);
-    --shadow-card: 0 1px 3px 0 hsl(30 10% 12% / 0.04),
-                   0 2px 6px -1px hsl(30 10% 12% / 0.06);
-    --shadow-elevated: 0 4px 12px -2px hsl(30 10% 12% / 0.08),
-                       0 8px 24px -4px hsl(30 10% 12% / 0.1);
-
-    /* Transitions */
-    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-gentle: 500ms cubic-bezier(0.4, 0, 0.2, 1);
-
+    
+    /* ============================================
+       SHADCN COMPATIBILITY MAPPINGS
+       ============================================ */
+    --background: var(--surface-bg-primary);
+    --foreground: var(--text-primary);
+    --card: var(--surface-card);
+    --card-foreground: var(--text-primary);
+    --popover: var(--surface-overlay);
+    --popover-foreground: var(--text-primary);
+    --primary: var(--accent-primary);
+    --primary-foreground: var(--accent-on-primary);
+    --secondary: var(--surface-bg-secondary);
+    --secondary-foreground: var(--text-secondary);
+    --muted: var(--surface-sunken);
+    --muted-foreground: var(--text-muted);
+    --accent: var(--accent-primary-subtle);
+    --accent-foreground: var(--text-accent);
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--border-default);
+    --input: var(--border-default);
+    --ring: var(--accent-primary);
+    --radius: var(--radius-medium);
+    
     /* Sidebar tokens */
-    --sidebar-background: 40 20% 98%;
-    --sidebar-foreground: 30 10% 25%;
-    --sidebar-primary: 158 35% 45%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 158 25% 92%;
-    --sidebar-accent-foreground: 158 35% 30%;
-    --sidebar-border: 35 15% 90%;
-    --sidebar-ring: 158 35% 45%;
+    --sidebar-background: var(--surface-bg-primary);
+    --sidebar-foreground: var(--text-secondary);
+    --sidebar-primary: var(--accent-primary);
+    --sidebar-primary-foreground: var(--accent-on-primary);
+    --sidebar-accent: var(--accent-primary-subtle);
+    --sidebar-accent-foreground: var(--text-accent);
+    --sidebar-border: var(--border-subtle);
+    --sidebar-ring: var(--accent-primary);
   }
 
   .dark {
-    --background: 30 15% 8%;
-    --foreground: 35 15% 92%;
-
-    --card: 30 12% 11%;
-    --card-foreground: 35 15% 92%;
-
-    --popover: 30 12% 11%;
-    --popover-foreground: 35 15% 92%;
-
-    --primary: 158 40% 50%;
-    --primary-foreground: 30 15% 8%;
-
-    --secondary: 30 10% 15%;
-    --secondary-foreground: 35 15% 85%;
-
-    --muted: 30 10% 18%;
-    --muted-foreground: 35 10% 55%;
-
-    --accent: 158 25% 18%;
-    --accent-foreground: 158 40% 70%;
-
-    --destructive: 0 65% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 30 10% 18%;
-    --input: 30 10% 20%;
-    --ring: 158 40% 50%;
-
-    --surface-elevated: 30 12% 13%;
+    /* Accent colors - slightly brighter in dark mode */
+    --accent-primary: var(--accent-h) calc(var(--accent-s) + 5%) calc(var(--accent-l) + 5%);
+    --accent-primary-soft: var(--accent-h) calc(var(--accent-s) * 0.5) 25%;
+    --accent-primary-subtle: var(--accent-h) calc(var(--accent-s) * 0.4) 18%;
+    --accent-on-primary: 30 15% 8%;
+    
+    /* Surfaces - deep charcoal, not pure black */
+    --surface-bg-primary: 30 15% 8%;
+    --surface-bg-secondary: 30 12% 11%;
+    --surface-card: 30 12% 12%;
+    --surface-elevated: 30 12% 14%;
     --surface-sunken: 30 15% 6%;
-
-    --shadow-soft: 0 2px 8px -2px hsl(0 0% 0% / 0.3), 
-                   0 4px 16px -4px hsl(0 0% 0% / 0.4);
-    --shadow-card: 0 1px 3px 0 hsl(0 0% 0% / 0.2),
-                   0 2px 6px -1px hsl(0 0% 0% / 0.3);
-    --shadow-elevated: 0 4px 12px -2px hsl(0 0% 0% / 0.4),
-                       0 8px 24px -4px hsl(0 0% 0% / 0.5);
-
-    --sidebar-background: 30 15% 8%;
-    --sidebar-foreground: 35 15% 85%;
-    --sidebar-primary: 158 40% 50%;
-    --sidebar-primary-foreground: 30 15% 8%;
-    --sidebar-accent: 158 25% 18%;
-    --sidebar-accent-foreground: 158 40% 70%;
-    --sidebar-border: 30 10% 18%;
-    --sidebar-ring: 158 40% 50%;
+    --surface-overlay: 30 12% 14%;
+    
+    /* Text - warm light tones */
+    --text-primary: 35 15% 92%;
+    --text-secondary: 35 12% 70%;
+    --text-muted: 35 10% 55%;
+    --text-inverse: 30 15% 8%;
+    --text-accent: var(--accent-h) calc(var(--accent-s) + 10%) calc(var(--accent-l) + 20%);
+    
+    /* Gradients - darker, more restrained */
+    --gradient-card: linear-gradient(135deg, hsl(30 12% 13%) 0%, hsl(30 12% 11%) 100%);
+    --gradient-card-accent: linear-gradient(135deg, hsl(var(--accent-primary-subtle)) 0%, hsl(30 12% 12%) 100%);
+    --gradient-progress: linear-gradient(90deg, hsl(var(--accent-primary)) 0%, hsl(var(--accent-h) calc(var(--accent-s) + 5%) calc(var(--accent-l) + 10%)) 100%);
+    --gradient-metric: linear-gradient(180deg, hsl(var(--accent-primary-subtle)) 0%, transparent 100%);
+    --gradient-chart-fill: linear-gradient(180deg, hsl(var(--accent-primary) / 0.3) 0%, hsl(var(--accent-primary) / 0.05) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(30 15% 8%) 0%, hsl(30 15% 6%) 100%);
+    
+    /* Shadows - minimal in dark mode */
+    --elevation-low: 0 1px 3px 0 hsl(0 0% 0% / 0.2), 0 2px 6px -1px hsl(0 0% 0% / 0.3);
+    --elevation-medium: 0 4px 12px -2px hsl(0 0% 0% / 0.4), 0 8px 24px -4px hsl(0 0% 0% / 0.5);
+    --elevation-high: 0 8px 24px -4px hsl(0 0% 0% / 0.5), 0 16px 48px -8px hsl(0 0% 0% / 0.6);
+    
+    /* Borders - subtle in dark mode */
+    --border-subtle: 30 10% 16%;
+    --border-default: 30 10% 20%;
+    --border-strong: 30 8% 28%;
+    
+    /* Chart tokens */
+    --chart-axis-muted: 30 8% 35%;
+    --chart-bar-inactive: 30 10% 22%;
+    
+    /* Destructive */
+    --destructive: 0 65% 50%;
+  }
+  
+  /* ============================================
+     ACCENT COLOR PRESETS
+     User-selectable accent colors
+     ============================================ */
+  [data-accent="sage"] {
+    --accent-h: 158;
+    --accent-s: 35%;
+    --accent-l: 45%;
+  }
+  
+  [data-accent="mint"] {
+    --accent-h: 168;
+    --accent-s: 45%;
+    --accent-l: 48%;
+  }
+  
+  [data-accent="ocean"] {
+    --accent-h: 200;
+    --accent-s: 50%;
+    --accent-l: 50%;
+  }
+  
+  [data-accent="lavender"] {
+    --accent-h: 270;
+    --accent-s: 40%;
+    --accent-l: 55%;
+  }
+  
+  [data-accent="coral"] {
+    --accent-h: 15;
+    --accent-s: 65%;
+    --accent-l: 55%;
+  }
+  
+  [data-accent="gold"] {
+    --accent-h: 45;
+    --accent-s: 70%;
+    --accent-l: 50%;
   }
 }
 
@@ -143,22 +248,46 @@
   body {
     @apply bg-background text-foreground font-sans;
     font-family: 'Outfit', system-ui, sans-serif;
+    transition: background-color var(--motion-standard), color var(--motion-standard);
   }
 }
 
 @layer utilities {
+  /* ============================================
+     ELEVATION UTILITIES
+     ============================================ */
+  .elevation-none {
+    box-shadow: var(--elevation-none);
+  }
+  
+  .elevation-low {
+    box-shadow: var(--elevation-low);
+  }
+  
+  .elevation-medium {
+    box-shadow: var(--elevation-medium);
+  }
+  
+  .elevation-high {
+    box-shadow: var(--elevation-high);
+  }
+  
+  /* Legacy shadow utilities (mapped to elevation) */
   .shadow-soft {
-    box-shadow: var(--shadow-soft);
+    box-shadow: var(--elevation-medium);
   }
   
   .shadow-card {
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--elevation-low);
   }
   
   .shadow-elevated {
-    box-shadow: var(--shadow-elevated);
+    box-shadow: var(--elevation-high);
   }
 
+  /* ============================================
+     SURFACE UTILITIES
+     ============================================ */
   .surface-elevated {
     background-color: hsl(var(--surface-elevated));
   }
@@ -166,8 +295,37 @@
   .surface-sunken {
     background-color: hsl(var(--surface-sunken));
   }
+  
+  .surface-card {
+    background-color: hsl(var(--surface-card));
+  }
 
-  /* Safe area insets for mobile */
+  /* ============================================
+     GRADIENT UTILITIES
+     ============================================ */
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+  
+  .gradient-card-accent {
+    background: var(--gradient-card-accent);
+  }
+  
+  .gradient-progress {
+    background: var(--gradient-progress);
+  }
+  
+  .gradient-metric {
+    background: var(--gradient-metric);
+  }
+  
+  .gradient-surface {
+    background: var(--gradient-surface);
+  }
+
+  /* ============================================
+     SAFE AREA UTILITIES (Mobile)
+     ============================================ */
   .pb-safe {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
@@ -176,7 +334,9 @@
     padding-top: max(0.75rem, env(safe-area-inset-top));
   }
 
-  /* HR Zone colors */
+  /* ============================================
+     HR ZONE UTILITIES
+     ============================================ */
   .hr-zone-1 { color: hsl(var(--hr-zone-1)); }
   .hr-zone-2 { color: hsl(var(--hr-zone-2)); }
   .hr-zone-3 { color: hsl(var(--hr-zone-3)); }
@@ -188,6 +348,14 @@
   .bg-hr-zone-3 { background-color: hsl(var(--hr-zone-3)); }
   .bg-hr-zone-4 { background-color: hsl(var(--hr-zone-4)); }
   .bg-hr-zone-5 { background-color: hsl(var(--hr-zone-5)); }
+  
+  /* ============================================
+     TEXT SEMANTIC UTILITIES
+     ============================================ */
+  .text-primary-content { color: hsl(var(--text-primary)); }
+  .text-secondary-content { color: hsl(var(--text-secondary)); }
+  .text-muted-content { color: hsl(var(--text-muted)); }
+  .text-accent-content { color: hsl(var(--text-accent)); }
 }
 
 /* Smooth scrolling */
@@ -202,4 +370,9 @@
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
+}
+
+/* Ensure transitions don't flash on initial load */
+html.no-transitions * {
+  transition: none !important;
 }

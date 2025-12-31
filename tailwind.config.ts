@@ -21,6 +21,43 @@ export default {
         sans: ["Outfit", "system-ui", "sans-serif"],
       },
       colors: {
+        // Semantic surface colors
+        surface: {
+          bg: {
+            primary: "hsl(var(--surface-bg-primary))",
+            secondary: "hsl(var(--surface-bg-secondary))",
+          },
+          card: "hsl(var(--surface-card))",
+          elevated: "hsl(var(--surface-elevated))",
+          sunken: "hsl(var(--surface-sunken))",
+          overlay: "hsl(var(--surface-overlay))",
+        },
+        // Semantic text colors
+        content: {
+          primary: "hsl(var(--text-primary))",
+          secondary: "hsl(var(--text-secondary))",
+          muted: "hsl(var(--text-muted))",
+          inverse: "hsl(var(--text-inverse))",
+          accent: "hsl(var(--text-accent))",
+        },
+        // Accent color tokens
+        accent: {
+          DEFAULT: "hsl(var(--accent-primary))",
+          primary: "hsl(var(--accent-primary))",
+          soft: "hsl(var(--accent-primary-soft))",
+          subtle: "hsl(var(--accent-primary-subtle))",
+          foreground: "hsl(var(--accent-on-primary))",
+        },
+        // Chart tokens
+        chart: {
+          line: "hsl(var(--chart-line-primary))",
+          axis: "hsl(var(--chart-axis-muted))",
+          bar: {
+            active: "hsl(var(--chart-bar-active))",
+            inactive: "hsl(var(--chart-bar-inactive))",
+          },
+        },
+        // Shadcn compatibility
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -41,10 +78,6 @@ export default {
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -73,17 +106,37 @@ export default {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 4px)",
-        sm: "calc(var(--radius) - 8px)",
-        xl: "calc(var(--radius) + 4px)",
-        "2xl": "calc(var(--radius) + 8px)",
+        sm: "var(--radius-small)",
+        DEFAULT: "var(--radius-medium)",
+        md: "var(--radius-medium)",
+        lg: "var(--radius-large)",
+        xl: "var(--radius-large)",
+        "2xl": "calc(var(--radius-large) + 0.5rem)",
+        full: "var(--radius-full)",
+      },
+      boxShadow: {
+        none: "var(--elevation-none)",
+        sm: "var(--elevation-low)",
+        DEFAULT: "var(--elevation-low)",
+        md: "var(--elevation-medium)",
+        lg: "var(--elevation-high)",
+        card: "var(--elevation-low)",
+        elevated: "var(--elevation-high)",
       },
       spacing: {
         "safe-bottom": "max(1rem, env(safe-area-inset-bottom))",
         "safe-top": "max(0.75rem, env(safe-area-inset-top))",
         "18": "4.5rem",
         "22": "5.5rem",
+      },
+      transitionDuration: {
+        fast: "150ms",
+        standard: "300ms",
+        slow: "500ms",
+      },
+      transitionTimingFunction: {
+        smooth: "cubic-bezier(0.4, 0, 0.2, 1)",
+        gentle: "cubic-bezier(0.25, 0.1, 0.25, 1)",
       },
       keyframes: {
         "accordion-down": {
@@ -128,10 +181,6 @@ export default {
         "slide-up": "slide-up 0.3s ease-out",
         "pulse-soft": "pulse-soft 2s ease-in-out infinite",
         "countdown": "countdown linear forwards",
-      },
-      transitionTimingFunction: {
-        smooth: "cubic-bezier(0.4, 0, 0.2, 1)",
-        gentle: "cubic-bezier(0.25, 0.1, 0.25, 1)",
       },
     },
   },

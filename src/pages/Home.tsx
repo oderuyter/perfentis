@@ -40,7 +40,7 @@ export default function Home() {
             <div className="bg-card rounded-2xl p-5 shadow-card border border-border/50 active:scale-[0.98] transition-transform">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="text-xs font-medium text-primary uppercase tracking-wide">
+                  <p className="text-xs font-medium text-accent-foreground uppercase tracking-wide">
                     Today's Workout
                   </p>
                   <h2 className="text-xl font-semibold mt-1">
@@ -53,8 +53,8 @@ export default function Home() {
                     <span className="text-sm capitalize">{todayWorkout.type}</span>
                   </div>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Play className="h-5 w-5 text-primary ml-0.5" />
+                <div className="h-12 w-12 rounded-full bg-accent-subtle flex items-center justify-center">
+                  <Play className="h-5 w-5 text-accent-foreground ml-0.5" />
                 </div>
               </div>
               
@@ -130,7 +130,7 @@ export default function Home() {
                 <p className="text-xl font-semibold mt-1">
                   {(weeklyStats.volumeThisWeek / 1000).toFixed(1)}k kg
                 </p>
-                <p className="text-sm text-primary mt-0.5">
+                <p className="text-sm text-accent-foreground mt-0.5">
                   +{Math.round(((weeklyStats.volumeThisWeek - weeklyStats.volumeLastWeek) / weeklyStats.volumeLastWeek) * 100)}% vs last week
                 </p>
               </div>
