@@ -46,13 +46,13 @@ export default function Progress() {
               <p className="text-2xl font-semibold mt-1">
                 {(progressData.weeklyVolume[3].volume / 1000).toFixed(1)}k kg
               </p>
-              <p className="text-sm text-primary mt-0.5 flex items-center gap-1">
+              <p className="text-sm text-accent-foreground mt-0.5 flex items-center gap-1">
                 <TrendingUp className="h-3.5 w-3.5" />
                 +{volumeChange}% vs last week
               </p>
             </div>
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Dumbbell className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 rounded-full bg-accent-subtle flex items-center justify-center">
+              <Dumbbell className="h-5 w-5 text-accent-foreground" />
             </div>
           </div>
           
@@ -66,7 +66,7 @@ export default function Progress() {
               return (
                 <div key={week.week} className="flex-1 flex flex-col items-center gap-1.5">
                   <div 
-                    className={`w-full rounded-md transition-all ${isLatest ? 'bg-primary' : 'bg-muted'}`}
+                    className={`w-full rounded-md transition-all ${isLatest ? 'bg-chart-bar-active' : 'bg-chart-bar-inactive'}`}
                     style={{ height: `${height}%` }}
                   />
                   <span className="text-xs text-muted-foreground">{week.week}</span>
@@ -97,9 +97,9 @@ export default function Progress() {
                 /{progressData.cardioGoal} min
               </span>
             </p>
-            <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className="mt-2 h-1.5 bg-chart-bar-inactive rounded-full overflow-hidden">
               <div 
-                className="h-full bg-primary rounded-full transition-all"
+                className="h-full bg-chart-bar-active rounded-full transition-all"
                 style={{ width: `${(progressData.cardioMinutes / progressData.cardioGoal) * 100}%` }}
               />
             </div>
@@ -147,7 +147,7 @@ export default function Progress() {
                   <p className="font-medium text-sm">{pr.exercise}</p>
                   <p className="text-xs text-muted-foreground">{pr.date}</p>
                 </div>
-                <p className="text-sm font-semibold text-primary">{pr.value}</p>
+                <p className="text-sm font-semibold text-accent-foreground">{pr.value}</p>
               </div>
             ))}
           </div>

@@ -46,7 +46,7 @@ export default function Train() {
               <Link to={`/workout/${workout.id}`} className="block">
                 <div className="bg-card rounded-xl p-4 shadow-card border border-border/50 active:scale-[0.98] transition-transform">
                   <div className="flex items-start gap-4">
-                    <div className="h-11 w-11 rounded-xl bg-accent flex items-center justify-center flex-shrink-0">
+                    <div className="h-11 w-11 rounded-xl bg-accent-subtle flex items-center justify-center flex-shrink-0">
                       <TypeIcon className="h-5 w-5 text-accent-foreground" />
                     </div>
                     
@@ -86,7 +86,7 @@ export default function Train() {
           transition={{ delay: 0.1 + workouts.length * 0.05 }}
         >
           <Link to="/workout/free" className="block">
-            <div className="bg-secondary/50 rounded-xl p-4 border border-dashed border-border active:scale-[0.98] transition-transform">
+            <div className="bg-surface-bg-secondary rounded-xl p-4 border border-dashed border-border active:scale-[0.98] transition-transform">
               <div className="flex items-center gap-4">
                 <div className="h-11 w-11 rounded-xl bg-muted flex items-center justify-center">
                   <Zap className="h-5 w-5 text-muted-foreground" />
