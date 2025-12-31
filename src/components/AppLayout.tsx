@@ -1,5 +1,6 @@
 import { Outlet } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
+import { WorkoutBiscuit } from "./workout/WorkoutBiscuit";
 
 interface AppLayoutProps {
   hideNav?: boolean;
@@ -11,7 +12,12 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
       <main className={hideNav ? "" : "pb-22"}>
         <Outlet />
       </main>
-      {!hideNav && <BottomNav />}
+      {!hideNav && (
+        <>
+          <WorkoutBiscuit />
+          <BottomNav />
+        </>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, SkipForward, Heart, ChevronUp, ChevronDown, Shuffle, Plus, History, Pause, Play, MoreVertical, StickyNote } from "lucide-react";
+import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { workouts } from "@/data/workouts";
 import { Button } from "@/components/ui/button";
@@ -53,10 +53,16 @@ export default function ActiveWorkout() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(!!resumeState);
 
-  const handleExit = useCallback(() => {
-    if (confirm("End workout early? Your progress will be saved.")) {
+  // Navigate away without ending workout - just go back
+  const handleMinimize = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
+  // Explicitly end workout
+  const handleEndWorkout = useCallback(() => {
+    if (confirm("End workout? Your progress will be saved.")) {
       endWorkout(true);
-      navigate(-1);
+      navigate("/");
     }
   }, [navigate, endWorkout]);
 
@@ -83,8 +89,8 @@ export default function ActiveWorkout() {
     return (
       <div className="fixed inset-0 bg-background flex flex-col items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-sm">
-          <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-            <Play className="h-8 w-8 text-primary ml-1" />
+          <div className="h-16 w-16 rounded-full gradient-card-accent flex items-center justify-center mx-auto mb-6 shadow-md">
+            <Play className="h-8 w-8 text-accent-foreground ml-1" />
           </div>
           <h1 className="text-xl font-semibold mb-2">Resume Workout?</h1>
           <p className="text-muted-foreground mb-6">
@@ -111,17 +117,17 @@ export default function ActiveWorkout() {
     return (
       <div className="fixed inset-0 bg-background flex flex-col items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
-          <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
-            <Check className="h-10 w-10 text-primary" />
+          <div className="h-20 w-20 rounded-full gradient-card-accent flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <Check className="h-10 w-10 text-accent-foreground" />
           </div>
           <h1 className="text-2xl font-semibold mb-2">Workout Complete</h1>
           <p className="text-muted-foreground mb-8">Great work today</p>
           <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
-            <div className="bg-card rounded-xl p-4 border border-border/50">
+            <div className="gradient-card rounded-xl p-4 border border-border/50 shadow-card">
               <p className="text-2xl font-semibold">{formatTime(state.elapsedTime)}</p>
               <p className="text-xs text-muted-foreground mt-1">Duration</p>
             </div>
-            <div className="bg-card rounded-xl p-4 border border-border/50">
+            <div className="gradient-card rounded-xl p-4 border border-border/50 shadow-card">
               <p className="text-2xl font-semibold">{completedSets.length}</p>
               <p className="text-xs text-muted-foreground mt-1">Sets</p>
             </div>
@@ -138,14 +144,14 @@ export default function ActiveWorkout() {
     <div className="fixed inset-0 bg-background flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-4 pt-safe pb-3 border-b border-border/30">
-        <button onClick={handleExit} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+        <button onClick={handleMinimize} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center" title="Minimize workout">
           <X className="h-5 w-5" />
         </button>
         <button onClick={() => setShowExerciseNav(true)} className="text-center">
           <p className="text-xs text-muted-foreground">{state.currentExerciseIndex + 1} of {state.exercises.filter(e => !e.skipped).length}</p>
           <p className="font-medium text-sm">{formatTime(state.elapsedTime)}</p>
         </button>
-        <button onClick={() => setShowHROverlay(true)} className="h-10 px-3 rounded-full bg-accent/50 flex items-center gap-1.5">
+        <button onClick={() => setShowHROverlay(true)} className="h-10 px-3 rounded-full bg-accent-subtle flex items-center gap-1.5">
           <Heart className="h-4 w-4 text-hr-zone2" />
           <span className="text-sm font-medium">{state.hrData.currentHR || '—'}</span>
         </button>
@@ -174,12 +180,16 @@ export default function ActiveWorkout() {
                 </div>
               </div>
               
-              {/* Current Set Display */}
-              <div className="bg-card rounded-2xl p-6 shadow-card border border-border/50 mb-4">
-                <p className="text-5xl font-bold tracking-tight text-center">
-                  {currentSet?.completedWeight ?? currentSet?.targetWeight ?? '—'} kg
-                </p>
-                <p className="text-2xl text-muted-foreground mt-2 text-center">× {currentSet?.completedReps ?? currentSet?.targetReps}</p>
+              {/* Primary Metric Display with Gradient */}
+              <div className="gradient-card-accent rounded-2xl p-6 shadow-card border border-accent/20 mb-4 relative overflow-hidden">
+                {/* Subtle gradient overlay */}
+                <div className="absolute inset-0 gradient-metric opacity-50" />
+                <div className="relative">
+                  <p className="text-5xl font-bold tracking-tight text-center text-accent-foreground">
+                    {currentSet?.completedWeight ?? currentSet?.targetWeight ?? '—'} kg
+                  </p>
+                  <p className="text-2xl text-muted-foreground mt-2 text-center">× {currentSet?.completedReps ?? currentSet?.targetReps}</p>
+                </div>
               </div>
               
               {/* All Sets */}
@@ -197,9 +207,26 @@ export default function ActiveWorkout() {
             <motion.div key="rest" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col items-center justify-center">
               <p className="text-sm text-muted-foreground mb-2">Rest</p>
               <button onClick={() => setShowRestEdit(true)} className="relative w-48 h-48 mb-4">
-                <svg className="w-full h-full transform -rotate-90">
+                {/* Gradient background for rest timer */}
+                <div className="absolute inset-4 rounded-full gradient-metric opacity-30" />
+                <svg className="w-full h-full transform -rotate-90 relative">
                   <circle cx="96" cy="96" r="88" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
-                  <circle cx="96" cy="96" r="88" fill="none" stroke="hsl(var(--primary))" strokeWidth="8" strokeLinecap="round" strokeDasharray={553} strokeDashoffset={553 * (1 - state.restTimeRemaining / state.restDuration)} className="transition-all duration-1000 linear" />
+                  <circle 
+                    cx="96" cy="96" r="88" 
+                    fill="none" 
+                    stroke="url(#progressGradient)" 
+                    strokeWidth="8" 
+                    strokeLinecap="round" 
+                    strokeDasharray={553} 
+                    strokeDashoffset={553 * (1 - state.restTimeRemaining / state.restDuration)} 
+                    className="transition-all duration-1000 linear" 
+                  />
+                  <defs>
+                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="hsl(var(--accent-primary))" />
+                      <stop offset="100%" stopColor="hsl(var(--accent-primary) / 0.7)" />
+                    </linearGradient>
+                  </defs>
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
                   <p className="text-5xl font-bold tracking-tight">{formatTime(state.restTimeRemaining)}</p>
@@ -210,7 +237,7 @@ export default function ActiveWorkout() {
                 {isPaused ? 'Resume' : 'Pause'}
               </button>
               {nextExercise && (
-                <div className="bg-muted/30 rounded-xl p-3">
+                <div className="gradient-card rounded-xl p-3 border border-border/50">
                   <p className="text-xs text-muted-foreground mb-1">Up next</p>
                   <p className="font-medium text-sm">{nextExercise.name}</p>
                 </div>
@@ -221,19 +248,28 @@ export default function ActiveWorkout() {
       </div>
 
       {/* Action Buttons */}
-      <div className="px-4 pb-safe flex gap-2">
-        <button onClick={() => setShowAdd(true)} className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center">
-          <Plus className="h-5 w-5" />
+      <div className="px-4 pb-safe">
+        <div className="flex gap-2 mb-3">
+          <button onClick={() => setShowAdd(true)} className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center">
+            <Plus className="h-5 w-5" />
+          </button>
+          {state.phase === "exercise" ? (
+            <Button onClick={completeSet} className="flex-1 h-14 rounded-xl font-semibold text-base gap-2">
+              <Check className="h-5 w-5" />Complete Set
+            </Button>
+          ) : (
+            <Button onClick={skipRest} variant="secondary" className="flex-1 h-14 rounded-xl font-semibold text-base gap-2">
+              <SkipForward className="h-5 w-5" />Skip Rest
+            </Button>
+          )}
+        </div>
+        {/* End workout button */}
+        <button 
+          onClick={handleEndWorkout}
+          className="w-full py-2 text-sm text-muted-foreground hover:text-destructive transition-colors"
+        >
+          End Workout
         </button>
-        {state.phase === "exercise" ? (
-          <Button onClick={completeSet} className="flex-1 h-14 rounded-xl font-semibold text-base gap-2">
-            <Check className="h-5 w-5" />Complete Set
-          </Button>
-        ) : (
-          <Button onClick={skipRest} variant="secondary" className="flex-1 h-14 rounded-xl font-semibold text-base gap-2">
-            <SkipForward className="h-5 w-5" />Skip Rest
-          </Button>
-        )}
       </div>
 
       {/* Overlays */}
