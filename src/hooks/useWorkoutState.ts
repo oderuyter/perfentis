@@ -302,7 +302,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
   }, []);
 
   // Swap exercise
-  const swapExercise = useCallback((exerciseIndex: number, newExercise: { id: string; name: string }) => {
+  const swapExercise = useCallback((exerciseIndex: number, newExercise: { id: string; name: string; muscleGroup?: string }) => {
     setState(prev => {
       if (!prev) return null;
       const exercises = [...prev.exercises];
@@ -313,6 +313,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
         exerciseId: newExercise.id,
         name: newExercise.name,
         swappedFrom: originalExercise.exerciseId,
+        muscleGroup: newExercise.muscleGroup || originalExercise.muscleGroup,
       };
       
       return { ...prev, exercises };
@@ -320,7 +321,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
   }, []);
 
   // Add exercise
-  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number }) => {
+  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string }) => {
     setState(prev => {
       if (!prev) return null;
       const newExercise: ActiveExercise = {
@@ -343,6 +344,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
         skipped: false,
         swappedFrom: null,
         addedMidWorkout: true,
+        muscleGroup: exercise.muscleGroup,
       };
       
       return { ...prev, exercises: [...prev.exercises, newExercise] };

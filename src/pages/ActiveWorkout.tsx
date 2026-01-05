@@ -335,7 +335,7 @@ export default function ActiveWorkout() {
           </>
         )}
         {showHistory && <ExerciseHistorySheet exerciseName={currentExercise.name} currentWeight={currentSet?.completedWeight ?? currentSet?.targetWeight ?? null} currentReps={currentSet?.completedReps ?? parseInt(currentSet?.targetReps?.match(/\d+/)?.[0] || '0')} onClose={() => setShowHistory(false)} />}
-        {showSwap && <SwapExerciseSheet currentExercise={currentExercise.name} onSwap={(ex) => { swapExercise(state.currentExerciseIndex, ex); setShowSwap(false); }} onClose={() => setShowSwap(false)} />}
+        {showSwap && <SwapExerciseSheet currentExercise={currentExercise.name} currentMuscleGroup={currentExercise.muscleGroup} onSwap={(ex) => { swapExercise(state.currentExerciseIndex, ex); setShowSwap(false); }} onClose={() => setShowSwap(false)} />}
         {showAdd && <AddExerciseSheet onAdd={addExercise} onClose={() => setShowAdd(false)} />}
         {showRestEdit && <RestTimerEdit currentDuration={state.restDuration} onUpdate={editRestDuration} onClose={() => setShowRestEdit(false)} />}
         {showExerciseNav && <ExerciseNav exercises={state.exercises} currentIndex={state.currentExerciseIndex} onSelect={(i) => goToExercise(i)} onRemove={removeExercise} onClose={() => setShowExerciseNav(false)} />}
