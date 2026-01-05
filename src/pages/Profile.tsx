@@ -12,9 +12,12 @@ import {
   Moon,
   Sun,
   Monitor,
-  Check
+  Check,
+  LogOut
 } from "lucide-react";
 import { useTheme, accentColors } from "@/hooks/useTheme";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
 
 interface SettingRowProps {
@@ -23,16 +26,26 @@ interface SettingRowProps {
   value?: string;
   onClick?: () => void;
   children?: React.ReactNode;
+  danger?: boolean;
 }
 
-function SettingRow({ icon: Icon, label, value, onClick, children }: SettingRowProps) {
+function SettingRow({ icon: Icon, label, value, onClick, children, danger }: SettingRowProps) {
   const content = (
     <>
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-lg bg-accent-subtle flex items-center justify-center">
-          <Icon className="h-4 w-4 text-accent-foreground" />
+        <div className={cn(
+          "h-8 w-8 rounded-lg flex items-center justify-center",
+          danger ? "bg-destructive/10" : "bg-accent-subtle"
+        )}>
+          <Icon className={cn(
+            "h-4 w-4",
+            danger ? "text-destructive" : "text-accent-foreground"
+          )} />
         </div>
-        <span className="font-medium text-sm">{label}</span>
+        <span className={cn(
+          "font-medium text-sm",
+          danger && "text-destructive"
+        )}>{label}</span>
       </div>
       <div className="flex items-center gap-2">
         {children || (
@@ -87,6 +100,8 @@ const themeModeIcons: Record<ThemeMode, React.ElementType> = {
 
 export default function Profile() {
   const { mode, accent, setMode, setAccent } = useTheme();
+  const { user, signOut } = useAuth();
+  const { profile } = useProfile();
 
   const cycleTheme = () => {
     const modes: ThemeMode[] = ["system", "light", "dark"];
@@ -95,7 +110,16 @@ export default function Profile() {
     setMode(modes[nextIndex]);
   };
 
+  const handleSignOut = async () => {
+    if (confirm("Sign out of your account?")) {
+      await signOut();
+    }
+  };
+
   const ThemeIcon = themeModeIcons[mode];
+
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
+  const email = user?.email || "";
 
   return (
     <div className="min-h-screen pt-safe px-4 pb-4">
@@ -121,9 +145,9 @@ export default function Profile() {
           <div className="h-14 w-14 rounded-full bg-accent-subtle flex items-center justify-center">
             <User className="h-7 w-7 text-accent-foreground" />
           </div>
-          <div>
-            <h2 className="font-semibold text-lg">Alex Morgan</h2>
-            <p className="text-sm text-muted-foreground">alex@example.com</p>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold text-lg truncate">{displayName}</h2>
+            <p className="text-sm text-muted-foreground truncate">{email}</p>
           </div>
         </div>
       </motion.div>
@@ -188,6 +212,18 @@ export default function Profile() {
         <div className="space-y-0.5">
           <SettingRow icon={Bell} label="Notifications" />
           <SettingRow icon={Shield} label="Privacy & Data" />
+        </div>
+
+        <SectionHeader title="Account" />
+        <div className="space-y-0.5">
+          <SettingRow 
+            icon={LogOut} 
+            label="Sign Out" 
+            onClick={handleSignOut}
+            danger
+          >
+            <span></span>
+          </SettingRow>
         </div>
       </motion.div>
     </div>

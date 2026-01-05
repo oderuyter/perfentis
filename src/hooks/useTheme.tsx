@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
+import { useAuth } from "./useAuth";
+import { useProfile } from "./useProfile";
 
 type ThemeMode = "system" | "light" | "dark";
 type AccentColor = "sage" | "mint" | "ocean" | "lavender" | "coral" | "gold";
@@ -31,6 +33,9 @@ function getSystemTheme(): "light" | "dark" {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  const { profile, updateProfile } = useProfile();
+  
   const [mode, setModeState] = useState<ThemeMode>(() => {
     if (typeof window === "undefined") return "system";
     return (localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode) || "system";
@@ -45,6 +50,20 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     if (mode === "system") return getSystemTheme();
     return mode;
   });
+
+  // Sync with profile when loaded
+  useEffect(() => {
+    if (profile) {
+      if (profile.theme_mode && profile.theme_mode !== mode) {
+        setModeState(profile.theme_mode as ThemeMode);
+        localStorage.setItem(THEME_STORAGE_KEY, profile.theme_mode);
+      }
+      if (profile.accent_color && profile.accent_color !== accent) {
+        setAccentState(profile.accent_color as AccentColor);
+        localStorage.setItem(ACCENT_STORAGE_KEY, profile.accent_color);
+      }
+    }
+  }, [profile?.theme_mode, profile?.accent_color]);
 
   // Apply theme class to document
   const applyTheme = useCallback((theme: "light" | "dark") => {
@@ -81,14 +100,24 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     
     const theme = newMode === "system" ? getSystemTheme() : newMode;
     applyTheme(theme);
-  }, [applyTheme]);
+    
+    // Sync to database if logged in
+    if (user) {
+      updateProfile({ theme_mode: newMode });
+    }
+  }, [applyTheme, user, updateProfile]);
 
   // Set accent handler
   const setAccent = useCallback((newAccent: AccentColor) => {
     setAccentState(newAccent);
     localStorage.setItem(ACCENT_STORAGE_KEY, newAccent);
     applyAccent(newAccent);
-  }, [applyAccent]);
+    
+    // Sync to database if logged in
+    if (user) {
+      updateProfile({ accent_color: newAccent });
+    }
+  }, [applyAccent, user, updateProfile]);
 
   // Initialize on mount
   useEffect(() => {
