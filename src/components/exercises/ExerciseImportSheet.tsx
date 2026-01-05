@@ -111,7 +111,7 @@ export function ExerciseImportSheet({ onClose, onCreate }: ExerciseImportSheetPr
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[69]"
         onClick={onClose}
       />
       <motion.div
@@ -119,7 +119,7 @@ export function ExerciseImportSheet({ onClose, onCreate }: ExerciseImportSheetPr
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 shadow-elevated max-h-[80vh] overflow-hidden flex flex-col"
+        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[70] shadow-elevated max-h-[80vh] overflow-hidden flex flex-col"
       >
         <div className="p-4 pb-0 relative flex-shrink-0">
           <button
@@ -138,7 +138,7 @@ export function ExerciseImportSheet({ onClose, onCreate }: ExerciseImportSheetPr
           </p>
         </div>
         
-        <div className="flex-1 overflow-y-auto px-4 pb-8 mb-safe">
+        <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
           {step === 'upload' && (
             <div className="py-6 space-y-4">
               {/* File upload */}
