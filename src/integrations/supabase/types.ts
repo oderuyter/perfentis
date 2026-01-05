@@ -61,6 +61,7 @@ export type Database = {
           equipment: Database["public"]["Enums"]["equipment_type"][] | null
           exercise_id: string
           id: string
+          image_url: string | null
           instructions: string | null
           is_active: boolean
           modality: Database["public"]["Enums"]["cardio_modality"] | null
@@ -88,6 +89,7 @@ export type Database = {
           equipment?: Database["public"]["Enums"]["equipment_type"][] | null
           exercise_id?: string
           id?: string
+          image_url?: string | null
           instructions?: string | null
           is_active?: boolean
           modality?: Database["public"]["Enums"]["cardio_modality"] | null
@@ -115,6 +117,7 @@ export type Database = {
           equipment?: Database["public"]["Enums"]["equipment_type"][] | null
           exercise_id?: string
           id?: string
+          image_url?: string | null
           instructions?: string | null
           is_active?: boolean
           modality?: Database["public"]["Enums"]["cardio_modality"] | null

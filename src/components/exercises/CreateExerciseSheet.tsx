@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, Dumbbell, Activity, Check } from 'lucide-react';
+import { ChevronDown, Dumbbell, Activity, Check, Camera, X, Upload } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 import type { 
   CreateExerciseInput, 
   ExerciseType, 
@@ -35,6 +38,9 @@ const cardioModalities: CardioModality[] = [
 ];
 
 export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExerciseSheetProps) {
+  const { user } = useAuth();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const [step, setStep] = useState<'type' | 'details'>('type');
   const [type, setType] = useState<ExerciseType | null>(null);
   const [name, setName] = useState('');
@@ -42,6 +48,9 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
   const [equipment, setEquipment] = useState<EquipmentType[]>([]);
   const [modality, setModality] = useState<CardioModality | null>(null);
   const [instructions, setInstructions] = useState('');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleSelectType = (selectedType: ExerciseType) => {
     setType(selectedType);
@@ -54,6 +63,65 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
     );
   };
 
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImagePreview(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Upload to storage
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('exercise-images')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('exercise-images')
+        .getPublicUrl(fileName);
+
+      setImageUrl(publicUrl);
+      toast.success('Image uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload image');
+      setImagePreview(null);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageUrl(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleCreate = async () => {
     if (!type || !name.trim()) return;
     
@@ -64,6 +132,7 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
       equipment: type === 'strength' ? equipment : [],
       modality: type === 'cardio' ? modality : null,
       instructions: instructions.trim() || undefined,
+      image_url: imageUrl,
     });
     
     onClose();
@@ -134,6 +203,50 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
             </div>
           ) : (
             <div className="space-y-5 pb-6">
+              {/* Image upload */}
+              <div className="space-y-2">
+                <Label>Exercise Image (optional)</Label>
+                <div className="flex items-start gap-3">
+                  {imagePreview ? (
+                    <div className="relative w-20 h-20 rounded-xl overflow-hidden bg-muted">
+                      <img 
+                        src={imagePreview} 
+                        alt="Exercise preview" 
+                        className="w-full h-full object-cover"
+                      />
+                      {isUploading && (
+                        <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                          <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        </div>
+                      )}
+                      {!isUploading && (
+                        <button
+                          onClick={handleRemoveImage}
+                          className="absolute top-1 right-1 w-5 h-5 bg-destructive rounded-full flex items-center justify-center"
+                        >
+                          <X className="h-3 w-3 text-destructive-foreground" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <label className="w-20 h-20 rounded-xl border-2 border-dashed border-border/50 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors bg-muted/30">
+                      <Camera className="h-5 w-5 text-muted-foreground mb-1" />
+                      <span className="text-[10px] text-muted-foreground">Add photo</span>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                  <p className="text-xs text-muted-foreground flex-1 pt-2">
+                    Upload an image to help identify this exercise. Max 5MB.
+                  </p>
+                </div>
+              </div>
+              
               {/* Exercise name */}
               <div className="space-y-2">
                 <Label htmlFor="name">Exercise Name</Label>
@@ -240,7 +353,7 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
                 </Button>
                 <Button
                   onClick={handleCreate}
-                  disabled={!isValid || isCreating}
+                  disabled={!isValid || isCreating || isUploading}
                   className="flex-1"
                 >
                   {isCreating ? 'Creating...' : 'Create'}

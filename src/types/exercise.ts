@@ -45,6 +45,7 @@ export interface Exercise {
   
   // Metadata
   instructions: string | null;
+  image_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -64,6 +65,7 @@ export interface CreateExerciseInput {
   equipment?: EquipmentType[];
   modality?: CardioModality | null;
   instructions?: string;
+  image_url?: string | null;
 }
 
 export interface UpdateExerciseInput extends CreateExerciseInput {

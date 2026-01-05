@@ -150,6 +150,7 @@ export function useExerciseLibrary(initialFilters?: ExerciseFilters) {
           equipment: input.equipment || [],
           modality: input.modality || null,
           instructions: input.instructions || null,
+          image_url: input.image_url || null,
           // Set appropriate supports flags based on type
           supports_weight: input.type === 'strength',
           supports_reps: input.type === 'strength',
@@ -196,6 +197,7 @@ export function useExerciseLibrary(initialFilters?: ExerciseFilters) {
           equipment: input.equipment || [],
           modality: input.modality || null,
           instructions: input.instructions || null,
+          image_url: input.image_url || null,
           supports_weight: input.type === 'strength',
           supports_reps: input.type === 'strength',
           supports_rpe: input.type === 'strength',
