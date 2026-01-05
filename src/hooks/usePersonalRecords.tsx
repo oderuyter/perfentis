@@ -20,6 +20,25 @@ export interface PersonalRecord {
 
 export function usePersonalRecords() {
   const { user } = useAuth();
+
+  const getRecentPRs = useCallback(async (limit = 5) => {
+    if (!user) return [];
+
+    try {
+      const { data, error } = await supabase
+        .from("personal_records")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("achieved_at", { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error("Error fetching PRs:", error);
+      return [];
+    }
+  }, [user]);
   const [recentPRs, setRecentPRs] = useState<PersonalRecord[]>([]);
 
   const fetchRecentPRs = useCallback(async (limit = 5) => {
@@ -160,5 +179,5 @@ export function usePersonalRecords() {
     }
   }, [user]);
 
-  return { recentPRs, checkAndSavePRs, getExercisePR, refetch: fetchRecentPRs };
+  return { recentPRs, checkAndSavePRs, getExercisePR, getRecentPRs, refetch: fetchRecentPRs };
 }
