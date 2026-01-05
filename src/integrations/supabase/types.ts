@@ -20,6 +20,7 @@ export type Database = {
           exercise_id: string
           exercise_name: string
           exercise_order: number
+          exercise_version: number | null
           id: string
           notes: string | null
           session_id: string
@@ -29,6 +30,7 @@ export type Database = {
           exercise_id: string
           exercise_name: string
           exercise_order: number
+          exercise_version?: number | null
           id?: string
           notes?: string | null
           session_id: string
@@ -38,6 +40,7 @@ export type Database = {
           exercise_id?: string
           exercise_name?: string
           exercise_order?: number
+          exercise_version?: number | null
           id?: string
           notes?: string | null
           session_id?: string
@@ -51,6 +54,90 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exercises: {
+        Row: {
+          created_at: string
+          equipment: Database["public"]["Enums"]["equipment_type"][] | null
+          exercise_id: string
+          id: string
+          instructions: string | null
+          is_active: boolean
+          modality: Database["public"]["Enums"]["cardio_modality"] | null
+          name: string
+          primary_muscle: Database["public"]["Enums"]["muscle_group"] | null
+          secondary_muscles:
+            | Database["public"]["Enums"]["muscle_group"][]
+            | null
+          source: Database["public"]["Enums"]["exercise_source"]
+          supports_distance: boolean | null
+          supports_intervals: boolean | null
+          supports_one_rm_percent: boolean | null
+          supports_reps: boolean | null
+          supports_rpe: boolean | null
+          supports_tempo: boolean | null
+          supports_time: boolean | null
+          supports_weight: boolean | null
+          type: Database["public"]["Enums"]["exercise_type"]
+          updated_at: string
+          user_id: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          equipment?: Database["public"]["Enums"]["equipment_type"][] | null
+          exercise_id?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          modality?: Database["public"]["Enums"]["cardio_modality"] | null
+          name: string
+          primary_muscle?: Database["public"]["Enums"]["muscle_group"] | null
+          secondary_muscles?:
+            | Database["public"]["Enums"]["muscle_group"][]
+            | null
+          source?: Database["public"]["Enums"]["exercise_source"]
+          supports_distance?: boolean | null
+          supports_intervals?: boolean | null
+          supports_one_rm_percent?: boolean | null
+          supports_reps?: boolean | null
+          supports_rpe?: boolean | null
+          supports_tempo?: boolean | null
+          supports_time?: boolean | null
+          supports_weight?: boolean | null
+          type: Database["public"]["Enums"]["exercise_type"]
+          updated_at?: string
+          user_id?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          equipment?: Database["public"]["Enums"]["equipment_type"][] | null
+          exercise_id?: string
+          id?: string
+          instructions?: string | null
+          is_active?: boolean
+          modality?: Database["public"]["Enums"]["cardio_modality"] | null
+          name?: string
+          primary_muscle?: Database["public"]["Enums"]["muscle_group"] | null
+          secondary_muscles?:
+            | Database["public"]["Enums"]["muscle_group"][]
+            | null
+          source?: Database["public"]["Enums"]["exercise_source"]
+          supports_distance?: boolean | null
+          supports_intervals?: boolean | null
+          supports_one_rm_percent?: boolean | null
+          supports_reps?: boolean | null
+          supports_rpe?: boolean | null
+          supports_tempo?: boolean | null
+          supports_time?: boolean | null
+          supports_weight?: boolean | null
+          type?: Database["public"]["Enums"]["exercise_type"]
+          updated_at?: string
+          user_id?: string | null
+          version?: number
+        }
+        Relationships: []
       }
       personal_records: {
         Row: {
@@ -147,6 +234,7 @@ export type Database = {
           completed_weight: number | null
           created_at: string
           exercise_log_id: string
+          exercise_version: number | null
           id: string
           is_completed: boolean | null
           rest_duration: number | null
@@ -161,6 +249,7 @@ export type Database = {
           completed_weight?: number | null
           created_at?: string
           exercise_log_id: string
+          exercise_version?: number | null
           id?: string
           is_completed?: boolean | null
           rest_duration?: number | null
@@ -175,6 +264,7 @@ export type Database = {
           completed_weight?: number | null
           created_at?: string
           exercise_log_id?: string
+          exercise_version?: number | null
           id?: string
           is_completed?: boolean | null
           rest_duration?: number | null
@@ -250,7 +340,55 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      cardio_modality:
+        | "run"
+        | "bike"
+        | "row"
+        | "swim"
+        | "elliptical"
+        | "stair_climber"
+        | "jump_rope"
+        | "walking"
+        | "hiking"
+        | "other"
+      equipment_type:
+        | "barbell"
+        | "dumbbell"
+        | "kettlebell"
+        | "cable"
+        | "machine"
+        | "bodyweight"
+        | "resistance_band"
+        | "suspension"
+        | "medicine_ball"
+        | "pull_up_bar"
+        | "dip_bars"
+        | "bench"
+        | "box"
+        | "cardio_machine"
+        | "none"
+      exercise_source: "system" | "user"
+      exercise_type: "strength" | "cardio"
+      muscle_group:
+        | "chest"
+        | "back"
+        | "shoulders"
+        | "biceps"
+        | "triceps"
+        | "forearms"
+        | "quadriceps"
+        | "hamstrings"
+        | "glutes"
+        | "calves"
+        | "abs"
+        | "obliques"
+        | "lower_back"
+        | "traps"
+        | "lats"
+        | "hip_flexors"
+        | "adductors"
+        | "abductors"
+        | "full_body"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -377,6 +515,59 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      cardio_modality: [
+        "run",
+        "bike",
+        "row",
+        "swim",
+        "elliptical",
+        "stair_climber",
+        "jump_rope",
+        "walking",
+        "hiking",
+        "other",
+      ],
+      equipment_type: [
+        "barbell",
+        "dumbbell",
+        "kettlebell",
+        "cable",
+        "machine",
+        "bodyweight",
+        "resistance_band",
+        "suspension",
+        "medicine_ball",
+        "pull_up_bar",
+        "dip_bars",
+        "bench",
+        "box",
+        "cardio_machine",
+        "none",
+      ],
+      exercise_source: ["system", "user"],
+      exercise_type: ["strength", "cardio"],
+      muscle_group: [
+        "chest",
+        "back",
+        "shoulders",
+        "biceps",
+        "triceps",
+        "forearms",
+        "quadriceps",
+        "hamstrings",
+        "glutes",
+        "calves",
+        "abs",
+        "obliques",
+        "lower_back",
+        "traps",
+        "lats",
+        "hip_flexors",
+        "adductors",
+        "abductors",
+        "full_body",
+      ],
+    },
   },
 } as const
