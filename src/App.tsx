@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "./components/AppLayout";
 import Home from "./pages/Home";
 import Train from "./pages/Train";
+import Exercises from "./pages/Exercises";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import WorkoutDetail from "./pages/WorkoutDetail";
@@ -60,6 +61,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/" element={<Home />} />
         <Route path="/train" element={<Train />} />
+        <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/workout/:id" element={<WorkoutDetail />} />

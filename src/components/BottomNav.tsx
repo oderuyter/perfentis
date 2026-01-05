@@ -1,4 +1,4 @@
-import { Home, Dumbbell, TrendingUp, User } from "lucide-react";
+import { Home, Dumbbell, TrendingUp, User, Library } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 const navItems = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/train", icon: Dumbbell, label: "Train" },
+  { to: "/exercises", icon: Library, label: "Exercises" },
   { to: "/progress", icon: TrendingUp, label: "Progress" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
