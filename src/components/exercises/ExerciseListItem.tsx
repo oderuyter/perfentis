@@ -1,6 +1,7 @@
 import { Dumbbell, Activity, User } from 'lucide-react';
 import type { Exercise, EquipmentType } from '@/types/exercise';
 import { EQUIPMENT_LABELS, MUSCLE_GROUP_LABELS } from '@/types/exercise';
+import { getExerciseImage } from '@/utils/equipmentImages';
 
 interface ExerciseListItemProps {
   exercise: Exercise;
@@ -29,17 +30,29 @@ export function ExerciseListItem({ exercise, onClick, showAddButton, onAdd }: Ex
     .map(eq => equipmentIcons[eq] || '•')
     .join(' ');
 
+  const exerciseImage = getExerciseImage(exercise);
+
   return (
     <button
       onClick={onClick || onAdd}
       className="w-full bg-muted/30 rounded-xl p-3 border border-border/30 flex items-center gap-3 active:scale-[0.98] transition-transform text-left"
     >
-      {/* Type icon */}
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-        isStrength ? 'bg-primary/10 text-primary' : 'bg-accent/50 text-accent-foreground'
-      }`}>
-        {isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
-      </div>
+      {/* Image or Type icon */}
+      {exerciseImage ? (
+        <div className="w-9 h-9 rounded-lg overflow-hidden bg-muted/50 flex-shrink-0">
+          <img 
+            src={exerciseImage} 
+            alt={exercise.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+          isStrength ? 'bg-primary/10 text-primary' : 'bg-accent/50 text-accent-foreground'
+        }`}>
+          {isStrength ? <Dumbbell className="h-4 w-4" /> : <Activity className="h-4 w-4" />}
+        </div>
+      )}
       
       {/* Content */}
       <div className="flex-1 min-w-0">
