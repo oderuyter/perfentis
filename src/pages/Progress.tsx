@@ -3,7 +3,14 @@ import { motion } from "framer-motion";
 import { TrendingUp, TrendingDown, Award, Timer, Dumbbell, Calendar } from "lucide-react";
 import { useWorkoutHistory, WorkoutSession } from "@/hooks/useWorkoutHistory";
 import { usePersonalRecords } from "@/hooks/usePersonalRecords";
+import { useWorkoutStreak } from "@/hooks/useWorkoutStreak";
 import { format, subWeeks, startOfWeek, endOfWeek, isWithinInterval } from "date-fns";
+import { WorkoutCalendar } from "@/components/progress/WorkoutCalendar";
+import { WorkoutDaySheet } from "@/components/progress/WorkoutDaySheet";
+import { WorkoutDetailSheet } from "@/components/progress/WorkoutDetailSheet";
+import { StreakCard } from "@/components/progress/StreakCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface WeeklyData {
   week: string;
@@ -12,8 +19,11 @@ interface WeeklyData {
 }
 
 export default function Progress() {
+  const { user } = useAuth();
   const { getRecentWorkouts } = useWorkoutHistory();
   const { getRecentPRs } = usePersonalRecords();
+  const { currentStreak, longestStreak, workoutDates, milestones, loading: streakLoading } = useWorkoutStreak();
+  
   const [workouts, setWorkouts] = useState<WorkoutSession[]>([]);
   const [recentPRs, setRecentPRs] = useState<Array<{
     exercise_name: string;
@@ -24,6 +34,13 @@ export default function Progress() {
   }>>([]);
   const [weeklyData, setWeeklyData] = useState<WeeklyData[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Sheet states for calendar drill-down
+  const [daySheetOpen, setDaySheetOpen] = useState(false);
+  const [detailSheetOpen, setDetailSheetOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDayWorkouts, setSelectedDayWorkouts] = useState<WorkoutSession[]>([]);
+  const [selectedWorkout, setSelectedWorkout] = useState<WorkoutSession | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -62,6 +79,46 @@ export default function Progress() {
     fetchData();
   }, [getRecentWorkouts, getRecentPRs]);
 
+  // Handle calendar day click
+  const handleDayClick = async (date: Date) => {
+    if (!user) return;
+    
+    setSelectedDate(date);
+    
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    try {
+      const { data, error } = await supabase
+        .from("workout_sessions")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "completed")
+        .gte("started_at", startOfDay.toISOString())
+        .lte("started_at", endOfDay.toISOString())
+        .order("started_at", { ascending: false });
+
+      if (error) throw error;
+      setSelectedDayWorkouts(data || []);
+      setDaySheetOpen(true);
+    } catch (error) {
+      console.error("Error fetching day workouts:", error);
+    }
+  };
+
+  const handleWorkoutClick = (workout: WorkoutSession) => {
+    setSelectedWorkout(workout);
+    setDaySheetOpen(false);
+    setDetailSheetOpen(true);
+  };
+
+  const handleBackFromDetail = () => {
+    setDetailSheetOpen(false);
+    setDaySheetOpen(true);
+  };
+
   // Calculate stats
   const currentWeekVolume = weeklyData[3]?.volume || 0;
   const lastWeekVolume = weeklyData[2]?.volume || 0;
@@ -74,8 +131,16 @@ export default function Progress() {
   // Calculate total workout time this month
   const totalMinutes = workouts.reduce((sum, w) => sum + ((w.duration_seconds || 0) / 60), 0);
 
+  if (loading || streakLoading) {
+    return (
+      <div className="min-h-screen pt-safe px-4 pb-4 flex items-center justify-center">
+        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen pt-safe px-4 pb-4">
+    <div className="min-h-screen pt-safe px-4 pb-24">
       {/* Header */}
       <header className="pt-6 pb-4">
         <motion.h1 
@@ -97,6 +162,19 @@ export default function Progress() {
 
       {/* Overview Cards */}
       <div className="space-y-4 mt-4">
+        {/* Streak Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+        >
+          <StreakCard
+            currentStreak={currentStreak}
+            longestStreak={longestStreak}
+            milestones={milestones}
+          />
+        </motion.div>
+
         {/* Volume Trend Card */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -222,11 +300,26 @@ export default function Progress() {
           </p>
         </motion.div>
 
+        {/* Workout Calendar */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.24 }}
+        >
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+            Workout History
+          </p>
+          <WorkoutCalendar
+            workoutDates={workoutDates}
+            onDayClick={handleDayClick}
+          />
+        </motion.div>
+
         {/* Recent PRs List */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
+          transition={{ delay: 0.26 }}
           className="bg-card rounded-xl p-4 shadow-card border border-border/50"
         >
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
@@ -258,6 +351,22 @@ export default function Progress() {
           )}
         </motion.div>
       </div>
+
+      {/* Sheets for calendar drill-down */}
+      <WorkoutDaySheet
+        open={daySheetOpen}
+        onOpenChange={setDaySheetOpen}
+        selectedDate={selectedDate}
+        workouts={selectedDayWorkouts}
+        onWorkoutClick={handleWorkoutClick}
+      />
+
+      <WorkoutDetailSheet
+        open={detailSheetOpen}
+        onOpenChange={setDetailSheetOpen}
+        workout={selectedWorkout}
+        onBack={handleBackFromDetail}
+      />
     </div>
   );
 }
