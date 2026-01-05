@@ -1,11 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote } from "lucide-react";
+import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy } from "lucide-react";
 import { useParams, useNavigate } from "react-router-dom";
 import { workouts } from "@/data/workouts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useWorkoutState, loadSavedWorkout, clearSavedWorkout } from "@/hooks/useWorkoutState";
+import { useWorkoutHistory } from "@/hooks/useWorkoutHistory";
+import { usePersonalRecords, type PersonalRecord } from "@/hooks/usePersonalRecords";
 import { SetEditor } from "@/components/workout/SetEditor";
 import { ExerciseHistorySheet } from "@/components/workout/ExerciseHistorySheet";
 import { SwapExerciseSheet } from "@/components/workout/SwapExerciseSheet";
@@ -13,6 +15,7 @@ import { AddExerciseSheet } from "@/components/workout/AddExerciseSheet";
 import { RestTimerEdit } from "@/components/workout/RestTimerEdit";
 import { ExerciseNav } from "@/components/workout/ExerciseNav";
 import { AdvancedMetrics } from "@/components/workout/AdvancedMetrics";
+import { toast } from "sonner";
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -43,6 +46,10 @@ export default function ActiveWorkout() {
     endWorkout,
   } = useWorkoutState(workout || null, resumeState);
 
+  const { saveWorkoutSession } = useWorkoutHistory();
+  const { checkAndSavePRs } = usePersonalRecords();
+  const [newPRs, setNewPRs] = useState<PersonalRecord[]>([]);
+
   // Overlays
   const [showHROverlay, setShowHROverlay] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -66,10 +73,22 @@ export default function ActiveWorkout() {
     }
   }, [navigate, endWorkout]);
 
-  const handleFinish = useCallback(() => {
+  const handleFinish = useCallback(async () => {
+    if (state && state.status === 'completed') {
+      // Save to database
+      const sessionId = await saveWorkoutSession(state);
+      if (sessionId) {
+        // Check for PRs
+        const prs = await checkAndSavePRs(state, sessionId);
+        if (prs.length > 0) {
+          setNewPRs(prs);
+          toast.success(`${prs.length} new PR${prs.length > 1 ? 's' : ''}!`);
+        }
+      }
+    }
     clearSavedWorkout();
     navigate("/");
-  }, [navigate]);
+  }, [navigate, state, saveWorkoutSession, checkAndSavePRs]);
 
   if (!workout || !state) {
     return (
@@ -121,7 +140,30 @@ export default function ActiveWorkout() {
             <Check className="h-10 w-10 text-accent-foreground" />
           </div>
           <h1 className="text-2xl font-semibold mb-2">Workout Complete</h1>
-          <p className="text-muted-foreground mb-8">Great work today</p>
+          <p className="text-muted-foreground mb-4">Great work today</p>
+          
+          {/* New PRs */}
+          {newPRs.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ delay: 0.2 }}
+              className="mb-6"
+            >
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Trophy className="h-5 w-5 text-gold" />
+                <p className="font-medium text-gold">New Personal Record{newPRs.length > 1 ? 's' : ''}!</p>
+              </div>
+              <div className="space-y-1">
+                {newPRs.map((pr, i) => (
+                  <p key={i} className="text-sm text-muted-foreground">
+                    {pr.exercise_name}: {pr.value}kg e1RM
+                  </p>
+                ))}
+              </div>
+            </motion.div>
+          )}
+          
           <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
             <div className="gradient-card rounded-xl p-4 border border-border/50 shadow-card">
               <p className="text-2xl font-semibold">{formatTime(state.elapsedTime)}</p>
