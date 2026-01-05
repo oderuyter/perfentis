@@ -119,9 +119,9 @@ export function ExerciseImportSheet({ onClose, onCreate }: ExerciseImportSheetPr
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 shadow-elevated max-h-[85vh] overflow-hidden flex flex-col"
+        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 shadow-elevated max-h-[80vh] overflow-hidden flex flex-col"
       >
-        <div className="p-4 pb-0 relative">
+        <div className="p-4 pb-0 relative flex-shrink-0">
           <button
             onClick={onClose}
             className="absolute top-3 left-1/2 -translate-x-1/2 p-1"
@@ -138,7 +138,7 @@ export function ExerciseImportSheet({ onClose, onCreate }: ExerciseImportSheetPr
           </p>
         </div>
         
-        <div className="flex-1 overflow-y-auto px-4 pb-safe">
+        <div className="flex-1 overflow-y-auto px-4 pb-8 mb-safe">
           {step === 'upload' && (
             <div className="py-6 space-y-4">
               {/* File upload */}
