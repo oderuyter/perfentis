@@ -18,6 +18,7 @@ import {
   MapPin,
   ArrowRight
 } from "lucide-react";
+import { GymDetailSheet } from "@/components/gym/GymDetailSheet";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,6 +63,7 @@ export default function GymMembership() {
   const [gymDirectory, setGymDirectory] = useState<GymDirectory[]>([]);
   const [gymSearchQuery, setGymSearchQuery] = useState("");
   const [loadingDirectory, setLoadingDirectory] = useState(false);
+  const [selectedDirectoryGymId, setSelectedDirectoryGymId] = useState<string | null>(null);
 
   const activeMembership = memberships.find((m) => m.status === "active");
   const { checkins } = useMembershipCheckins(activeMembership?.id || null);
@@ -373,7 +375,8 @@ export default function GymMembership() {
                   key={gym.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-card rounded-xl p-4 shadow-card border border-border/50"
+                  onClick={() => setSelectedDirectoryGymId(gym.id)}
+                  className="bg-card rounded-xl p-4 shadow-card border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
                 >
                   <div className="flex items-start gap-4">
                     <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
@@ -656,6 +659,13 @@ export default function GymMembership() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Gym Detail Sheet */}
+      <GymDetailSheet
+        gymId={selectedDirectoryGymId}
+        open={!!selectedDirectoryGymId}
+        onOpenChange={(open) => !open && setSelectedDirectoryGymId(null)}
+      />
     </div>
   );
 }
