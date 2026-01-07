@@ -9,7 +9,8 @@ import {
   Trophy, 
   Settings, 
   HelpCircle,
-  ChevronRight
+  ChevronRight,
+  Building2
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ interface DrawerItem {
 }
 
 const drawerItems: DrawerItem[] = [
+  { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym" },
   { to: "/gym-membership", icon: CreditCard, label: "Gym Membership", description: "Manage your gym access" },
   { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
   { to: "/social", icon: MessageCircle, label: "Social", description: "Community feed" },

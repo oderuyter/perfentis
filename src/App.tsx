@@ -22,6 +22,18 @@ import FindCoach from "./pages/FindCoach";
 import Social from "./pages/Social";
 import Events from "./pages/Events";
 import Help from "./pages/Help";
+import GymPortalLayout from "./pages/gym-portal/GymPortalLayout";
+import GymDashboard from "./pages/gym-portal/GymDashboard";
+import GymMembers from "./pages/gym-portal/GymMembers";
+import GymMemberships from "./pages/gym-portal/GymMemberships";
+import GymClasses from "./pages/gym-portal/GymClasses";
+import GymBookings from "./pages/gym-portal/GymBookings";
+import GymStaff from "./pages/gym-portal/GymStaff";
+import GymRotas from "./pages/gym-portal/GymRotas";
+import GymPayments from "./pages/gym-portal/GymPayments";
+import GymReports from "./pages/gym-portal/GymReports";
+import GymProfile from "./pages/gym-portal/GymProfile";
+import GymSettings from "./pages/gym-portal/GymSettings";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +91,19 @@ function AppRoutes() {
         <Route path="/events" element={<Events />} />
         <Route path="/help" element={<Help />} />
         <Route path="/workout/:id" element={<WorkoutDetail />} />
+      </Route>
+      <Route path="/gym-portal" element={<ProtectedRoute><GymPortalLayout /></ProtectedRoute>}>
+        <Route index element={<GymDashboard />} />
+        <Route path="members" element={<GymMembers />} />
+        <Route path="memberships" element={<GymMemberships />} />
+        <Route path="classes" element={<GymClasses />} />
+        <Route path="bookings" element={<GymBookings />} />
+        <Route path="staff" element={<GymStaff />} />
+        <Route path="rotas" element={<GymRotas />} />
+        <Route path="payments" element={<GymPayments />} />
+        <Route path="reports" element={<GymReports />} />
+        <Route path="profile" element={<GymProfile />} />
+        <Route path="settings" element={<GymSettings />} />
       </Route>
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
