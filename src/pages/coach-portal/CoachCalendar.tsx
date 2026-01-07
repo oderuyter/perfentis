@@ -154,7 +154,7 @@ export default function CoachCalendar() {
 
       const { error } = await supabase.from("coach_appointments").insert({
         coach_id: coach.id,
-        client_id: form.client_id || null,
+        client_id: form.client_id && form.client_id !== "none" ? form.client_id : null,
         title: form.title || null,
         appointment_type: form.appointment_type,
         mode: form.mode,
@@ -459,10 +459,10 @@ export default function CoachCalendar() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Client (optional)</Label>
-                <Select value={form.client_id} onValueChange={v => setForm(p => ({ ...p, client_id: v }))}>
+                <Select value={form.client_id || "none"} onValueChange={v => setForm(p => ({ ...p, client_id: v === "none" ? "" : v }))}>
                   <SelectTrigger><SelectValue placeholder="Select client or leave empty" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No client (blocked time)</SelectItem>
+                    <SelectItem value="none">No client (blocked time)</SelectItem>
                     {clients.map(client => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.profiles?.display_name || "Unknown Client"}
