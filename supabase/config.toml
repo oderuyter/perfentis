@@ -1,1 +1,7 @@
 project_id = "nwweebxwjpycovlpdath"
+
+[functions.send-gym-invitation]
+verify_jwt = false
+
+[functions.accept-gym-invitation]
+verify_jwt = false

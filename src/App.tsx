@@ -34,6 +34,8 @@ import GymPayments from "./pages/gym-portal/GymPayments";
 import GymReports from "./pages/gym-portal/GymReports";
 import GymProfile from "./pages/gym-portal/GymProfile";
 import GymSettings from "./pages/gym-portal/GymSettings";
+import GymMembershipLevels from "./pages/gym-portal/GymMembershipLevels";
+import AcceptInvite from "./pages/AcceptInvite";
 
 const queryClient = new QueryClient();
 
@@ -104,9 +106,12 @@ function AppRoutes() {
         <Route path="reports" element={<GymReports />} />
         <Route path="profile" element={<GymProfile />} />
         <Route path="settings" element={<GymSettings />} />
+        <Route path="membership-levels" element={<GymMembershipLevels />} />
       </Route>
+      <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
+    </Routes>
     </Routes>
   );
 }

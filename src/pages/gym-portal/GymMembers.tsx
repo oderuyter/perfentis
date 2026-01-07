@@ -19,7 +19,8 @@ import {
   MapPin,
   AlertTriangle,
   FileText,
-  Loader2
+  Loader2,
+  UserPlus
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -59,6 +60,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InviteMemberDialog } from "@/components/gym-portal/InviteMemberDialog";
 
 interface ContextType {
   selectedGymId: string | null;
