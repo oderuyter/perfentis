@@ -657,6 +657,116 @@ export type Database = {
           },
         ]
       }
+      gym_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          gym_id: string
+          id: string
+          invited_by: string
+          membership_level_id: string | null
+          name: string | null
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          gym_id: string
+          id?: string
+          invited_by: string
+          membership_level_id?: string | null
+          name?: string | null
+          status?: string
+          token: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          gym_id?: string
+          id?: string
+          invited_by?: string
+          membership_level_id?: string | null
+          name?: string | null
+          status?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_invitations_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_invitations_membership_level_id_fkey"
+            columns: ["membership_level_id"]
+            isOneToOne: false
+            referencedRelation: "gym_membership_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_membership_levels: {
+        Row: {
+          access_notes: string | null
+          billing_cycle: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          gym_id: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number | null
+          updated_at: string
+        }
+        Insert: {
+          access_notes?: string | null
+          billing_cycle?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          gym_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          access_notes?: string | null
+          billing_cycle?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          gym_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_membership_levels_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_staff: {
         Row: {
           created_at: string
@@ -972,6 +1082,8 @@ export type Database = {
           created_at: string
           gym_id: string
           id: string
+          invitation_id: string | null
+          membership_level_id: string | null
           membership_number: string | null
           membership_token: string
           next_payment_date: string | null
@@ -986,6 +1098,8 @@ export type Database = {
           created_at?: string
           gym_id: string
           id?: string
+          invitation_id?: string | null
+          membership_level_id?: string | null
           membership_number?: string | null
           membership_token?: string
           next_payment_date?: string | null
@@ -1000,6 +1114,8 @@ export type Database = {
           created_at?: string
           gym_id?: string
           id?: string
+          invitation_id?: string | null
+          membership_level_id?: string | null
           membership_number?: string | null
           membership_token?: string
           next_payment_date?: string | null
@@ -1016,6 +1132,20 @@ export type Database = {
             columns: ["gym_id"]
             isOneToOne: false
             referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "gym_invitations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_membership_level_id_fkey"
+            columns: ["membership_level_id"]
+            isOneToOne: false
+            referencedRelation: "gym_membership_levels"
             referencedColumns: ["id"]
           },
         ]
