@@ -1,4 +1,4 @@
-import { Home, Dumbbell, TrendingUp, User, Library } from "lucide-react";
+import { Home, Dumbbell, TrendingUp, User, UtensilsCrossed, Sparkles } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -6,8 +6,9 @@ import { motion } from "framer-motion";
 const navItems = [
   { to: "/", icon: Home, label: "Home" },
   { to: "/train", icon: Dumbbell, label: "Train" },
-  { to: "/exercises", icon: Library, label: "Exercises" },
   { to: "/progress", icon: TrendingUp, label: "Progress" },
+  { to: "/nutrition", icon: UtensilsCrossed, label: "Nutrition" },
+  { to: "/habits", icon: Sparkles, label: "Habits" },
   { to: "/profile", icon: User, label: "Profile" },
 ];
 
@@ -16,7 +17,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md pb-safe">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           return (
@@ -29,7 +30,7 @@ export function BottomNav() {
                 {isActive && (
                   <motion.div
                     layoutId="nav-indicator"
-                    className="absolute -inset-2 rounded-xl bg-accent"
+                    className="absolute -inset-1.5 rounded-lg bg-accent"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
@@ -45,7 +46,7 @@ export function BottomNav() {
               </div>
               <span
                 className={cn(
-                  "mt-1 text-xs font-medium transition-colors duration-200",
+                  "mt-1 text-[10px] font-medium transition-colors duration-200",
                   isActive
                     ? "text-accent-foreground"
                     : "text-muted-foreground group-hover:text-foreground"

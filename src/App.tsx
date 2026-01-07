@@ -15,6 +15,13 @@ import WorkoutDetail from "./pages/WorkoutDetail";
 import ActiveWorkout from "./pages/ActiveWorkout";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import Nutrition from "./pages/Nutrition";
+import Habits from "./pages/Habits";
+import GymMembership from "./pages/GymMembership";
+import FindCoach from "./pages/FindCoach";
+import Social from "./pages/Social";
+import Events from "./pages/Events";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +71,13 @@ function AppRoutes() {
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/nutrition" element={<Nutrition />} />
+        <Route path="/habits" element={<Habits />} />
+        <Route path="/gym-membership" element={<GymMembership />} />
+        <Route path="/find-coach" element={<FindCoach />} />
+        <Route path="/social" element={<Social />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/help" element={<Help />} />
         <Route path="/workout/:id" element={<WorkoutDetail />} />
       </Route>
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
