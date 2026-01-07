@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
-import { useOwnedGyms } from "@/hooks/useGymManagement";
+import { useOwnedGyms } from "@/hooks/useOwnedGyms";
 import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,

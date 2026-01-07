@@ -51,12 +51,10 @@ export default function GymMemberships() {
     setIsLoading(true);
 
     try {
+      // First fetch memberships
       let query = supabase
         .from("memberships")
-        .select(`
-          *,
-          profiles:user_id(display_name)
-        `)
+        .select("*")
         .eq("gym_id", selectedGymId)
         .order("created_at", { ascending: false });
 
@@ -64,9 +62,34 @@ export default function GymMemberships() {
         query = query.eq("status", statusFilter);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      setMemberships(data || []);
+      const { data: membershipsData, error: membershipsError } = await query;
+      if (membershipsError) throw membershipsError;
+
+      if (!membershipsData || membershipsData.length === 0) {
+        setMemberships([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch profiles separately
+      const userIds = [...new Set(membershipsData.map(m => m.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, display_name")
+        .in("user_id", userIds);
+
+      // Create profile map
+      const profileMap = new Map(
+        (profiles || []).map(p => [p.user_id, { display_name: p.display_name }])
+      );
+
+      // Merge profiles into memberships
+      const membershipsWithProfiles = membershipsData.map(m => ({
+        ...m,
+        profiles: profileMap.get(m.user_id) || null
+      }));
+
+      setMemberships(membershipsWithProfiles);
     } catch (error) {
       console.error("Error fetching memberships:", error);
       toast.error("Failed to load memberships");

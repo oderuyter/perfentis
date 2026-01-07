@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Menu, 
@@ -14,16 +14,19 @@ import {
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useRoles } from "@/hooks/useRoles";
+import { useOwnedGyms } from "@/hooks/useOwnedGyms";
 
 interface DrawerItem {
   to: string;
   icon: React.ElementType;
   label: string;
   description?: string;
+  requiresGymAccess?: boolean;
 }
 
-const drawerItems: DrawerItem[] = [
-  { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym" },
+const allDrawerItems: DrawerItem[] = [
+  { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym", requiresGymAccess: true },
   { to: "/gym-membership", icon: CreditCard, label: "Gym Membership", description: "Manage your gym access" },
   { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
   { to: "/social", icon: MessageCircle, label: "Social", description: "Community feed" },
@@ -40,6 +43,19 @@ interface GlobalDrawerProps {
 export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasAnyRole, isAdmin } = useRoles();
+  const { hasGymAccess } = useOwnedGyms();
+
+  // Filter drawer items based on roles
+  const drawerItems = useMemo(() => {
+    return allDrawerItems.filter((item) => {
+      if (item.requiresGymAccess) {
+        // Show Gym Admin only if user is admin, gym_manager, gym_staff, or owns/manages a gym
+        return isAdmin() || hasAnyRole(['gym_manager', 'gym_staff']) || hasGymAccess;
+      }
+      return true;
+    });
+  }, [isAdmin, hasAnyRole, hasGymAccess]);
 
   const handleNavigation = (to: string) => {
     navigate(to);

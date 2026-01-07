@@ -169,18 +169,10 @@ export default function GymMembers() {
     setIsLoading(true);
 
     try {
+      // First fetch memberships
       let query = supabase
         .from("memberships")
-        .select(`
-          id,
-          user_id,
-          membership_number,
-          status,
-          tier,
-          created_at,
-          start_date,
-          profiles:user_id(display_name, avatar_url)
-        `)
+        .select("id, user_id, membership_number, status, tier, created_at, start_date")
         .eq("gym_id", selectedGymId)
         .order("created_at", { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
@@ -192,11 +184,33 @@ export default function GymMembers() {
         query = query.eq("tier", tierFilter);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
+      const { data: memberships, error: membershipsError } = await query;
+      if (membershipsError) throw membershipsError;
 
-      // Map the data properly
-      const mappedMembers: MemberWithDetails[] = (data || []).map((m: any) => ({
+      if (!memberships || memberships.length === 0) {
+        setMembers([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Get unique user IDs and fetch their profiles separately
+      const userIds = [...new Set(memberships.map(m => m.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, avatar_url")
+        .in("user_id", userIds);
+
+      if (profilesError) {
+        console.warn("Error fetching profiles:", profilesError);
+      }
+
+      // Create a map for quick profile lookup
+      const profileMap = new Map(
+        (profiles || []).map(p => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+      );
+
+      // Map the data with profiles
+      const mappedMembers: MemberWithDetails[] = memberships.map((m) => ({
         id: m.id,
         user_id: m.user_id,
         membership_number: m.membership_number,
@@ -204,7 +218,7 @@ export default function GymMembers() {
         tier: m.tier,
         created_at: m.created_at,
         start_date: m.start_date,
-        profile: m.profiles
+        profile: profileMap.get(m.user_id) || null
       }));
 
       setMembers(mappedMembers);
