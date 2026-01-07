@@ -16,9 +16,12 @@ import {
   Loader2,
   Search,
   MapPin,
-  ArrowRight
+  ArrowRight,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { GymDetailSheet } from "@/components/gym/GymDetailSheet";
+import { MembershipDetailSheet } from "@/components/gym/MembershipDetailSheet";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +37,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 type GymDirectory = {
   id: string;
@@ -47,7 +51,7 @@ type GymDirectory = {
 export default function GymMembership() {
   const { user } = useAuth();
   const { roles, isGymManager, isGymStaff, isAdmin } = useRoles();
-  const { memberships, isLoading: membershipsLoading, cancelMembership } = useUserMemberships();
+  const { memberships, isLoading: membershipsLoading, cancelMembership, refetch: refetchMemberships } = useUserMemberships();
   const { gyms: ownedGyms, isLoading: gymsLoading, createGym } = useOwnedGyms();
   
   const [selectedGymId, setSelectedGymId] = useState<string | null>(null);
@@ -64,8 +68,14 @@ export default function GymMembership() {
   const [gymSearchQuery, setGymSearchQuery] = useState("");
   const [loadingDirectory, setLoadingDirectory] = useState(false);
   const [selectedDirectoryGymId, setSelectedDirectoryGymId] = useState<string | null>(null);
+  
+  // Membership management state
+  const [selectedMembership, setSelectedMembership] = useState<typeof memberships[0] | null>(null);
+  const [pastMembershipsOpen, setPastMembershipsOpen] = useState(false);
 
   const activeMembership = memberships.find((m) => m.status === "active");
+  const activeMemberships = memberships.filter((m) => m.status === "active");
+  const inactiveMemberships = memberships.filter((m) => m.status !== "active");
   const { checkins } = useMembershipCheckins(activeMembership?.id || null);
   
   // Fetch gym directory
@@ -214,82 +224,86 @@ export default function GymMembership() {
         {/* User Membership Tab */}
         <TabsContent value="membership" className="mt-4 space-y-4">
           {/* Active Memberships */}
-          {memberships.filter((m) => m.status === "active").length > 0 ? (
+          {activeMemberships.length > 0 ? (
             <div className="space-y-4">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Active Memberships
               </p>
-              {memberships
-                .filter((m) => m.status === "active")
-                .map((membership) => (
-                  <motion.div
-                    key={membership.id}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
+              {activeMemberships.map((membership) => (
+                <motion.div
+                  key={membership.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <div 
+                    onClick={() => setSelectedMembership(membership)}
+                    className="gradient-card-accent rounded-xl p-5 shadow-card border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
                   >
-                    <div className="gradient-card-accent rounded-xl p-5 shadow-card border border-border/50">
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-accent-foreground mb-2">
-                            ACTIVE
-                          </span>
-                          <h2 className="text-xl font-semibold">
-                            {membership.gym?.name || "Unknown Gym"}
-                          </h2>
-                          {membership.gym?.address && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {membership.gym.address}
-                            </p>
-                          )}
-                        </div>
-                        <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center">
-                          <Building2 className="h-6 w-6 text-accent-foreground" />
-                        </div>
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-accent-foreground mb-2">
+                          ACTIVE
+                        </span>
+                        <h2 className="text-xl font-semibold">
+                          {membership.gym?.name || "Unknown Gym"}
+                        </h2>
+                        {membership.gym?.address && (
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {membership.gym.address}
+                          </p>
+                        )}
                       </div>
-
-                      {/* Membership Details */}
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Member #</p>
-                          <p className="font-mono text-sm font-medium">
-                            {membership.membership_number || "—"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Tier</p>
-                          <p className="font-medium capitalize">{membership.tier || "Standard"}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Start Date</p>
-                          <p className="font-medium">
-                            {membership.start_date
-                              ? format(new Date(membership.start_date), "MMM d, yyyy")
-                              : "—"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Next Payment</p>
-                          <p className="font-medium">
-                            {membership.next_payment_date
-                              ? format(new Date(membership.next_payment_date), "MMM d, yyyy")
-                              : "One-time"}
-                          </p>
-                        </div>
+                      <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center">
+                        <Building2 className="h-6 w-6 text-accent-foreground" />
                       </div>
+                    </div>
 
-                      <button
-                        onClick={() => setShowQR({ 
+                    {/* Membership Details */}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Member #</p>
+                        <p className="font-mono text-sm font-medium">
+                          {membership.membership_number || "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Tier</p>
+                        <p className="font-medium capitalize">{membership.tier || "Standard"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Start Date</p>
+                        <p className="font-medium">
+                          {membership.start_date
+                            ? format(new Date(membership.start_date), "MMM d, yyyy")
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Next Payment</p>
+                        <p className="font-medium">
+                          {membership.next_payment_date
+                            ? format(new Date(membership.next_payment_date), "MMM d, yyyy")
+                            : "One-time"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowQR({ 
                           token: membership.membership_token, 
                           number: membership.membership_number 
-                        })}
-                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium"
-                      >
-                        <QrCode className="h-5 w-5" />
-                        Show QR Code
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
+                        });
+                      }}
+                      className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium"
+                    >
+                      <QrCode className="h-5 w-5" />
+                      Show QR Code
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           ) : (
             <motion.div
@@ -329,35 +343,56 @@ export default function GymMembership() {
             </div>
           )}
 
-          {/* Past & Inactive Memberships */}
-          {memberships.filter((m) => m.status !== "active").length > 0 && (
-            <div className="mt-6">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                Past Memberships
-              </p>
-              <div className="space-y-2">
-                {memberships
-                  .filter((m) => m.status !== "active")
-                  .map((membership) => (
+          {/* Past & Inactive Memberships - Collapsible */}
+          {inactiveMemberships.length > 0 && (
+            <Collapsible open={pastMembershipsOpen} onOpenChange={setPastMembershipsOpen} className="mt-6">
+              <CollapsibleTrigger className="flex items-center justify-between w-full py-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Past Memberships ({inactiveMemberships.length})
+                </p>
+                {pastMembershipsOpen ? (
+                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                )}
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 mt-2">
+                {inactiveMemberships.map((membership) => {
+                  const getStatusColor = (status: string) => {
+                    switch (status) {
+                      case "cancelled": return "bg-red-500/20 text-red-700 dark:text-red-400";
+                      case "pending": return "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400";
+                      case "inquiry": return "bg-blue-500/20 text-blue-700 dark:text-blue-400";
+                      case "suspended": return "bg-orange-500/20 text-orange-700 dark:text-orange-400";
+                      default: return "bg-muted text-muted-foreground";
+                    }
+                  };
+                  
+                  return (
                     <div
                       key={membership.id}
-                      className="bg-card rounded-xl p-4 shadow-card border border-border/50 opacity-60"
+                      onClick={() => setSelectedMembership(membership)}
+                      className="bg-card rounded-xl p-4 shadow-card border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <div>
                           <p className="font-medium">{membership.gym?.name || "Unknown Gym"}</p>
-                          <p className="text-sm text-muted-foreground capitalize">
-                            {membership.tier || "Standard"} · {membership.status}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium uppercase ${getStatusColor(membership.status)}`}>
+                              {membership.status}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {membership.tier || "Standard"}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-xs font-mono text-muted-foreground">
-                          {membership.membership_number}
-                        </span>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
                       </div>
                     </div>
-                  ))}
-              </div>
-            </div>
+                  );
+                })}
+              </CollapsibleContent>
+            </Collapsible>
           )}
         </TabsContent>
 
@@ -675,6 +710,14 @@ export default function GymMembership() {
         gymId={selectedDirectoryGymId}
         open={!!selectedDirectoryGymId}
         onOpenChange={(open) => !open && setSelectedDirectoryGymId(null)}
+      />
+
+      {/* Membership Detail Sheet */}
+      <MembershipDetailSheet
+        membership={selectedMembership}
+        open={!!selectedMembership}
+        onOpenChange={(open) => !open && setSelectedMembership(null)}
+        onMembershipUpdated={refetchMemberships}
       />
     </div>
   );
