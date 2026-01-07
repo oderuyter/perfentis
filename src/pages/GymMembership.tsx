@@ -13,7 +13,10 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Loader2
+  Loader2,
+  Search,
+  MapPin,
+  ArrowRight
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +34,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+type GymDirectory = {
+  id: string;
+  name: string;
+  address: string | null;
+  description: string | null;
+  logo_url: string | null;
+  status: string;
+};
+
 export default function GymMembership() {
   const { user } = useAuth();
   const { roles, isGymManager, isGymStaff, isAdmin } = useRoles();
@@ -45,9 +57,39 @@ export default function GymMembership() {
   const [newGymName, setNewGymName] = useState("");
   const [newGymAddress, setNewGymAddress] = useState("");
   const [creating, setCreating] = useState(false);
+  
+  // Gym directory state
+  const [gymDirectory, setGymDirectory] = useState<GymDirectory[]>([]);
+  const [gymSearchQuery, setGymSearchQuery] = useState("");
+  const [loadingDirectory, setLoadingDirectory] = useState(false);
 
   const activeMembership = memberships.find((m) => m.status === "active");
   const { checkins } = useMembershipCheckins(activeMembership?.id || null);
+  
+  // Fetch gym directory
+  useEffect(() => {
+    const fetchGymDirectory = async () => {
+      setLoadingDirectory(true);
+      const { data, error } = await supabase
+        .from("gyms")
+        .select("id, name, address, description, logo_url, status")
+        .eq("status", "active")
+        .order("name");
+      
+      if (!error && data) {
+        setGymDirectory(data);
+      }
+      setLoadingDirectory(false);
+    };
+    
+    fetchGymDirectory();
+  }, []);
+  
+  // Filter gym directory by search
+  const filteredGyms = gymDirectory.filter(gym => 
+    gym.name.toLowerCase().includes(gymSearchQuery.toLowerCase()) ||
+    (gym.address?.toLowerCase().includes(gymSearchQuery.toLowerCase()))
+  );
 
   // Set first owned gym as selected
   useEffect(() => {
@@ -159,11 +201,12 @@ export default function GymMembership() {
 
       {/* Tabs for User/Admin view */}
       <Tabs defaultValue="membership" className="mt-4">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className={cn("grid w-full", hasManagementAccess ? "grid-cols-3" : "grid-cols-2")}>
           <TabsTrigger value="membership">My Membership</TabsTrigger>
-          <TabsTrigger value="manage" disabled={!hasManagementAccess}>
-            {hasManagementAccess ? "Manage Gym" : "Manage"}
-          </TabsTrigger>
+          <TabsTrigger value="directory">Find a Gym</TabsTrigger>
+          {hasManagementAccess && (
+            <TabsTrigger value="manage">Manage</TabsTrigger>
+          )}
         </TabsList>
 
         {/* User Membership Tab */}
@@ -271,9 +314,6 @@ export default function GymMembership() {
               <p className="text-sm text-muted-foreground mb-4">
                 Join a gym to get started with your fitness journey
               </p>
-              <button className="px-6 py-2 rounded-full bg-primary text-primary-foreground font-medium">
-                Find a Gym
-              </button>
             </motion.div>
           )}
 
@@ -309,7 +349,79 @@ export default function GymMembership() {
           )}
         </TabsContent>
 
+        {/* Gym Directory Tab */}
+        <TabsContent value="directory" className="mt-4 space-y-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={gymSearchQuery}
+              onChange={(e) => setGymSearchQuery(e.target.value)}
+              placeholder="Search gyms by name or location..."
+              className="pl-10"
+            />
+          </div>
+          
+          {loadingDirectory ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredGyms.length > 0 ? (
+            <div className="space-y-3">
+              {filteredGyms.map((gym) => (
+                <motion.div
+                  key={gym.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-card rounded-xl p-4 shadow-card border border-border/50"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                      {gym.logo_url ? (
+                        <img src={gym.logo_url} alt={gym.name} className="h-full w-full object-cover rounded-lg" />
+                      ) : (
+                        <Building2 className="h-7 w-7 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate">{gym.name}</h3>
+                      {gym.address && (
+                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{gym.address}</span>
+                        </p>
+                      )}
+                      {gym.description && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{gym.description}</p>
+                      )}
+                    </div>
+                    <button className="flex-shrink-0 p-2 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-card rounded-xl p-8 shadow-card border border-border/50 text-center">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h2 className="font-semibold mb-2">
+                {gymSearchQuery ? "No Gyms Found" : "No Gyms Available"}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                {gymSearchQuery 
+                  ? "Try adjusting your search terms"
+                  : "Check back later for available gyms in your area"
+                }
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
         {/* Gym Management Tab */}
+        {hasManagementAccess && (
         <TabsContent value="manage" className="mt-4 space-y-4">
           {/* Create Gym Button */}
           {!showCreateGym && (
@@ -499,6 +611,7 @@ export default function GymMembership() {
             </div>
           )}
         </TabsContent>
+        )}
       </Tabs>
 
       {/* QR Code Modal */}
