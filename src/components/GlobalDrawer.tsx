@@ -10,12 +10,14 @@ import {
   Settings, 
   HelpCircle,
   ChevronRight,
-  Building2
+  Building2,
+  GraduationCap
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
 import { useOwnedGyms } from "@/hooks/useOwnedGyms";
+import { useCoach } from "@/hooks/useCoach";
 
 interface DrawerItem {
   to: string;
@@ -23,10 +25,12 @@ interface DrawerItem {
   label: string;
   description?: string;
   requiresGymAccess?: boolean;
+  requiresCoachAccess?: boolean;
 }
 
 const allDrawerItems: DrawerItem[] = [
   { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym", requiresGymAccess: true },
+  { to: "/coach-portal", icon: GraduationCap, label: "Coach Portal", description: "Manage your coaching", requiresCoachAccess: true },
   { to: "/gym-membership", icon: CreditCard, label: "Gym Membership", description: "Manage your gym access" },
   { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
   { to: "/social", icon: MessageCircle, label: "Social", description: "Community feed" },
@@ -45,6 +49,7 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
   const location = useLocation();
   const { hasAnyRole, isAdmin } = useRoles();
   const { hasGymAccess } = useOwnedGyms();
+  const { isCoach } = useCoach();
 
   // Filter drawer items based on roles
   const drawerItems = useMemo(() => {
@@ -53,9 +58,13 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
         // Show Gym Admin only if user is admin, gym_manager, gym_staff, or owns/manages a gym
         return isAdmin() || hasAnyRole(['gym_manager', 'gym_staff']) || hasGymAccess;
       }
+      if (item.requiresCoachAccess) {
+        // Show Coach Portal only if user is a coach
+        return isAdmin() || hasAnyRole(['coach']) || isCoach;
+      }
       return true;
     });
-  }, [isAdmin, hasAnyRole, hasGymAccess]);
+  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach]);
 
   const handleNavigation = (to: string) => {
     navigate(to);
