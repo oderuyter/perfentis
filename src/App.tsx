@@ -112,7 +112,6 @@ function AppRoutes() {
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
-    </Routes>
   );
 }
 
