@@ -49,7 +49,7 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
   const location = useLocation();
   const { hasAnyRole, isAdmin } = useRoles();
   const { hasGymAccess } = useOwnedGyms();
-  const { isCoach } = useCoach();
+  const { isCoach, isLoading: isCoachLoading } = useCoach();
 
   // Filter drawer items based on roles
   const drawerItems = useMemo(() => {
@@ -59,12 +59,12 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
         return isAdmin() || hasAnyRole(['gym_manager', 'gym_staff']) || hasGymAccess;
       }
       if (item.requiresCoachAccess) {
-        // Show Coach Portal only if user is a coach
-        return isAdmin() || hasAnyRole(['coach']) || isCoach;
+        // Show Coach Portal only if user is a coach (or still loading - show it to avoid flicker)
+        return isAdmin() || hasAnyRole(['coach']) || isCoach || isCoachLoading;
       }
       return true;
     });
-  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach]);
+  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading]);
 
   const handleNavigation = (to: string) => {
     navigate(to);
