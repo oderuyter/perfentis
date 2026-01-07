@@ -213,96 +213,84 @@ export default function GymMembership() {
 
         {/* User Membership Tab */}
         <TabsContent value="membership" className="mt-4 space-y-4">
-          {activeMembership ? (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              {/* Active Membership Card */}
-              <div className="gradient-card-accent rounded-xl p-5 shadow-card border border-border/50">
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-accent-foreground mb-2">
-                      ACTIVE
-                    </span>
-                    <h2 className="text-xl font-semibold">
-                      {activeMembership.gym?.name || "Unknown Gym"}
-                    </h2>
-                    {activeMembership.gym?.address && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {activeMembership.gym.address}
-                      </p>
-                    )}
-                  </div>
-                  <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center">
-                    <Building2 className="h-6 w-6 text-accent-foreground" />
-                  </div>
-                </div>
-
-                {/* Membership Details */}
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Member #</p>
-                    <p className="font-mono text-sm font-medium">
-                      {activeMembership.membership_number || "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Tier</p>
-                    <p className="font-medium capitalize">{activeMembership.tier || "Standard"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Start Date</p>
-                    <p className="font-medium">
-                      {activeMembership.start_date
-                        ? format(new Date(activeMembership.start_date), "MMM d, yyyy")
-                        : "—"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Next Payment</p>
-                    <p className="font-medium">
-                      {activeMembership.next_payment_date
-                        ? format(new Date(activeMembership.next_payment_date), "MMM d, yyyy")
-                        : "—"}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setShowQR({ 
-                    token: activeMembership.membership_token, 
-                    number: activeMembership.membership_number 
-                  })}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium"
-                >
-                  <QrCode className="h-5 w-5" />
-                  Show QR Code
-                </button>
-              </div>
-
-              {/* Recent Check-ins */}
-              {checkins.length > 0 && (
-                <div className="mt-6">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                    Recent Check-ins
-                  </p>
-                  <div className="space-y-2">
-                    {checkins.slice(0, 5).map((checkin) => (
-                      <div
-                        key={checkin.id}
-                        className="flex items-center gap-3 bg-card rounded-lg p-3 border border-border/50"
-                      >
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">
-                          {format(new Date(checkin.checked_in_at), "EEE, MMM d 'at' h:mm a")}
-                        </span>
+          {/* Active Memberships */}
+          {memberships.filter((m) => m.status === "active").length > 0 ? (
+            <div className="space-y-4">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Active Memberships
+              </p>
+              {memberships
+                .filter((m) => m.status === "active")
+                .map((membership) => (
+                  <motion.div
+                    key={membership.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                  >
+                    <div className="gradient-card-accent rounded-xl p-5 shadow-card border border-border/50">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-accent-foreground mb-2">
+                            ACTIVE
+                          </span>
+                          <h2 className="text-xl font-semibold">
+                            {membership.gym?.name || "Unknown Gym"}
+                          </h2>
+                          {membership.gym?.address && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {membership.gym.address}
+                            </p>
+                          )}
+                        </div>
+                        <div className="h-12 w-12 rounded-full bg-accent flex items-center justify-center">
+                          <Building2 className="h-6 w-6 text-accent-foreground" />
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </motion.div>
+
+                      {/* Membership Details */}
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Member #</p>
+                          <p className="font-mono text-sm font-medium">
+                            {membership.membership_number || "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Tier</p>
+                          <p className="font-medium capitalize">{membership.tier || "Standard"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Start Date</p>
+                          <p className="font-medium">
+                            {membership.start_date
+                              ? format(new Date(membership.start_date), "MMM d, yyyy")
+                              : "—"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Next Payment</p>
+                          <p className="font-medium">
+                            {membership.next_payment_date
+                              ? format(new Date(membership.next_payment_date), "MMM d, yyyy")
+                              : "One-time"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setShowQR({ 
+                          token: membership.membership_token, 
+                          number: membership.membership_number 
+                        })}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium"
+                      >
+                        <QrCode className="h-5 w-5" />
+                        Show QR Code
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+            </div>
           ) : (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
@@ -312,14 +300,36 @@ export default function GymMembership() {
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="h-8 w-8 text-muted-foreground" />
               </div>
-              <h2 className="font-semibold mb-2">No Active Membership</h2>
+              <h2 className="font-semibold mb-2">No Active Memberships</h2>
               <p className="text-sm text-muted-foreground mb-4">
                 Join a gym to get started with your fitness journey
               </p>
             </motion.div>
           )}
 
-          {/* Past Memberships */}
+          {/* Recent Check-ins (for first active membership) */}
+          {activeMembership && checkins.length > 0 && (
+            <div className="mt-6">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                Recent Check-ins
+              </p>
+              <div className="space-y-2">
+                {checkins.slice(0, 5).map((checkin) => (
+                  <div
+                    key={checkin.id}
+                    className="flex items-center gap-3 bg-card rounded-lg p-3 border border-border/50"
+                  >
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {format(new Date(checkin.checked_in_at), "EEE, MMM d 'at' h:mm a")}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Past & Inactive Memberships */}
           {memberships.filter((m) => m.status !== "active").length > 0 && (
             <div className="mt-6">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
