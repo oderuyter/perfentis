@@ -5,82 +5,67 @@ import {
   CreditCard, 
   Building2, 
   Calendar,
-  ChevronRight,
   X,
   Users,
-  ScanLine
+  ScanLine,
+  Plus,
+  Settings,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoles } from "@/hooks/useRoles";
+import { 
+  useUserMemberships, 
+  useOwnedGyms, 
+  useGymMembers,
+  useMembershipCheckins 
+} from "@/hooks/useGymManagement";
 import { cn } from "@/lib/utils";
-
-interface Membership {
-  id: string;
-  gym_id: string;
-  status: string;
-  tier: string;
-  membership_token: string;
-  next_payment_date: string | null;
-  gym?: {
-    name: string;
-    address: string | null;
-  };
-}
-
-interface Gym {
-  id: string;
-  name: string;
-  owner_id: string;
-}
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function GymMembership() {
   const { user } = useAuth();
-  const [memberships, setMemberships] = useState<Membership[]>([]);
-  const [ownedGyms, setOwnedGyms] = useState<Gym[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<"user" | "admin">("user");
-  const [showQR, setShowQR] = useState<string | null>(null);
-  const [mockMembers] = useState([
-    { id: "1", name: "John Doe", tier: "Premium", status: "active" },
-    { id: "2", name: "Jane Smith", tier: "Standard", status: "active" },
-    { id: "3", name: "Mike Johnson", tier: "Premium", status: "inactive" },
-  ]);
+  const { roles, isGymManager, isGymStaff, isAdmin } = useRoles();
+  const { memberships, isLoading: membershipsLoading, cancelMembership } = useUserMemberships();
+  const { gyms: ownedGyms, isLoading: gymsLoading, createGym } = useOwnedGyms();
+  
+  const [selectedGymId, setSelectedGymId] = useState<string | null>(null);
+  const { members, isLoading: membersLoading, updateMemberStatus } = useGymMembers(selectedGymId);
+  
+  const [showQR, setShowQR] = useState<{ token: string; number: string | null } | null>(null);
+  const [showCreateGym, setShowCreateGym] = useState(false);
+  const [newGymName, setNewGymName] = useState("");
+  const [newGymAddress, setNewGymAddress] = useState("");
+  const [creating, setCreating] = useState(false);
 
+  const activeMembership = memberships.find((m) => m.status === "active");
+  const { checkins } = useMembershipCheckins(activeMembership?.id || null);
+
+  // Set first owned gym as selected
   useEffect(() => {
-    if (user) {
-      fetchData();
+    if (ownedGyms.length > 0 && !selectedGymId) {
+      setSelectedGymId(ownedGyms[0].id);
     }
-  }, [user]);
+  }, [ownedGyms, selectedGymId]);
 
-  const fetchData = async () => {
-    if (!user) return;
-    setLoading(true);
+  // Determine if user has management access
+  const hasManagementAccess = ownedGyms.length > 0 || 
+    roles.some(r => r.role === 'gym_manager' || r.role === 'gym_staff' || r.role === 'admin');
 
-    const [membershipsRes, gymsRes] = await Promise.all([
-      supabase
-        .from("memberships")
-        .select(`
-          *,
-          gym:gyms(name, address)
-        `)
-        .eq("user_id", user.id),
-      supabase.from("gyms").select("*").eq("owner_id", user.id),
-    ]);
-
-    setMemberships(membershipsRes.data || []);
-    setOwnedGyms(gymsRes.data || []);
-    setLoading(false);
-  };
-
-  // Generate QR code as SVG (simple representation)
+  // Generate QR code as SVG
   const generateQRCode = (token: string) => {
-    // This is a placeholder - in production use a proper QR library
     const size = 200;
     const cells = 21;
     const cellSize = size / cells;
     
-    // Simple hash-based pattern
     const pattern: boolean[][] = [];
     for (let i = 0; i < cells; i++) {
       pattern[i] = [];
@@ -90,7 +75,6 @@ export default function GymMembership() {
       }
     }
 
-    // Add finder patterns
     const addFinderPattern = (startX: number, startY: number) => {
       for (let i = 0; i < 7; i++) {
         for (let j = 0; j < 7; j++) {
@@ -128,15 +112,29 @@ export default function GymMembership() {
     );
   };
 
-  if (loading) {
+  const handleCreateGym = async () => {
+    if (!newGymName.trim()) {
+      toast.error("Please enter a gym name");
+      return;
+    }
+    setCreating(true);
+    await createGym({ 
+      name: newGymName.trim(), 
+      address: newGymAddress.trim() || undefined 
+    });
+    setNewGymName("");
+    setNewGymAddress("");
+    setShowCreateGym(false);
+    setCreating(false);
+  };
+
+  if (membershipsLoading || gymsLoading) {
     return (
       <div className="min-h-screen pt-safe px-4 pb-4 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
-
-  const activeMembership = memberships.find((m) => m.status === "active");
 
   return (
     <div className="min-h-screen pt-safe px-4 pb-24">
@@ -155,66 +153,32 @@ export default function GymMembership() {
           transition={{ delay: 0.05 }}
           className="text-muted-foreground text-sm mt-1"
         >
-          Manage your gym access
+          Manage your gym access and memberships
         </motion.p>
       </header>
 
-      {/* View Toggle (if gym owner) */}
-      {ownedGyms.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex gap-2 mt-4"
-        >
-          <button
-            onClick={() => setActiveView("user")}
-            className={cn(
-              "flex-1 py-2 rounded-full text-sm font-medium transition-colors",
-              activeView === "user"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted hover:bg-muted/80"
-            )}
-          >
-            My Membership
-          </button>
-          <button
-            onClick={() => setActiveView("admin")}
-            className={cn(
-              "flex-1 py-2 rounded-full text-sm font-medium transition-colors",
-              activeView === "admin"
-                ? "bg-primary text-primary-foreground"
-                : "bg-muted hover:bg-muted/80"
-            )}
-          >
-            Gym Admin
-          </button>
-        </motion.div>
-      )}
+      {/* Tabs for User/Admin view */}
+      <Tabs defaultValue="membership" className="mt-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="membership">My Membership</TabsTrigger>
+          <TabsTrigger value="manage" disabled={!hasManagementAccess}>
+            {hasManagementAccess ? "Manage Gym" : "Manage"}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* User View */}
-      {activeView === "user" && (
-        <>
+        {/* User Membership Tab */}
+        <TabsContent value="membership" className="mt-4 space-y-4">
           {activeMembership ? (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="mt-6"
             >
-              {/* Membership Card */}
+              {/* Active Membership Card */}
               <div className="gradient-card-accent rounded-xl p-5 shadow-card border border-border/50">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <span
-                      className={cn(
-                        "inline-block px-2 py-0.5 rounded-full text-xs font-medium mb-2",
-                        activeMembership.status === "active"
-                          ? "bg-primary/20 text-accent-foreground"
-                          : "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {activeMembership.status.toUpperCase()}
+                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-primary/20 text-accent-foreground mb-2">
+                      ACTIVE
                     </span>
                     <h2 className="text-xl font-semibold">
                       {activeMembership.gym?.name || "Unknown Gym"}
@@ -230,10 +194,25 @@ export default function GymMembership() {
                   </div>
                 </div>
 
+                {/* Membership Details */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
+                    <p className="text-xs text-muted-foreground">Member #</p>
+                    <p className="font-mono text-sm font-medium">
+                      {activeMembership.membership_number || "—"}
+                    </p>
+                  </div>
+                  <div>
                     <p className="text-xs text-muted-foreground">Tier</p>
-                    <p className="font-medium capitalize">{activeMembership.tier}</p>
+                    <p className="font-medium capitalize">{activeMembership.tier || "Standard"}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Start Date</p>
+                    <p className="font-medium">
+                      {activeMembership.start_date
+                        ? format(new Date(activeMembership.start_date), "MMM d, yyyy")
+                        : "—"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Next Payment</p>
@@ -246,20 +225,44 @@ export default function GymMembership() {
                 </div>
 
                 <button
-                  onClick={() => setShowQR(activeMembership.membership_token)}
+                  onClick={() => setShowQR({ 
+                    token: activeMembership.membership_token, 
+                    number: activeMembership.membership_number 
+                  })}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium"
                 >
                   <QrCode className="h-5 w-5" />
                   Show QR Code
                 </button>
               </div>
+
+              {/* Recent Check-ins */}
+              {checkins.length > 0 && (
+                <div className="mt-6">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                    Recent Check-ins
+                  </p>
+                  <div className="space-y-2">
+                    {checkins.slice(0, 5).map((checkin) => (
+                      <div
+                        key={checkin.id}
+                        className="flex items-center gap-3 bg-card rounded-lg p-3 border border-border/50"
+                      >
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">
+                          {format(new Date(checkin.checked_in_at), "EEE, MMM d 'at' h:mm a")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           ) : (
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="mt-6 bg-card rounded-xl p-6 shadow-card border border-border/50 text-center"
+              className="bg-card rounded-xl p-6 shadow-card border border-border/50 text-center"
             >
               <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="h-8 w-8 text-muted-foreground" />
@@ -288,95 +291,215 @@ export default function GymMembership() {
                       key={membership.id}
                       className="bg-card rounded-xl p-4 shadow-card border border-border/50 opacity-60"
                     >
-                      <p className="font-medium">{membership.gym?.name || "Unknown Gym"}</p>
-                      <p className="text-sm text-muted-foreground capitalize">
-                        {membership.tier} · {membership.status}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{membership.gym?.name || "Unknown Gym"}</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {membership.tier || "Standard"} · {membership.status}
+                          </p>
+                        </div>
+                        <span className="text-xs font-mono text-muted-foreground">
+                          {membership.membership_number}
+                        </span>
+                      </div>
                     </div>
                   ))}
               </div>
             </div>
           )}
-        </>
-      )}
+        </TabsContent>
 
-      {/* Admin View */}
-      {activeView === "admin" && (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="mt-6"
-        >
-          {ownedGyms.map((gym) => (
-            <div key={gym.id} className="mb-6">
-              <h2 className="font-semibold mb-4">{gym.name}</h2>
+        {/* Gym Management Tab */}
+        <TabsContent value="manage" className="mt-4 space-y-4">
+          {/* Create Gym Button */}
+          {!showCreateGym && (
+            <button
+              onClick={() => setShowCreateGym(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+            >
+              <Plus className="h-5 w-5" />
+              Create New Gym
+            </button>
+          )}
 
-              {/* Quick Actions */}
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <button className="bg-card rounded-xl p-4 shadow-card border border-border/50 text-left">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-2">
-                    <ScanLine className="h-5 w-5 text-muted-foreground" />
+          {/* Create Gym Form */}
+          <AnimatePresence>
+            {showCreateGym && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="bg-card rounded-xl p-4 border border-border/50 space-y-4"
+              >
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">Create New Gym</h3>
+                  <button onClick={() => setShowCreateGym(false)}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="gymName">Gym Name *</Label>
+                    <Input
+                      id="gymName"
+                      value={newGymName}
+                      onChange={(e) => setNewGymName(e.target.value)}
+                      placeholder="e.g., Iron Paradise Gym"
+                    />
                   </div>
-                  <p className="font-medium">Scan QR</p>
-                  <p className="text-xs text-muted-foreground">Check in member</p>
-                </button>
-                <button className="bg-card rounded-xl p-4 shadow-card border border-border/50 text-left">
-                  <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-2">
-                    <Users className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <Label htmlFor="gymAddress">Address</Label>
+                    <Input
+                      id="gymAddress"
+                      value={newGymAddress}
+                      onChange={(e) => setNewGymAddress(e.target.value)}
+                      placeholder="e.g., 123 Main St, City"
+                    />
                   </div>
-                  <p className="font-medium">Manage</p>
-                  <p className="text-xs text-muted-foreground">Memberships</p>
-                </button>
-              </div>
-
-              {/* Members List */}
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
-                Members
-              </p>
-              <div className="space-y-2">
-                {mockMembers.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between bg-card rounded-xl p-4 shadow-card border border-border/50"
+                  <button
+                    onClick={handleCreateGym}
+                    disabled={creating}
+                    className="w-full py-2 rounded-lg bg-primary text-primary-foreground font-medium disabled:opacity-50"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                        <span className="text-sm font-medium">
-                          {member.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-xs text-muted-foreground">{member.tier}</p>
-                      </div>
-                    </div>
-                    <span
+                    {creating ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Create Gym"}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Gym Selector */}
+          {ownedGyms.length > 0 && (
+            <div className="space-y-4">
+              {ownedGyms.length > 1 && (
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {ownedGyms.map((gym) => (
+                    <button
+                      key={gym.id}
+                      onClick={() => setSelectedGymId(gym.id)}
                       className={cn(
-                        "px-2 py-0.5 rounded-full text-xs font-medium",
-                        member.status === "active"
-                          ? "bg-primary/20 text-accent-foreground"
-                          : "bg-muted text-muted-foreground"
+                        "px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors",
+                        selectedGymId === gym.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted hover:bg-muted/80"
                       )}
                     >
-                      {member.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+                      {gym.name}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-          {ownedGyms.length === 0 && (
-            <div className="bg-card rounded-xl p-6 shadow-card border border-border/50 text-center">
-              <p className="text-muted-foreground">You don't own any gyms</p>
+              {/* Selected Gym Management */}
+              {selectedGymId && (
+                <div className="space-y-4">
+                  {/* Quick Actions */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button className="bg-card rounded-xl p-4 shadow-card border border-border/50 text-left">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <ScanLine className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="font-medium">Scan QR</p>
+                      <p className="text-xs text-muted-foreground">Check in member</p>
+                    </button>
+                    <button className="bg-card rounded-xl p-4 shadow-card border border-border/50 text-left">
+                      <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-2">
+                        <Settings className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <p className="font-medium">Settings</p>
+                      <p className="text-xs text-muted-foreground">Gym profile</p>
+                    </button>
+                  </div>
+
+                  {/* Members List */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Members ({members.length})
+                      </p>
+                      <button className="text-xs text-primary font-medium">
+                        Add Member
+                      </button>
+                    </div>
+                    
+                    {membersLoading ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : members.length > 0 ? (
+                      <div className="space-y-2">
+                        {members.map((member) => (
+                          <div
+                            key={member.id}
+                            className="flex items-center justify-between bg-card rounded-xl p-4 shadow-card border border-border/50"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                <Users className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <p className="font-mono text-sm font-medium">
+                                  {member.membership_number || "—"}
+                                </p>
+                                <p className="text-xs text-muted-foreground capitalize">
+                                  {member.tier || "Standard"}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={cn(
+                                  "px-2 py-0.5 rounded-full text-xs font-medium",
+                                  member.status === "active"
+                                    ? "bg-primary/20 text-accent-foreground"
+                                    : "bg-muted text-muted-foreground"
+                                )}
+                              >
+                                {member.status}
+                              </span>
+                              {member.status === "active" ? (
+                                <button
+                                  onClick={() => updateMemberStatus(member.id, "suspended")}
+                                  className="p-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => updateMemberStatus(member.id, "active")}
+                                  className="p-1 text-muted-foreground hover:text-foreground"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-card rounded-xl p-6 border border-border/50 text-center">
+                        <p className="text-sm text-muted-foreground">No members yet</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
-        </motion.div>
-      )}
+
+          {ownedGyms.length === 0 && !showCreateGym && (
+            <div className="bg-card rounded-xl p-6 shadow-card border border-border/50 text-center">
+              <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                <Building2 className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h2 className="font-semibold mb-2">No Gyms Yet</h2>
+              <p className="text-sm text-muted-foreground">
+                Create a gym to start managing memberships
+              </p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* QR Code Modal */}
       <AnimatePresence>
@@ -402,10 +525,15 @@ export default function GymMembership() {
                 <X className="h-4 w-4" />
               </button>
 
-              <h2 className="text-lg font-semibold text-center mb-4">Check-in QR Code</h2>
+              <h2 className="text-lg font-semibold text-center mb-2">Check-in QR Code</h2>
+              {showQR.number && (
+                <p className="text-center font-mono text-sm text-muted-foreground mb-4">
+                  {showQR.number}
+                </p>
+              )}
               
               <div className="flex justify-center mb-4 bg-white p-4 rounded-xl">
-                {generateQRCode(showQR)}
+                {generateQRCode(showQR.token)}
               </div>
 
               <p className="text-xs text-muted-foreground text-center">

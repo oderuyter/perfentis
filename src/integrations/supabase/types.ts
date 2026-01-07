@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      capabilities: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          scope_type: Database["public"]["Enums"]["role_scope"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          scope_type?: Database["public"]["Enums"]["role_scope"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          scope_type?: Database["public"]["Enums"]["role_scope"]
+        }
+        Relationships: []
+      }
       checkins: {
         Row: {
           coach_id: string
@@ -45,6 +69,82 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_bookings: {
+        Row: {
+          booking_date: string
+          created_at: string
+          id: string
+          schedule_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          booking_date: string
+          created_at?: string
+          id?: string
+          schedule_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          booking_date?: string
+          created_at?: string
+          id?: string
+          schedule_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_bookings_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_schedules: {
+        Row: {
+          class_id: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          instructor_id: string | null
+          is_active: boolean
+          start_time: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          instructor_id?: string | null
+          is_active?: boolean
+          start_time: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          instructor_id?: string | null
+          is_active?: boolean
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_schedules_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "gym_classes"
             referencedColumns: ["id"]
           },
         ]
@@ -513,36 +613,136 @@ export type Database = {
         }
         Relationships: []
       }
+      gym_classes: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          description: string | null
+          duration_minutes: number
+          gym_id: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          gym_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number
+          gym_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_classes_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_staff: {
+        Row: {
+          created_at: string
+          gym_id: string
+          hire_date: string | null
+          id: string
+          is_active: boolean
+          position: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gym_id: string
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean
+          position?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gym_id?: string
+          hire_date?: string | null
+          id?: string
+          is_active?: boolean
+          position?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_staff_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gyms: {
         Row: {
           address: string | null
           created_at: string
           description: string | null
+          email: string | null
           id: string
           logo_url: string | null
           name: string
           owner_id: string | null
+          phone: string | null
+          status: string
+          timezone: string | null
           updated_at: string
+          website: string | null
         }
         Insert: {
           address?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           id?: string
           logo_url?: string | null
           name: string
           owner_id?: string | null
+          phone?: string | null
+          status?: string
+          timezone?: string | null
           updated_at?: string
+          website?: string | null
         }
         Update: {
           address?: string | null
           created_at?: string
           description?: string | null
+          email?: string | null
           id?: string
           logo_url?: string | null
           name?: string
           owner_id?: string | null
+          phone?: string | null
+          status?: string
+          timezone?: string | null
           updated_at?: string
+          website?: string | null
         }
         Relationships: []
       }
@@ -678,8 +878,11 @@ export type Database = {
           created_at: string
           gym_id: string
           id: string
+          membership_number: string | null
           membership_token: string
           next_payment_date: string | null
+          payment_status: string | null
+          start_date: string | null
           status: string
           tier: string | null
           updated_at: string
@@ -689,8 +892,11 @@ export type Database = {
           created_at?: string
           gym_id: string
           id?: string
+          membership_number?: string | null
           membership_token?: string
           next_payment_date?: string | null
+          payment_status?: string | null
+          start_date?: string | null
           status?: string
           tier?: string | null
           updated_at?: string
@@ -700,8 +906,11 @@ export type Database = {
           created_at?: string
           gym_id?: string
           id?: string
+          membership_number?: string | null
           membership_token?: string
           next_payment_date?: string | null
+          payment_status?: string | null
+          start_date?: string | null
           status?: string
           tier?: string | null
           updated_at?: string
@@ -957,6 +1166,35 @@ export type Database = {
         }
         Relationships: []
       }
+      role_capabilities: {
+        Row: {
+          capability_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          capability_id: string
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          capability_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_capabilities_capability_id_fkey"
+            columns: ["capability_id"]
+            isOneToOne: false
+            referencedRelation: "capabilities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       set_logs: {
         Row: {
           completed_reps: number | null
@@ -1013,6 +1251,93 @@ export type Database = {
           },
         ]
       }
+      staff_rotas: {
+        Row: {
+          created_at: string
+          end_time: string
+          gym_id: string
+          id: string
+          notes: string | null
+          shift_date: string
+          staff_id: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          gym_id: string
+          id?: string
+          notes?: string | null
+          shift_date: string
+          staff_id: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          gym_id?: string
+          id?: string
+          notes?: string | null
+          shift_date?: string
+          staff_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_rotas_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_rotas_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "gym_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          scope_id: string | null
+          scope_type: Database["public"]["Enums"]["role_scope"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          role: Database["public"]["Enums"]["app_role"]
+          scope_id?: string | null
+          scope_type?: Database["public"]["Enums"]["role_scope"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          role?: Database["public"]["Enums"]["app_role"]
+          scope_id?: string | null
+          scope_type?: Database["public"]["Enums"]["role_scope"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       workout_sessions: {
         Row: {
           avg_hr: number | null
@@ -1066,9 +1391,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_membership_number: { Args: { _gym_id: string }; Returns: string }
+      has_capability: {
+        Args: { _capability_name: string; _scope_id?: string; _user_id: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _scope_id?: string
+          _scope_type?: Database["public"]["Enums"]["role_scope"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role:
+        | "admin"
+        | "athlete"
+        | "gym_manager"
+        | "gym_staff"
+        | "gym_user"
+        | "coach"
+        | "coach_client"
+        | "event_organiser"
+        | "event_member"
       cardio_modality:
         | "run"
         | "bike"
@@ -1118,6 +1466,7 @@ export type Database = {
         | "adductors"
         | "abductors"
         | "full_body"
+      role_scope: "global" | "gym" | "event"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1245,6 +1594,17 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: [
+        "admin",
+        "athlete",
+        "gym_manager",
+        "gym_staff",
+        "gym_user",
+        "coach",
+        "coach_client",
+        "event_organiser",
+        "event_member",
+      ],
       cardio_modality: [
         "run",
         "bike",
@@ -1297,6 +1657,7 @@ export const Constants = {
         "abductors",
         "full_body",
       ],
+      role_scope: ["global", "gym", "event"],
     },
   },
 } as const
