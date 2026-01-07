@@ -35,6 +35,19 @@ import GymReports from "./pages/gym-portal/GymReports";
 import GymProfile from "./pages/gym-portal/GymProfile";
 import GymSettings from "./pages/gym-portal/GymSettings";
 import GymMembershipLevels from "./pages/gym-portal/GymMembershipLevels";
+import CoachPortalLayout from "./pages/coach-portal/CoachPortalLayout";
+import CoachDashboard from "./pages/coach-portal/CoachDashboard";
+import CoachProfile from "./pages/coach-portal/CoachProfile";
+import CoachServices from "./pages/coach-portal/CoachServices";
+import CoachClients from "./pages/coach-portal/CoachClients";
+import CoachInvitations from "./pages/coach-portal/CoachInvitations";
+import CoachPlans from "./pages/coach-portal/CoachPlans";
+import CoachCheckins from "./pages/coach-portal/CoachCheckins";
+import CoachCalendar from "./pages/coach-portal/CoachCalendar";
+import CoachProgress from "./pages/coach-portal/CoachProgress";
+import CoachAffiliations from "./pages/coach-portal/CoachAffiliations";
+import CoachFinancials from "./pages/coach-portal/CoachFinancials";
+import CoachSettings from "./pages/coach-portal/CoachSettings";
 import AcceptInvite from "./pages/AcceptInvite";
 
 const queryClient = new QueryClient();
@@ -107,6 +120,20 @@ function AppRoutes() {
         <Route path="profile" element={<GymProfile />} />
         <Route path="settings" element={<GymSettings />} />
         <Route path="membership-levels" element={<GymMembershipLevels />} />
+      </Route>
+      <Route path="/coach-portal" element={<ProtectedRoute><CoachPortalLayout /></ProtectedRoute>}>
+        <Route index element={<CoachDashboard />} />
+        <Route path="profile" element={<CoachProfile />} />
+        <Route path="services" element={<CoachServices />} />
+        <Route path="clients" element={<CoachClients />} />
+        <Route path="invitations" element={<CoachInvitations />} />
+        <Route path="plans" element={<CoachPlans />} />
+        <Route path="checkins" element={<CoachCheckins />} />
+        <Route path="calendar" element={<CoachCalendar />} />
+        <Route path="progress" element={<CoachProgress />} />
+        <Route path="affiliations" element={<CoachAffiliations />} />
+        <Route path="financials" element={<CoachFinancials />} />
+        <Route path="settings" element={<CoachSettings />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
