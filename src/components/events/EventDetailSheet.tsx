@@ -132,35 +132,25 @@ export function EventDetailSheet({
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[70] shadow-elevated h-[85vh] overflow-hidden flex flex-col"
       >
-            {/* Hero/Header */}
+            {/* Header with close button */}
             <div className="relative flex-shrink-0">
-              {(event.hero_image_url || event.image_url) ? (
-                <div className="h-40 bg-muted">
-                  <img
-                    src={event.hero_image_url || event.image_url || ""}
-                    alt={event.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/50 to-transparent" />
-                </div>
-              ) : (
-                <div className="h-24 bg-gradient-to-br from-accent/20 to-accent/5" />
-              )}
+              {/* Drag handle */}
+              <div className="flex justify-center py-3">
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+              </div>
               
               <button
                 onClick={onClose}
-                className="absolute right-4 top-4 p-2 rounded-full bg-card/80 backdrop-blur-sm"
+                className="absolute right-4 top-3 p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
-            </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="px-4 -mt-4 relative">
-                <h2 className="text-xl font-semibold mb-2">{event.title}</h2>
+              {/* Title section */}
+              <div className="px-4 pb-2">
+                <h2 className="text-xl font-semibold pr-10 mb-2">{event.title}</h2>
                 
-                <div className="flex flex-wrap items-center gap-3 mb-4 text-sm text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   {eventDate && (
                     <span className="flex items-center gap-1">
                       <Calendar className="h-4 w-4" />
@@ -179,7 +169,12 @@ export function EventDetailSheet({
                     </span>
                   )}
                 </div>
+              </div>
+            </div>
 
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="px-4">
                 {/* Tabs */}
                 <div className="flex gap-1 p-1 bg-muted rounded-lg mb-4">
                   {["info", "workouts", "leaderboard"].map((tab) => (
