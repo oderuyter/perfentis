@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EventCalendarView } from "@/components/events/EventCalendarView";
 import { EventDetailSheet } from "@/components/events/EventDetailSheet";
-import { EventRegistrationSheet } from "@/components/events/EventRegistrationSheet";
 import { MyEventsSection } from "@/components/events/MyEventsSection";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +37,6 @@ export default function Events() {
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "my">("list");
   const [filterMode, setFilterMode] = useState<"all" | "in-person" | "online" | "hybrid">("all");
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-  const [showRegistration, setShowRegistration] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -269,19 +267,6 @@ export default function Events() {
         onRegistrationChange={refetchRegistrations}
       />
 
-      {/* Registration Sheet */}
-      {selectedEvent && (
-        <EventRegistrationSheet
-          eventId={selectedEvent.id}
-          eventTitle={selectedEvent.title}
-          isOpen={showRegistration}
-          onClose={() => setShowRegistration(false)}
-          onSuccess={() => {
-            refetchRegistrations();
-            setShowRegistration(false);
-          }}
-        />
-      )}
     </div>
   );
 }

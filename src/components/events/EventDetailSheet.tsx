@@ -11,12 +11,12 @@ import {
   Lock,
   ChevronRight
 } from "lucide-react";
-import { format, formatDistanceToNow, differenceInSeconds } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { EventRegistrationSheet } from "./EventRegistrationSheet";
 
 interface Event {
   id: string;
@@ -333,6 +333,18 @@ export function EventDetailSheet({
               )}
             </div>
           </motion.div>
+
+          {/* Registration Sheet - rendered inside the detail sheet */}
+          <EventRegistrationSheet
+            eventId={event.id}
+            eventTitle={event.title}
+            isOpen={showRegistration}
+            onClose={() => setShowRegistration(false)}
+            onSuccess={() => {
+              onRegistrationChange?.();
+              setShowRegistration(false);
+            }}
+          />
         </>
       )}
     </AnimatePresence>
