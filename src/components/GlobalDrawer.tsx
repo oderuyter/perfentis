@@ -57,6 +57,7 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
   const { hasEventAccess, isLoading: isEventLoading } = useOwnedEvents();
 
   // Filter drawer items based on roles
+  // Event Portal is always visible so users can create their first event
   const drawerItems = useMemo(() => {
     return allDrawerItems.filter((item) => {
       if (item.requiresGymAccess) {
@@ -66,11 +67,12 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
         return isAdmin() || hasAnyRole(['coach']) || isCoach || isCoachLoading;
       }
       if (item.requiresEventAccess) {
-        return isAdmin() || hasAnyRole(['event_organiser']) || hasEventAccess || isEventLoading;
+        // Always show Event Portal - users can create events from there
+        return true;
       }
       return true;
     });
-  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading, hasEventAccess, isEventLoading]);
+  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading]);
 
   const handleNavigation = (to: string) => {
     navigate(to);
