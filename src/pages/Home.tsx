@@ -3,6 +3,7 @@ import { Clock, ChevronRight, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import { todayWorkout, weeklyStats } from "@/data/workouts";
 import { Button } from "@/components/ui/button";
+import { NextEventCard } from "@/components/events/NextEventCard";
 
 export default function Home() {
   const greeting = getGreeting();
@@ -74,6 +75,9 @@ export default function Home() {
             </div>
           </Link>
         </motion.div>
+
+        {/* Next Event Card */}
+        <NextEventCard />
 
         {/* Secondary Cards */}
         <div className="grid grid-cols-2 gap-3">

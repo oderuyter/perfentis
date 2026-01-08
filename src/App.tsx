@@ -48,6 +48,20 @@ import CoachProgress from "./pages/coach-portal/CoachProgress";
 import CoachAffiliations from "./pages/coach-portal/CoachAffiliations";
 import CoachFinancials from "./pages/coach-portal/CoachFinancials";
 import CoachSettings from "./pages/coach-portal/CoachSettings";
+import EventPortalLayout from "./pages/event-portal/EventPortalLayout";
+import EventDashboard from "./pages/event-portal/EventDashboard";
+import EventsManagement from "./pages/event-portal/EventsManagement";
+import EventDivisions from "./pages/event-portal/EventDivisions";
+import EventRegistrations from "./pages/event-portal/EventRegistrations";
+import EventWorkouts from "./pages/event-portal/EventWorkouts";
+import EventSchedule from "./pages/event-portal/EventSchedule";
+import EventScoring from "./pages/event-portal/EventScoring";
+import EventLeaderboards from "./pages/event-portal/EventLeaderboards";
+import EventStaff from "./pages/event-portal/EventStaff";
+import EventCommunications from "./pages/event-portal/EventCommunications";
+import EventBranding from "./pages/event-portal/EventBranding";
+import EventReports from "./pages/event-portal/EventReports";
+import EventSettings from "./pages/event-portal/EventSettings";
 import AcceptInvite from "./pages/AcceptInvite";
 
 const queryClient = new QueryClient();
@@ -134,6 +148,21 @@ function AppRoutes() {
         <Route path="affiliations" element={<CoachAffiliations />} />
         <Route path="financials" element={<CoachFinancials />} />
         <Route path="settings" element={<CoachSettings />} />
+      </Route>
+      <Route path="/event-portal" element={<ProtectedRoute><EventPortalLayout /></ProtectedRoute>}>
+        <Route index element={<EventDashboard />} />
+        <Route path="events" element={<EventsManagement />} />
+        <Route path="divisions" element={<EventDivisions />} />
+        <Route path="registrations" element={<EventRegistrations />} />
+        <Route path="workouts" element={<EventWorkouts />} />
+        <Route path="schedule" element={<EventSchedule />} />
+        <Route path="scoring" element={<EventScoring />} />
+        <Route path="leaderboards" element={<EventLeaderboards />} />
+        <Route path="staff" element={<EventStaff />} />
+        <Route path="communications" element={<EventCommunications />} />
+        <Route path="branding" element={<EventBranding />} />
+        <Route path="reports" element={<EventReports />} />
+        <Route path="settings" element={<EventSettings />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
