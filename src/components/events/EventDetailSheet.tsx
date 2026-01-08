@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   X, 
   Calendar, 
@@ -114,24 +114,24 @@ export function EventDetailSheet({
 
   if (!event) return null;
 
+  if (!isOpen) return null;
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[69]"
-            onClick={onClose}
-          />
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[70] shadow-elevated max-h-[90vh] overflow-hidden flex flex-col"
-          >
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[69]"
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[70] shadow-elevated h-[85vh] overflow-hidden flex flex-col"
+      >
             {/* Hero/Header */}
             <div className="relative flex-shrink-0">
               {(event.hero_image_url || event.image_url) ? (
@@ -334,19 +334,17 @@ export function EventDetailSheet({
             </div>
           </motion.div>
 
-          {/* Registration Sheet - rendered inside the detail sheet */}
-          <EventRegistrationSheet
-            eventId={event.id}
-            eventTitle={event.title}
-            isOpen={showRegistration}
-            onClose={() => setShowRegistration(false)}
-            onSuccess={() => {
-              onRegistrationChange?.();
-              setShowRegistration(false);
-            }}
-          />
-        </>
-      )}
-    </AnimatePresence>
+      {/* Registration Sheet - rendered inside the detail sheet */}
+      <EventRegistrationSheet
+        eventId={event.id}
+        eventTitle={event.title}
+        isOpen={showRegistration}
+        onClose={() => setShowRegistration(false)}
+        onSuccess={() => {
+          onRegistrationChange?.();
+          setShowRegistration(false);
+        }}
+      />
+    </>
   );
 }
