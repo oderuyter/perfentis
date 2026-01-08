@@ -900,24 +900,86 @@ export type Database = {
         }
         Relationships: []
       }
-      event_divisions: {
+      event_assets: {
         Row: {
+          alt_text: string | null
+          asset_type: string
           created_at: string
+          display_order: number | null
           event_id: string
           id: string
-          name: string
+          url: string
         }
         Insert: {
+          alt_text?: string | null
+          asset_type: string
           created_at?: string
+          display_order?: number | null
           event_id: string
           id?: string
-          name: string
+          url: string
         }
         Update: {
+          alt_text?: string | null
+          asset_type?: string
           created_at?: string
+          display_order?: number | null
           event_id?: string
           id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_assets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_divisions: {
+        Row: {
+          age_group: string | null
+          capacity: number | null
+          created_at: string
+          description: string | null
+          difficulty_level: string | null
+          display_order: number | null
+          event_id: string
+          gender: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          team_size: number | null
+        }
+        Insert: {
+          age_group?: string | null
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty_level?: string | null
+          display_order?: number | null
+          event_id: string
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          team_size?: number | null
+        }
+        Update: {
+          age_group?: string | null
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          difficulty_level?: string | null
+          display_order?: number | null
+          event_id?: string
+          gender?: string | null
+          id?: string
+          is_active?: boolean | null
           name?: string
+          team_size?: number | null
         }
         Relationships: [
           {
@@ -971,6 +1033,182 @@ export type Database = {
           },
         ]
       }
+      event_heats: {
+        Row: {
+          created_at: string
+          division_id: string | null
+          duration_minutes: number | null
+          event_id: string
+          id: string
+          lane_count: number | null
+          name: string | null
+          start_time: string | null
+          status: string | null
+          updated_at: string
+          workout_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          division_id?: string | null
+          duration_minutes?: number | null
+          event_id: string
+          id?: string
+          lane_count?: number | null
+          name?: string | null
+          start_time?: string | null
+          status?: string | null
+          updated_at?: string
+          workout_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          division_id?: string | null
+          duration_minutes?: number | null
+          event_id?: string
+          id?: string
+          lane_count?: number | null
+          name?: string | null
+          start_time?: string | null
+          status?: string | null
+          updated_at?: string
+          workout_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_heats_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "event_divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_heats_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_heats_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "event_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          email: string
+          event_id: string
+          expires_at: string | null
+          id: string
+          invite_type: string
+          invited_by: string
+          name: string | null
+          status: string | null
+          team_id: string | null
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          event_id: string
+          expires_at?: string | null
+          id?: string
+          invite_type?: string
+          invited_by: string
+          name?: string | null
+          status?: string | null
+          team_id?: string | null
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          event_id?: string
+          expires_at?: string | null
+          id?: string
+          invite_type?: string
+          invited_by?: string
+          name?: string | null
+          status?: string | null
+          team_id?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_invites_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_invites_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "event_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_lane_assignments: {
+        Row: {
+          created_at: string
+          heat_id: string
+          id: string
+          lane_number: number
+          registration_id: string | null
+          team_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          heat_id: string
+          id?: string
+          lane_number: number
+          registration_id?: string | null
+          team_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          heat_id?: string
+          id?: string
+          lane_number?: number
+          registration_id?: string | null
+          team_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_lane_assignments_heat_id_fkey"
+            columns: ["heat_id"]
+            isOneToOne: false
+            referencedRelation: "event_heats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_lane_assignments_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_lane_assignments_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "event_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_leaderboard_rows: {
         Row: {
           created_at: string
@@ -1009,30 +1247,488 @@ export type Database = {
           },
         ]
       }
+      event_registrations: {
+        Row: {
+          amount_paid: number | null
+          checked_in_at: string | null
+          created_at: string
+          custom_fields: Json | null
+          division_id: string | null
+          event_id: string
+          id: string
+          payment_intent_id: string | null
+          payment_status: string | null
+          registration_type: string
+          status: string
+          team_id: string | null
+          ticket_id: string | null
+          updated_at: string
+          user_id: string
+          waiver_accepted: boolean | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          checked_in_at?: string | null
+          created_at?: string
+          custom_fields?: Json | null
+          division_id?: string | null
+          event_id: string
+          id?: string
+          payment_intent_id?: string | null
+          payment_status?: string | null
+          registration_type?: string
+          status?: string
+          team_id?: string | null
+          ticket_id?: string | null
+          updated_at?: string
+          user_id: string
+          waiver_accepted?: boolean | null
+        }
+        Update: {
+          amount_paid?: number | null
+          checked_in_at?: string | null
+          created_at?: string
+          custom_fields?: Json | null
+          division_id?: string | null
+          event_id?: string
+          id?: string
+          payment_intent_id?: string | null
+          payment_status?: string | null
+          registration_type?: string
+          status?: string
+          team_id?: string | null
+          ticket_id?: string | null
+          updated_at?: string
+          user_id?: string
+          waiver_accepted?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registrations_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "event_divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "event_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "event_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_scores: {
+        Row: {
+          created_at: string
+          event_id: string
+          heat_id: string | null
+          id: string
+          points: number | null
+          rank: number | null
+          registration_id: string | null
+          rejection_reason: string | null
+          score_distance: number | null
+          score_reps: number | null
+          score_time_seconds: number | null
+          score_value: number | null
+          score_weight: number | null
+          status: string | null
+          team_id: string | null
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          heat_id?: string | null
+          id?: string
+          points?: number | null
+          rank?: number | null
+          registration_id?: string | null
+          rejection_reason?: string | null
+          score_distance?: number | null
+          score_reps?: number | null
+          score_time_seconds?: number | null
+          score_value?: number | null
+          score_weight?: number | null
+          status?: string | null
+          team_id?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          heat_id?: string | null
+          id?: string
+          points?: number | null
+          rank?: number | null
+          registration_id?: string | null
+          rejection_reason?: string | null
+          score_distance?: number | null
+          score_reps?: number | null
+          score_time_seconds?: number | null
+          score_value?: number | null
+          score_weight?: number | null
+          status?: string | null
+          team_id?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_scores_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_scores_heat_id_fkey"
+            columns: ["heat_id"]
+            isOneToOne: false
+            referencedRelation: "event_heats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_scores_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_scores_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "event_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_scores_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "event_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_sponsors: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          event_id: string
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          tier: string | null
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          event_id: string
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          tier?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          event_id?: string
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          tier?: string | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_sponsors_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_staff: {
+        Row: {
+          created_at: string
+          email: string | null
+          event_id: string
+          id: string
+          name: string | null
+          role: string
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          event_id: string
+          id?: string
+          name?: string | null
+          role?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          event_id?: string
+          id?: string
+          name?: string | null
+          role?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_staff_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_team_members: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_at: string | null
+          name: string | null
+          role: string | null
+          status: string
+          team_id: string
+          user_id: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_at?: string | null
+          name?: string | null
+          role?: string | null
+          status?: string
+          team_id: string
+          user_id?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_at?: string | null
+          name?: string | null
+          role?: string | null
+          status?: string
+          team_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "event_teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_teams: {
+        Row: {
+          created_at: string
+          division_id: string | null
+          event_id: string
+          id: string
+          leader_id: string
+          name: string
+          size_limit: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          division_id?: string | null
+          event_id: string
+          id?: string
+          leader_id: string
+          name: string
+          size_limit?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          division_id?: string | null
+          event_id?: string
+          id?: string
+          leader_id?: string
+          name?: string
+          size_limit?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_teams_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "event_divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_teams_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_tickets: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          currency: string | null
+          division_id: string | null
+          early_bird_deadline: string | null
+          early_bird_price: number | null
+          event_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number | null
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          currency?: string | null
+          division_id?: string | null
+          early_bird_deadline?: string | null
+          early_bird_price?: number | null
+          event_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price?: number | null
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          currency?: string | null
+          division_id?: string | null
+          early_bird_deadline?: string | null
+          early_bird_price?: number | null
+          event_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_tickets_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "event_divisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_tickets_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_workouts: {
         Row: {
           created_at: string
           description: string | null
+          display_order: number | null
           event_id: string
+          exercise_data: Json | null
           id: string
+          is_published: boolean | null
           released_at: string | null
+          scoring_type: string | null
+          stage_day: number | null
+          standards: string | null
+          submission_deadline: string | null
+          time_cap_seconds: number | null
           title: string
+          workout_type: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
+          display_order?: number | null
           event_id: string
+          exercise_data?: Json | null
           id?: string
+          is_published?: boolean | null
           released_at?: string | null
+          scoring_type?: string | null
+          stage_day?: number | null
+          standards?: string | null
+          submission_deadline?: string | null
+          time_cap_seconds?: number | null
           title: string
+          workout_type?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
+          display_order?: number | null
           event_id?: string
+          exercise_data?: Json | null
           id?: string
+          is_published?: boolean | null
           released_at?: string | null
+          scoring_type?: string | null
+          stage_day?: number | null
+          standards?: string | null
+          submission_deadline?: string | null
+          time_cap_seconds?: number | null
           title?: string
+          workout_type?: string | null
         }
         Relationships: [
           {
@@ -1046,37 +1742,61 @@ export type Database = {
       }
       events: {
         Row: {
+          contact_email: string | null
           created_at: string
           description: string | null
+          end_date: string | null
           event_date: string | null
+          event_mode: string | null
+          event_type: string | null
+          hero_image_url: string | null
           id: string
           image_url: string | null
+          is_public: boolean | null
           location: string | null
           organiser_id: string
+          rules: string | null
+          start_date: string | null
           status: string
           title: string
           updated_at: string
         }
         Insert: {
+          contact_email?: string | null
           created_at?: string
           description?: string | null
+          end_date?: string | null
           event_date?: string | null
+          event_mode?: string | null
+          event_type?: string | null
+          hero_image_url?: string | null
           id?: string
           image_url?: string | null
+          is_public?: boolean | null
           location?: string | null
           organiser_id: string
+          rules?: string | null
+          start_date?: string | null
           status?: string
           title: string
           updated_at?: string
         }
         Update: {
+          contact_email?: string | null
           created_at?: string
           description?: string | null
+          end_date?: string | null
           event_date?: string | null
+          event_mode?: string | null
+          event_type?: string | null
+          hero_image_url?: string | null
           id?: string
           image_url?: string | null
+          is_public?: boolean | null
           location?: string | null
           organiser_id?: string
+          rules?: string | null
+          start_date?: string | null
           status?: string
           title?: string
           updated_at?: string
