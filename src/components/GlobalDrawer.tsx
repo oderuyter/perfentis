@@ -11,13 +11,15 @@ import {
   HelpCircle,
   ChevronRight,
   Building2,
-  GraduationCap
+  GraduationCap,
+  Flag
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
 import { useOwnedGyms } from "@/hooks/useOwnedGyms";
 import { useCoach } from "@/hooks/useCoach";
+import { useOwnedEvents } from "@/hooks/useOwnedEvents";
 
 interface DrawerItem {
   to: string;
@@ -26,11 +28,13 @@ interface DrawerItem {
   description?: string;
   requiresGymAccess?: boolean;
   requiresCoachAccess?: boolean;
+  requiresEventAccess?: boolean;
 }
 
 const allDrawerItems: DrawerItem[] = [
   { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym", requiresGymAccess: true },
   { to: "/coach-portal", icon: GraduationCap, label: "Coach Portal", description: "Manage your coaching", requiresCoachAccess: true },
+  { to: "/event-portal", icon: Flag, label: "Event Portal", description: "Manage your events", requiresEventAccess: true },
   { to: "/gym-membership", icon: CreditCard, label: "Gym Membership", description: "Manage your gym access" },
   { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
   { to: "/social", icon: MessageCircle, label: "Social", description: "Community feed" },
@@ -50,21 +54,23 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
   const { hasAnyRole, isAdmin } = useRoles();
   const { hasGymAccess } = useOwnedGyms();
   const { isCoach, isLoading: isCoachLoading } = useCoach();
+  const { hasEventAccess, isLoading: isEventLoading } = useOwnedEvents();
 
   // Filter drawer items based on roles
   const drawerItems = useMemo(() => {
     return allDrawerItems.filter((item) => {
       if (item.requiresGymAccess) {
-        // Show Gym Admin only if user is admin, gym_manager, gym_staff, or owns/manages a gym
         return isAdmin() || hasAnyRole(['gym_manager', 'gym_staff']) || hasGymAccess;
       }
       if (item.requiresCoachAccess) {
-        // Show Coach Portal only if user is a coach (or still loading - show it to avoid flicker)
         return isAdmin() || hasAnyRole(['coach']) || isCoach || isCoachLoading;
+      }
+      if (item.requiresEventAccess) {
+        return isAdmin() || hasAnyRole(['event_organiser']) || hasEventAccess || isEventLoading;
       }
       return true;
     });
-  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading]);
+  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading, hasEventAccess, isEventLoading]);
 
   const handleNavigation = (to: string) => {
     navigate(to);
