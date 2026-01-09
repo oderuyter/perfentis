@@ -46,20 +46,20 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { to: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/admin/users", icon: Users, label: "Users & Roles" },
-  { to: "/admin/uac", icon: Shield, label: "UAC & Groups" },
-  { to: "/admin/gyms", icon: Building2, label: "Gyms" },
-  { to: "/admin/coaches", icon: GraduationCap, label: "Coaches" },
-  { to: "/admin/events", icon: Flag, label: "Events" },
-  { to: "/admin/workouts", icon: Dumbbell, label: "Workouts & Programs" },
-  { to: "/admin/exercises", icon: BookOpen, label: "Exercise Library" },
-  { to: "/admin/billing", icon: CreditCard, label: "Billing" },
-  { to: "/admin/social", icon: MessageCircle, label: "Social Moderation" },
-  { to: "/admin/notifications", icon: Bell, label: "Notifications" },
-  { to: "/admin/imports", icon: FileUp, label: "Imports & Exports" },
-  { to: "/admin/logs", icon: FileText, label: "Logs & Audit" },
-  { to: "/admin/settings", icon: Settings, label: "Settings" },
+  { to: "/admin-portal", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/admin-portal/users", icon: Users, label: "Users & Roles" },
+  { to: "/admin-portal/uac", icon: Shield, label: "UAC & Groups" },
+  { to: "/admin-portal/gyms", icon: Building2, label: "Gyms" },
+  { to: "/admin-portal/coaches", icon: GraduationCap, label: "Coaches" },
+  { to: "/admin-portal/events", icon: Flag, label: "Events" },
+  { to: "/admin-portal/workouts", icon: Dumbbell, label: "Workouts & Programs" },
+  { to: "/admin-portal/exercises", icon: BookOpen, label: "Exercise Library" },
+  { to: "/admin-portal/billing", icon: CreditCard, label: "Billing" },
+  { to: "/admin-portal/social", icon: MessageCircle, label: "Social Moderation" },
+  { to: "/admin-portal/notifications", icon: Bell, label: "Notifications" },
+  { to: "/admin-portal/imports", icon: FileUp, label: "Imports & Exports" },
+  { to: "/admin-portal/logs", icon: FileText, label: "Logs & Audit" },
+  { to: "/admin-portal/settings", icon: Settings, label: "Settings" },
 ];
 
 export default function AdminPortalLayout() {
@@ -94,7 +94,7 @@ export default function AdminPortalLayout() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/admin-portal/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -104,8 +104,8 @@ export default function AdminPortalLayout() {
   };
 
   const isActive = (path: string) => {
-    if (path === "/admin") {
-      return location.pathname === "/admin";
+    if (path === "/admin-portal") {
+      return location.pathname === "/admin-portal";
     }
     return location.pathname.startsWith(path);
   };
@@ -279,7 +279,7 @@ export default function AdminPortalLayout() {
                 <User className="h-4 w-4 mr-2" />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
+              <DropdownMenuItem onClick={() => navigate("/admin-portal/settings")}>
                 <Settings className="h-4 w-4 mr-2" />
                 Settings
               </DropdownMenuItem>
