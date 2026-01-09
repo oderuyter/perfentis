@@ -9,9 +9,9 @@ export default function Home() {
   const greeting = getGreeting();
   
   return (
-    <div className="min-h-screen pt-safe px-4 pb-4">
+    <div className="min-h-screen gradient-page pt-safe px-4 pb-24">
       {/* Header */}
-      <header className="pt-6 pb-4">
+      <header className="pt-6 pb-6">
         <motion.p 
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -30,7 +30,7 @@ export default function Home() {
       </header>
 
       {/* Cards */}
-      <div className="space-y-4 mt-4">
+      <div className="space-y-5 mt-2">
         {/* Primary Card - Today's Workout */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -80,24 +80,24 @@ export default function Home() {
         <NextEventCard />
 
         {/* Secondary Cards */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {/* Weekly Sessions */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
           >
-            <div className="bg-card rounded-xl p-4 shadow-card border border-border/50">
+            <div className="gradient-card rounded-2xl p-5 shadow-card border border-border/30">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 This Week
               </p>
-              <p className="text-2xl font-semibold mt-2">
+              <p className="text-3xl font-semibold mt-3">
                 {weeklyStats.sessionsCompleted}
-                <span className="text-muted-foreground text-lg font-normal">
+                <span className="text-muted-foreground text-xl font-normal">
                   /{weeklyStats.sessionsGoal}
                 </span>
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1.5">
                 Sessions
               </p>
             </div>
@@ -109,14 +109,14 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <div className="bg-card rounded-xl p-4 shadow-card border border-border/50">
+            <div className="gradient-card rounded-2xl p-5 shadow-card border border-border/30">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Recent PR
               </p>
-              <p className="text-lg font-semibold mt-2 leading-tight">
+              <p className="text-xl font-semibold mt-3 leading-tight">
                 {weeklyStats.recentPR.value}
               </p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1.5">
                 {weeklyStats.recentPR.exercise}
               </p>
             </div>
@@ -130,15 +130,15 @@ export default function Home() {
           transition={{ delay: 0.25 }}
         >
           <Link to="/progress" className="block">
-            <div className="bg-card rounded-xl p-4 shadow-card border border-border/50 flex items-center justify-between active:scale-[0.98] transition-transform">
+            <div className="gradient-card rounded-2xl p-5 shadow-card border border-border/30 flex items-center justify-between active:scale-[0.98] transition-transform">
               <div>
                 <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                   Weekly Volume
                 </p>
-                <p className="text-xl font-semibold mt-1">
+                <p className="text-2xl font-semibold mt-2">
                   {(weeklyStats.volumeThisWeek / 1000).toFixed(1)}k kg
                 </p>
-                <p className="text-sm text-accent-foreground mt-0.5">
+                <p className="text-sm text-success mt-1">
                   +{Math.round(((weeklyStats.volumeThisWeek - weeklyStats.volumeLastWeek) / weeklyStats.volumeLastWeek) * 100)}% vs last week
                 </p>
               </div>
