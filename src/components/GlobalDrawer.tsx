@@ -12,7 +12,8 @@ import {
   ChevronRight,
   Building2,
   GraduationCap,
-  Flag
+  Flag,
+  ShieldCheck
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -29,9 +30,11 @@ interface DrawerItem {
   requiresGymAccess?: boolean;
   requiresCoachAccess?: boolean;
   requiresEventAccess?: boolean;
+  requiresAdmin?: boolean;
 }
 
 const allDrawerItems: DrawerItem[] = [
+  { to: "/admin-portal", icon: ShieldCheck, label: "Admin Portal", description: "Platform administration", requiresAdmin: true },
   { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym", requiresGymAccess: true },
   { to: "/coach-portal", icon: GraduationCap, label: "Coach Portal", description: "Manage your coaching", requiresCoachAccess: true },
   { to: "/event-portal", icon: Flag, label: "Event Portal", description: "Manage your events", requiresEventAccess: true },
@@ -60,6 +63,9 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
   // Event Portal is always visible so users can create their first event
   const drawerItems = useMemo(() => {
     return allDrawerItems.filter((item) => {
+      if (item.requiresAdmin) {
+        return isAdmin();
+      }
       if (item.requiresGymAccess) {
         return isAdmin() || hasAnyRole(['gym_manager', 'gym_staff']) || hasGymAccess;
       }
