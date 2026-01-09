@@ -14,6 +14,96 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          id: string
+          metadata: Json | null
+          notification_type: string
+          recipients_count: number | null
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          target_filter: Json | null
+          target_type: string
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          id?: string
+          metadata?: Json | null
+          notification_type?: string
+          recipients_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          target_filter?: Json | null
+          target_type: string
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          metadata?: Json | null
+          notification_type?: string
+          recipients_count?: number | null
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          target_filter?: Json | null
+          target_type?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          category: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          message: string
+          metadata: Json | null
+          severity: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          category: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          message: string
+          metadata?: Json | null
+          severity?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          category?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          message?: string
+          metadata?: Json | null
+          severity?: string
+        }
+        Relationships: []
+      }
       capabilities: {
         Row: {
           created_at: string
@@ -1931,6 +2021,97 @@ export type Database = {
         }
         Relationships: []
       }
+      group_members: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_roles: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          scope_id: string | null
+          scope_type: Database["public"]["Enums"]["role_scope"]
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          scope_id?: string | null
+          scope_type?: Database["public"]["Enums"]["role_scope"]
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          scope_id?: string | null
+          scope_type?: Database["public"]["Enums"]["role_scope"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_roles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gym_classes: {
         Row: {
           capacity: number | null
@@ -2230,6 +2411,57 @@ export type Database = {
           type?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      import_batches: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_count: number | null
+          entity_type: string
+          error_count: number | null
+          errors: Json | null
+          file_name: string | null
+          id: string
+          imported_by: string
+          metadata: Json | null
+          skipped_count: number | null
+          status: string
+          total_rows: number | null
+          updated_count: number | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_count?: number | null
+          entity_type: string
+          error_count?: number | null
+          errors?: Json | null
+          file_name?: string | null
+          id?: string
+          imported_by: string
+          metadata?: Json | null
+          skipped_count?: number | null
+          status?: string
+          total_rows?: number | null
+          updated_count?: number | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_count?: number | null
+          entity_type?: string
+          error_count?: number | null
+          errors?: Json | null
+          file_name?: string | null
+          id?: string
+          imported_by?: string
+          metadata?: Json | null
+          skipped_count?: number | null
+          status?: string
+          total_rows?: number | null
+          updated_count?: number | null
         }
         Relationships: []
       }
@@ -2727,36 +2959,57 @@ export type Database = {
       profiles: {
         Row: {
           accent_color: string | null
+          address_city: string | null
+          address_line1: string | null
+          address_postcode: string | null
+          admin_notes: string | null
           avatar_url: string | null
           created_at: string
           display_name: string | null
           id: string
+          last_active_at: string | null
           max_hr: number | null
+          phone: string | null
           resting_hr: number | null
+          status: string | null
           theme_mode: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           accent_color?: string | null
+          address_city?: string | null
+          address_line1?: string | null
+          address_postcode?: string | null
+          admin_notes?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          last_active_at?: string | null
           max_hr?: number | null
+          phone?: string | null
           resting_hr?: number | null
+          status?: string | null
           theme_mode?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           accent_color?: string | null
+          address_city?: string | null
+          address_line1?: string | null
+          address_postcode?: string | null
+          admin_notes?: string | null
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          last_active_at?: string | null
           max_hr?: number | null
+          phone?: string | null
           resting_hr?: number | null
+          status?: string | null
           theme_mode?: string | null
           updated_at?: string
           user_id?: string
@@ -2872,6 +3125,60 @@ export type Database = {
           },
         ]
       }
+      social_posts: {
+        Row: {
+          comments_count: number
+          content: string
+          created_at: string
+          flagged_at: string | null
+          flagged_reason: string | null
+          id: string
+          is_flagged: boolean
+          is_removed: boolean
+          likes_count: number
+          media_urls: string[] | null
+          removal_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments_count?: number
+          content: string
+          created_at?: string
+          flagged_at?: string | null
+          flagged_reason?: string | null
+          id?: string
+          is_flagged?: boolean
+          is_removed?: boolean
+          likes_count?: number
+          media_urls?: string[] | null
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments_count?: number
+          content?: string
+          created_at?: string
+          flagged_at?: string | null
+          flagged_reason?: string | null
+          id?: string
+          is_flagged?: boolean
+          is_removed?: boolean
+          likes_count?: number
+          media_urls?: string[] | null
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       staff_rotas: {
         Row: {
           created_at: string
@@ -2976,6 +3283,50 @@ export type Database = {
             columns: ["parent_plan_id"]
             isOneToOne: false
             referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          is_read: boolean
+          metadata: Json | null
+          notification_id: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          metadata?: Json | null
+          notification_id?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          metadata?: Json | null
+          notification_id?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notifications_notification_id_fkey"
+            columns: ["notification_id"]
+            isOneToOne: false
+            referencedRelation: "admin_notifications"
             referencedColumns: ["id"]
           },
         ]
@@ -3088,6 +3439,18 @@ export type Database = {
         Returns: boolean
       }
       is_coach: { Args: { _user_id: string }; Returns: boolean }
+      log_audit_event: {
+        Args: {
+          _action: string
+          _category?: string
+          _entity_id?: string
+          _entity_type?: string
+          _message: string
+          _metadata?: Json
+          _severity?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
