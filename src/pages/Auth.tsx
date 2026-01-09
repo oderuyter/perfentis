@@ -79,26 +79,26 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-surface-primary">
+    <div className="min-h-screen gradient-page flex flex-col items-center justify-center px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
         {/* Logo / Brand */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-10">
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="h-16 w-16 rounded-2xl bg-gradient-metric mx-auto mb-4 flex items-center justify-center shadow-glow"
+            className="h-20 w-20 rounded-3xl gradient-card-accent mx-auto mb-5 flex items-center justify-center shadow-card border border-primary/20"
           >
-            <span className="text-2xl font-bold text-accent-on-primary">F</span>
+            <span className="text-3xl font-bold text-primary">F</span>
           </motion.div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">
+          <p className="text-muted-foreground text-sm mt-2">
             {isSignUp 
               ? "Start your fitness journey" 
               : "Sign in to continue training"}
@@ -106,21 +106,21 @@ export default function Auth() {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {isSignUp && (
             <div className="space-y-2">
               <Label htmlFor="displayName" className="text-sm font-medium">
                 Display Name
               </Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="displayName"
                   type="text"
                   placeholder="Your name"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  className="pl-10 h-12 bg-surface-secondary border-border/50"
+                  className="pl-11 h-13 bg-card border-border/30 rounded-xl"
                 />
               </div>
             </div>
@@ -131,7 +131,7 @@ export default function Auth() {
               Email
             </Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="email"
                 type="email"
@@ -141,7 +141,7 @@ export default function Auth() {
                   setEmail(e.target.value);
                   if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
                 }}
-                className="pl-10 h-12 bg-surface-secondary border-border/50"
+                className="pl-11 h-13 bg-card border-border/30 rounded-xl"
               />
             </div>
             {errors.email && (
@@ -154,7 +154,7 @@ export default function Auth() {
               Password
             </Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="password"
                 type="password"
@@ -164,7 +164,7 @@ export default function Auth() {
                   setPassword(e.target.value);
                   if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
                 }}
-                className="pl-10 h-12 bg-surface-secondary border-border/50"
+                className="pl-11 h-13 bg-card border-border/30 rounded-xl"
               />
             </div>
             {errors.password && (
@@ -175,7 +175,7 @@ export default function Auth() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full h-12 bg-accent text-accent-on-primary hover:bg-accent/90 shadow-glow"
+            className="w-full h-13 rounded-xl font-semibold text-base shadow-card"
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -189,7 +189,7 @@ export default function Auth() {
         </form>
 
         {/* Toggle */}
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <button
             type="button"
             onClick={() => {

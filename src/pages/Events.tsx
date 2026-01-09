@@ -79,9 +79,9 @@ export default function Events() {
   }
 
   return (
-    <div className="min-h-screen pt-safe px-4 pb-24">
+    <div className="min-h-screen gradient-page pt-safe px-4 pb-24">
       {/* Header */}
-      <header className="pt-6 pb-4">
+      <header className="pt-6 pb-6">
         <motion.h1
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -104,7 +104,7 @@ export default function Events() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="flex gap-1 p-1 bg-muted rounded-lg mb-4"
+        className="flex gap-1 p-1.5 bg-muted/60 backdrop-blur-sm rounded-2xl mb-6 shadow-card"
       >
         {[
           { id: "list", icon: List, label: "Browse" },
@@ -115,10 +115,10 @@ export default function Events() {
             key={tab.id}
             onClick={() => setViewMode(tab.id as typeof viewMode)}
             className={cn(
-              "flex-1 flex items-center justify-center gap-1.5 py-2 text-sm font-medium rounded-md transition-colors",
+              "flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium rounded-xl transition-all duration-200",
               viewMode === tab.id
-                ? "bg-card shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-card shadow-card text-foreground"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/50"
             )}
           >
             <tab.icon className="h-4 w-4" />
@@ -145,16 +145,16 @@ export default function Events() {
             />
           </div>
           
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {["all", "in-person", "online", "hybrid"].map((mode) => (
               <button
                 key={mode}
                 onClick={() => setFilterMode(mode as typeof filterMode)}
                 className={cn(
-                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors",
+                  "px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200",
                   filterMode === mode
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted hover:bg-muted/80"
+                    ? "bg-primary text-primary-foreground shadow-card"
+                    : "bg-card/60 hover:bg-card text-muted-foreground hover:text-foreground"
                 )}
               >
                 {mode === "all" ? "All" : mode.charAt(0).toUpperCase() + mode.slice(1)}
@@ -166,7 +166,7 @@ export default function Events() {
 
       {/* List View */}
       {viewMode === "list" && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {filteredEvents.map((event, idx) => (
             <motion.button
               key={event.id}
@@ -174,51 +174,52 @@ export default function Events() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 + idx * 0.03 }}
               onClick={() => handleEventClick(event)}
-              className="w-full bg-card rounded-xl shadow-card border border-border/50 overflow-hidden text-left"
+              className="w-full gradient-card rounded-2xl shadow-card border border-border/30 overflow-hidden text-left hover:shadow-soft transition-shadow duration-300"
             >
               {(event.hero_image_url || event.image_url) && (
-                <div className="h-28 bg-muted">
+                <div className="h-32 bg-muted relative overflow-hidden">
                   <img
                     src={event.hero_image_url || event.image_url || ""}
                     alt={event.title}
                     className="w-full h-full object-cover"
                   />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent" />
                 </div>
               )}
-              <div className="p-4">
-                <div className="flex items-start justify-between">
+              <div className="p-5">
+                <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{event.title}</h3>
+                    <h3 className="font-semibold text-lg truncate">{event.title}</h3>
                     {event.description && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                      <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
                         {event.description}
                       </p>
                     )}
-                    <div className="flex flex-wrap items-center gap-2 mt-2 text-xs text-muted-foreground">
+                    <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-muted-foreground">
                       {(event.start_date || event.event_date) && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
+                        <span className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-lg">
+                          <Calendar className="h-3.5 w-3.5" />
                           {format(new Date(event.start_date || event.event_date || ""), "MMM d, yyyy")}
                         </span>
                       )}
                       {event.location && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
+                        <span className="flex items-center gap-1.5 bg-muted/50 px-2 py-1 rounded-lg">
+                          <MapPin className="h-3.5 w-3.5" />
                           {event.location}
                         </span>
                       )}
                       {event.event_mode && (
-                        <span className="px-1.5 py-0.5 bg-muted rounded capitalize">
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded-lg capitalize font-medium">
                           {event.event_mode}
                         </span>
                       )}
                     </div>
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                  <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
                 </div>
                 {isRegistered(event.id) && (
-                  <span className="inline-block mt-2 px-2 py-0.5 bg-accent/20 text-accent-foreground rounded-full text-xs font-medium">
-                    Registered
+                  <span className="inline-flex items-center mt-3 px-3 py-1 bg-success/15 text-success rounded-xl text-xs font-medium">
+                    ✓ Registered
                   </span>
                 )}
               </div>
@@ -226,7 +227,7 @@ export default function Events() {
           ))}
 
           {filteredEvents.length === 0 && (
-            <div className="bg-card rounded-xl p-6 shadow-card border border-border/50 text-center">
+            <div className="gradient-card rounded-2xl p-8 shadow-card border border-border/30 text-center">
               <p className="text-muted-foreground">No events found</p>
             </div>
           )}
