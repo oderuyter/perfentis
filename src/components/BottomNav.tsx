@@ -1,4 +1,4 @@
-import { Home, Dumbbell, TrendingUp, User, UtensilsCrossed, Sparkles } from "lucide-react";
+import { Home, Dumbbell, TrendingUp, UtensilsCrossed, Sparkles } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -9,7 +9,6 @@ const navItems = [
   { to: "/progress", icon: TrendingUp, label: "Progress" },
   { to: "/nutrition", icon: UtensilsCrossed, label: "Nutrition" },
   { to: "/habits", icon: Sparkles, label: "Habits" },
-  { to: "/profile", icon: User, label: "Profile" },
 ];
 
 export function BottomNav() {
