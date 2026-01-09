@@ -5,7 +5,7 @@ import { WorkoutBiscuit } from "./workout/WorkoutBiscuit";
 import { GlobalDrawer, HamburgerButton } from "./GlobalDrawer";
 import { useProfile } from "@/hooks/useProfile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User } from "lucide-react";
+import { User, Dumbbell } from "lucide-react";
 
 interface AppLayoutProps {
   hideNav?: boolean;
@@ -31,9 +31,7 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
             
             {/* Center: Logo/Brand placeholder */}
             <div className="absolute left-1/2 -translate-x-1/2">
-              <span className="text-lg font-bold tracking-tight text-foreground">
-                JEFIT
-              </span>
+              <Dumbbell className="h-6 w-6 text-white" />
             </div>
             
             {/* Right: Profile Avatar */}
