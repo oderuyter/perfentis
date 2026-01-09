@@ -158,10 +158,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Invitation created with ID: ${invitation.id}`);
 
-    // Get the app URL from environment or construct it
-    const appUrl = Deno.env.get("SUPABASE_URL")?.replace(".supabase.co", ".lovableproject.com") 
-      || "https://app.example.com";
-    const inviteLink = `${appUrl}/accept-invite?token=${token_value}`;
+    // Get the app URL from the request origin
+    const origin = req.headers.get("origin") || req.headers.get("referer")?.split("/").slice(0, 3).join("/") || "https://app.example.com";
+    const inviteLink = `${origin}/accept-invite?token=${token_value}`;
 
     // Send invitation email
     const emailResponse = await resend.emails.send({
