@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.accept-gym-invitation]
 verify_jwt = false
+
+[functions.send-admin-invitation]
+verify_jwt = false
+
+[functions.admin-reset-password]
+verify_jwt = false

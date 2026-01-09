@@ -48,6 +48,9 @@ import {
   FileText,
   Filter,
   Download,
+  KeyRound,
+  Mail,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -90,8 +93,14 @@ export default function AdminUsers() {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [newRole, setNewRole] = useState<AppRole>("athlete");
   const [adminNotes, setAdminNotes] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [inviteRole, setInviteRole] = useState<AppRole>("athlete");
+  const [isInviting, setIsInviting] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -295,6 +304,92 @@ export default function AdminUsers() {
     }
   };
 
+  const handleInviteUser = async () => {
+    if (!inviteEmail) {
+      toast.error("Please enter an email address");
+      return;
+    }
+
+    setIsInviting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-admin-invitation`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            email: inviteEmail,
+            name: inviteName || undefined,
+            role: inviteRole,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to invite user");
+      }
+
+      toast.success(`Invitation sent to ${inviteEmail}`);
+      setShowInviteDialog(false);
+      setInviteEmail("");
+      setInviteName("");
+      setInviteRole("athlete");
+      fetchUsers();
+    } catch (error: any) {
+      console.error("Error inviting user:", error);
+      toast.error(error.message || "Failed to invite user");
+    } finally {
+      setIsInviting(false);
+    }
+  };
+
+  const handleResetPassword = async (user: UserWithRoles) => {
+    setIsResettingPassword(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-password`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            userId: user.user_id,
+          }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to send reset email");
+      }
+
+      toast.success(`Password reset email sent to user`);
+    } catch (error: any) {
+      console.error("Error resetting password:", error);
+      toast.error(error.message || "Failed to reset password");
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   const exportUsers = () => {
     const csvData = filteredUsers.map((user) => ({
       user_id: user.user_id,
@@ -348,7 +443,7 @@ export default function AdminUsers() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button>
+          <Button onClick={() => setShowInviteDialog(true)}>
             <UserPlus className="h-4 w-4 mr-2" />
             Invite User
           </Button>
@@ -503,6 +598,13 @@ export default function AdminUsers() {
                           >
                             <FileText className="h-4 w-4 mr-2" />
                             Admin Notes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleResetPassword(user)}
+                            disabled={isResettingPassword}
+                          >
+                            <KeyRound className="h-4 w-4 mr-2" />
+                            Reset Password
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -665,6 +767,70 @@ export default function AdminUsers() {
               Cancel
             </Button>
             <Button onClick={handleSaveNotes}>Save Notes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invite User Dialog */}
+      <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Invite New User</DialogTitle>
+            <DialogDescription>
+              Send an invitation email to a new user
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Email Address *</Label>
+              <Input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="user@example.com"
+              />
+            </div>
+            <div>
+              <Label>Name (optional)</Label>
+              <Input
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
+                placeholder="John Doe"
+              />
+            </div>
+            <div>
+              <Label>Initial Role</Label>
+              <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as AppRole)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role.replace("_", " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInviteDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleInviteUser} disabled={isInviting}>
+              {isInviting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Send Invitation
+                </>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
