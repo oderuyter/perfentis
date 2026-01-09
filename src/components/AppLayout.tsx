@@ -1,8 +1,11 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { BottomNav } from "./BottomNav";
 import { WorkoutBiscuit } from "./workout/WorkoutBiscuit";
 import { GlobalDrawer, HamburgerButton } from "./GlobalDrawer";
+import { useProfile } from "@/hooks/useProfile";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User } from "lucide-react";
 
 interface AppLayoutProps {
   hideNav?: boolean;
@@ -10,19 +13,46 @@ interface AppLayoutProps {
 
 export function AppLayout({ hideNav = false }: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { profile } = useProfile();
+  const navigate = useNavigate();
+
+  const handleProfileClick = () => {
+    navigate("/profile");
+  };
 
   return (
     <div className="min-h-screen gradient-page">
-      {/* Global Header with Hamburger */}
+      {/* Global Header */}
       {!hideNav && (
-        <div className="fixed top-0 left-0 right-0 z-40 pt-safe">
-          <div className="px-4 py-3">
+        <header className="fixed top-0 left-0 right-0 z-40 pt-safe">
+          <div className="flex items-center justify-between px-4 py-3">
+            {/* Left: Hamburger */}
             <HamburgerButton onClick={() => setDrawerOpen(true)} />
+            
+            {/* Center: Logo/Brand placeholder */}
+            <div className="absolute left-1/2 -translate-x-1/2">
+              <span className="text-lg font-bold tracking-tight text-foreground">
+                JEFIT
+              </span>
+            </div>
+            
+            {/* Right: Profile Avatar */}
+            <button
+              onClick={handleProfileClick}
+              className="relative rounded-full ring-2 ring-border/40 ring-offset-2 ring-offset-background hover:ring-primary/50 transition-all"
+            >
+              <Avatar className="h-9 w-9">
+                <AvatarImage src={profile?.avatar_url || undefined} alt="Profile" />
+                <AvatarFallback className="bg-muted text-muted-foreground">
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
+              </Avatar>
+            </button>
           </div>
-        </div>
+        </header>
       )}
 
-      <main className={hideNav ? "" : "pb-24"}>
+      <main className={hideNav ? "" : "pt-16 pb-24"}>
         <Outlet />
       </main>
       
