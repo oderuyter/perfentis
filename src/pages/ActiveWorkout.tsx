@@ -66,12 +66,20 @@ export default function ActiveWorkout() {
   }, [navigate]);
 
   // Explicitly end workout
-  const handleEndWorkout = useCallback(() => {
+  const handleEndWorkout = useCallback(async () => {
     if (confirm("End workout? Your progress will be saved.")) {
-      endWorkout(true);
+      // Save workout session before ending
+      if (state) {
+        await saveWorkoutSession(state);
+      }
+      // Clear saved workout from localStorage first
+      clearSavedWorkout();
+      // Then update state to trigger re-render
+      endWorkout(false);
+      // Navigate after clearing
       navigate("/");
     }
-  }, [navigate, endWorkout]);
+  }, [navigate, endWorkout, state, saveWorkoutSession]);
 
   const handleFinish = useCallback(async () => {
     if (state && state.status === 'completed') {

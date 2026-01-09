@@ -16,13 +16,34 @@ export function WorkoutBiscuit() {
   const [workoutState, setWorkoutState] = useState(loadSavedWorkout());
   const [elapsedTime, setElapsedTime] = useState(workoutState?.elapsedTime || 0);
   
-  // Check for active workout on mount and location change
+  // Check for active workout on mount, location change, and periodically
   useEffect(() => {
-    const state = loadSavedWorkout();
-    setWorkoutState(state);
-    if (state) {
-      setElapsedTime(state.elapsedTime);
-    }
+    const checkWorkout = () => {
+      const state = loadSavedWorkout();
+      setWorkoutState(state);
+      if (state) {
+        setElapsedTime(state.elapsedTime);
+      }
+    };
+    
+    checkWorkout();
+    
+    // Also listen for storage changes (when workout is cleared)
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'active_workout_state' || e.key === null) {
+        checkWorkout();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorage);
+    
+    // Periodic check to catch same-tab localStorage changes
+    const interval = setInterval(checkWorkout, 500);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
   }, [location.pathname]);
   
   // Keep elapsed time updated while showing the biscuit
