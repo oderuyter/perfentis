@@ -16,8 +16,11 @@ export function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md pb-safe">
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/30 bg-card/90 backdrop-blur-xl pb-safe">
+      {/* Subtle gradient overlay for premium feel */}
+      <div className="absolute inset-0 bg-gradient-to-t from-transparent to-card/50 pointer-events-none" />
+      
+      <div className="relative flex items-center justify-around h-16 max-w-lg mx-auto px-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.to;
           return (
@@ -26,34 +29,43 @@ export function BottomNav() {
               to={item.to}
               className="relative flex flex-col items-center justify-center flex-1 h-full py-2 group"
             >
-              <div className="relative">
+              <div className="relative flex flex-col items-center">
                 {isActive && (
                   <motion.div
                     layoutId="nav-indicator"
-                    className="absolute -inset-1.5 rounded-lg bg-accent"
+                    className="absolute -inset-2 rounded-xl bg-primary/15"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
-                <item.icon
+                <div className="relative">
+                  {isActive && (
+                    <motion.div
+                      layoutId="nav-glow"
+                      className="absolute inset-0 rounded-full bg-primary/30 blur-md"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                  <item.icon
+                    className={cn(
+                      "relative h-5 w-5 transition-all duration-standard",
+                      isActive
+                        ? "text-primary"
+                        : "text-muted-foreground group-hover:text-foreground"
+                    )}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                  />
+                </div>
+                <span
                   className={cn(
-                    "relative h-5 w-5 transition-colors duration-200",
+                    "mt-1.5 text-micro font-medium transition-all duration-standard",
                     isActive
-                      ? "text-accent-foreground"
+                      ? "text-primary"
                       : "text-muted-foreground group-hover:text-foreground"
                   )}
-                  strokeWidth={isActive ? 2.5 : 2}
-                />
+                >
+                  {item.label}
+                </span>
               </div>
-              <span
-                className={cn(
-                  "mt-1 text-[10px] font-medium transition-colors duration-200",
-                  isActive
-                    ? "text-accent-foreground"
-                    : "text-muted-foreground group-hover:text-foreground"
-                )}
-              >
-                {item.label}
-              </span>
             </NavLink>
           );
         })}
