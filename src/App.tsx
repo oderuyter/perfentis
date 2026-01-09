@@ -63,6 +63,21 @@ import EventBranding from "./pages/event-portal/EventBranding";
 import EventReports from "./pages/event-portal/EventReports";
 import EventSettings from "./pages/event-portal/EventSettings";
 import AcceptInvite from "./pages/AcceptInvite";
+import AdminPortalLayout from "./pages/admin-portal/AdminPortalLayout";
+import AdminDashboard from "./pages/admin-portal/AdminDashboard";
+import AdminUsers from "./pages/admin-portal/AdminUsers";
+import AdminUAC from "./pages/admin-portal/AdminUAC";
+import AdminGyms from "./pages/admin-portal/AdminGyms";
+import AdminCoaches from "./pages/admin-portal/AdminCoaches";
+import AdminEvents from "./pages/admin-portal/AdminEvents";
+import AdminWorkouts from "./pages/admin-portal/AdminWorkouts";
+import AdminExercises from "./pages/admin-portal/AdminExercises";
+import AdminBilling from "./pages/admin-portal/AdminBilling";
+import AdminSocial from "./pages/admin-portal/AdminSocial";
+import AdminNotifications from "./pages/admin-portal/AdminNotifications";
+import AdminImports from "./pages/admin-portal/AdminImports";
+import AdminLogs from "./pages/admin-portal/AdminLogs";
+import AdminSettings from "./pages/admin-portal/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -163,6 +178,22 @@ function AppRoutes() {
         <Route path="branding" element={<EventBranding />} />
         <Route path="reports" element={<EventReports />} />
         <Route path="settings" element={<EventSettings />} />
+      </Route>
+      <Route path="/admin-portal" element={<ProtectedRoute><AdminPortalLayout /></ProtectedRoute>}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="uac" element={<AdminUAC />} />
+        <Route path="gyms" element={<AdminGyms />} />
+        <Route path="coaches" element={<AdminCoaches />} />
+        <Route path="events" element={<AdminEvents />} />
+        <Route path="workouts" element={<AdminWorkouts />} />
+        <Route path="exercises" element={<AdminExercises />} />
+        <Route path="billing" element={<AdminBilling />} />
+        <Route path="social" element={<AdminSocial />} />
+        <Route path="notifications" element={<AdminNotifications />} />
+        <Route path="imports" element={<AdminImports />} />
+        <Route path="logs" element={<AdminLogs />} />
+        <Route path="settings" element={<AdminSettings />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
