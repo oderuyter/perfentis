@@ -11,13 +11,16 @@ const typeIcons = {
 
 export default function Train() {
   return (
-    <div className="min-h-screen pt-safe px-4 pb-4">
+    <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
+      {/* Ambient glow */}
+      <div className="fixed inset-0 gradient-glow pointer-events-none" />
+      
       {/* Header */}
-      <header className="pt-6 pb-4">
+      <header className="relative pt-14 pb-4">
         <motion.h1 
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-semibold tracking-tight"
+          className="text-2xl font-bold tracking-tight"
         >
           Train
         </motion.h1>
@@ -25,14 +28,14 @@ export default function Train() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="text-muted-foreground text-sm mt-1"
+          className="text-muted-foreground mt-1"
         >
           Choose your workout
         </motion.p>
       </header>
 
       {/* Workout List */}
-      <div className="space-y-3 mt-4">
+      <div className="relative space-y-3 mt-4">
         {workouts.map((workout, index) => {
           const TypeIcon = typeIcons[workout.type];
           
@@ -44,14 +47,14 @@ export default function Train() {
               transition={{ delay: 0.1 + index * 0.05 }}
             >
               <Link to={`/workout/${workout.id}`} className="block">
-                <div className="bg-card rounded-xl p-4 shadow-card border border-border/50 active:scale-[0.98] transition-transform">
+                <div className="card-glass p-4 active:scale-[0.98] transition-transform">
                   <div className="flex items-start gap-4">
-                    <div className="h-11 w-11 rounded-xl bg-accent-subtle flex items-center justify-center flex-shrink-0">
-                      <TypeIcon className="h-5 w-5 text-accent-foreground" />
+                    <div className="h-12 w-12 rounded-xl bg-primary/12 flex items-center justify-center flex-shrink-0">
+                      <TypeIcon className="h-5 w-5 text-primary" />
                     </div>
                     
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-base">
+                      <h3 className="font-semibold text-base text-foreground">
                         {workout.name}
                       </h3>
                       {workout.focus && (
@@ -86,13 +89,13 @@ export default function Train() {
           transition={{ delay: 0.1 + workouts.length * 0.05 }}
         >
           <Link to="/workout/free" className="block">
-            <div className="bg-surface-bg-secondary rounded-xl p-4 border border-dashed border-border active:scale-[0.98] transition-transform">
+            <div className="rounded-xl p-4 border border-dashed border-border/50 bg-surface-card/50 active:scale-[0.98] transition-transform">
               <div className="flex items-center gap-4">
-                <div className="h-11 w-11 rounded-xl bg-muted flex items-center justify-center">
+                <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center">
                   <Zap className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-base">Free Workout</h3>
+                  <h3 className="font-semibold text-base text-foreground">Free Workout</h3>
                   <p className="text-sm text-muted-foreground mt-0.5">
                     Log as you go
                   </p>

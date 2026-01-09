@@ -79,11 +79,14 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen gradient-page flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen gradient-page flex flex-col items-center justify-center px-6 py-12">
+      {/* Ambient glow effect */}
+      <div className="fixed inset-0 gradient-glow pointer-events-none" />
+      
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
+        className="relative w-full max-w-sm"
       >
         {/* Logo / Brand */}
         <div className="text-center mb-10">
@@ -91,102 +94,105 @@ export default function Auth() {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ delay: 0.1 }}
-            className="h-20 w-20 rounded-3xl gradient-card-accent mx-auto mb-5 flex items-center justify-center shadow-card border border-primary/20"
+            className="h-20 w-20 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-glow border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/5"
           >
             <span className="text-3xl font-bold text-primary">F</span>
           </motion.div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-3xl font-bold tracking-tight">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
-          <p className="text-muted-foreground text-sm mt-2">
+          <p className="text-muted-foreground mt-2">
             {isSignUp 
               ? "Start your fitness journey" 
               : "Sign in to continue training"}
           </p>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {isSignUp && (
+        {/* Form Card */}
+        <div className="card-glass p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {isSignUp && (
+              <div className="space-y-2">
+                <Label htmlFor="displayName" className="text-sm font-medium">
+                  Display Name
+                </Label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="displayName"
+                    type="text"
+                    placeholder="Your name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    className="pl-11"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
-              <Label htmlFor="displayName" className="text-sm font-medium">
-                Display Name
+              <Label htmlFor="email" className="text-sm font-medium">
+                Email
               </Label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="displayName"
-                  type="text"
-                  placeholder="Your name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="pl-11 h-13 bg-card border-border/30 rounded-xl"
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
+                  }}
+                  className="pl-11"
                 />
               </div>
+              {errors.email && (
+                <p className="text-destructive text-xs mt-1">{errors.email}</p>
+              )}
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium">
-              Email
-            </Label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors(prev => ({ ...prev, email: undefined }));
-                }}
-                className="pl-11 h-13 bg-card border-border/30 rounded-xl"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium">
+                Password
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
+                  }}
+                  className="pl-11"
+                />
+              </div>
+              {errors.password && (
+                <p className="text-destructive text-xs mt-1">{errors.password}</p>
+              )}
             </div>
-            {errors.email && (
-              <p className="text-destructive text-xs">{errors.email}</p>
-            )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium">
-              Password
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
-                }}
-                className="pl-11 h-13 bg-card border-border/30 rounded-xl"
-              />
-            </div>
-            {errors.password && (
-              <p className="text-destructive text-xs">{errors.password}</p>
-            )}
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-13 rounded-xl font-semibold text-base shadow-card"
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <>
-                {isSignUp ? "Create Account" : "Sign In"}
-                <ArrowRight className="h-4 w-4 ml-2" />
-              </>
-            )}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              variant="glow"
+              className="w-full h-12 rounded-xl font-semibold text-base"
+            >
+              {isLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <>
+                  {isSignUp ? "Create Account" : "Sign In"}
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </form>
+        </div>
 
         {/* Toggle */}
         <div className="mt-8 text-center">
@@ -196,7 +202,7 @@ export default function Auth() {
               setIsSignUp(!isSignUp);
               setErrors({});
             }}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             {isSignUp 
               ? "Already have an account? Sign in" 

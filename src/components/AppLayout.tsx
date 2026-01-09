@@ -12,17 +12,17 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen gradient-page">
       {/* Global Header with Hamburger */}
       {!hideNav && (
         <div className="fixed top-0 left-0 right-0 z-40 pt-safe">
-          <div className="px-4 py-2">
+          <div className="px-4 py-3">
             <HamburgerButton onClick={() => setDrawerOpen(true)} />
           </div>
         </div>
       )}
 
-      <main className={hideNav ? "" : "pb-22"}>
+      <main className={hideNav ? "" : "pb-24"}>
         <Outlet />
       </main>
       

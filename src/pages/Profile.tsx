@@ -34,16 +34,16 @@ function SettingRow({ icon: Icon, label, value, onClick, children, danger }: Set
     <>
       <div className="flex items-center gap-3">
         <div className={cn(
-          "h-8 w-8 rounded-lg flex items-center justify-center",
-          danger ? "bg-destructive/10" : "bg-accent-subtle"
+          "h-9 w-9 rounded-xl flex items-center justify-center",
+          danger ? "bg-destructive/15" : "bg-primary/12"
         )}>
           <Icon className={cn(
             "h-4 w-4",
-            danger ? "text-destructive" : "text-accent-foreground"
+            danger ? "text-destructive" : "text-primary"
           )} />
         </div>
         <span className={cn(
-          "font-medium text-sm",
+          "font-medium",
           danger && "text-destructive"
         )}>{label}</span>
       </div>
@@ -62,7 +62,7 @@ function SettingRow({ icon: Icon, label, value, onClick, children, danger }: Set
     return (
       <button
         onClick={onClick}
-        className="w-full flex items-center justify-between py-3.5 active:bg-muted/50 transition-colors rounded-lg -mx-2 px-2"
+        className="w-full flex items-center justify-between py-3.5 active:bg-muted/30 transition-colors rounded-xl -mx-2 px-2"
       >
         {content}
       </button>
@@ -78,7 +78,7 @@ function SettingRow({ icon: Icon, label, value, onClick, children, danger }: Set
 
 function SectionHeader({ title }: { title: string }) {
   return (
-    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-6 pb-2">
+    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider pt-6 pb-2">
       {title}
     </p>
   );
@@ -122,13 +122,16 @@ export default function Profile() {
   const email = user?.email || "";
 
   return (
-    <div className="min-h-screen pt-safe px-4 pb-4">
+    <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
+      {/* Ambient glow */}
+      <div className="fixed inset-0 gradient-glow pointer-events-none" />
+      
       {/* Header */}
-      <header className="pt-6 pb-4">
+      <header className="relative pt-14 pb-4">
         <motion.h1 
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-semibold tracking-tight"
+          className="text-2xl font-bold tracking-tight"
         >
           Profile
         </motion.h1>
@@ -139,14 +142,14 @@ export default function Profile() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        className="bg-card rounded-xl p-4 shadow-card border border-border/50 mt-4"
+        className="card-glass-accent p-5 mt-4"
       >
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-full bg-accent-subtle flex items-center justify-center">
-            <User className="h-7 w-7 text-accent-foreground" />
+          <div className="h-14 w-14 rounded-xl bg-primary/15 flex items-center justify-center">
+            <User className="h-7 w-7 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-lg truncate">{displayName}</h2>
+            <h2 className="font-bold text-lg truncate text-foreground">{displayName}</h2>
             <p className="text-sm text-muted-foreground truncate">{email}</p>
           </div>
         </div>
@@ -157,23 +160,23 @@ export default function Profile() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
-        className="mt-2"
+        className="relative mt-2"
       >
         <SectionHeader title="Profile" />
-        <div className="space-y-0.5">
+        <div className="card-glass p-4 space-y-0.5">
           <SettingRow icon={User} label="Personal Details" />
           <SettingRow icon={Target} label="Training Goals" value="Build Muscle" />
           <SettingRow icon={Ruler} label="Units" value="Metric" />
         </div>
 
         <SectionHeader title="Health & Devices" />
-        <div className="space-y-0.5">
+        <div className="card-glass p-4 space-y-0.5">
           <SettingRow icon={Smartphone} label="Integrations" />
           <SettingRow icon={Heart} label="Heart Rate Zones" />
         </div>
 
         <SectionHeader title="Appearance" />
-        <div className="space-y-0.5">
+        <div className="card-glass p-4 space-y-0.5">
           <SettingRow
             icon={ThemeIcon}
             label="Theme"
@@ -193,7 +196,7 @@ export default function Profile() {
                   className={cn(
                     "h-7 w-7 rounded-full transition-all flex items-center justify-center",
                     accent === color.value 
-                      ? "ring-2 ring-offset-2 ring-offset-background ring-foreground/20 scale-110" 
+                      ? "ring-2 ring-offset-2 ring-offset-background ring-primary/50 scale-110" 
                       : "hover:scale-105"
                   )}
                   style={{ backgroundColor: color.color }}
@@ -209,13 +212,13 @@ export default function Profile() {
         </div>
 
         <SectionHeader title="Preferences" />
-        <div className="space-y-0.5">
+        <div className="card-glass p-4 space-y-0.5">
           <SettingRow icon={Bell} label="Notifications" />
           <SettingRow icon={Shield} label="Privacy & Data" />
         </div>
 
         <SectionHeader title="Account" />
-        <div className="space-y-0.5">
+        <div className="card-glass p-4 space-y-0.5">
           <SettingRow 
             icon={LogOut} 
             label="Sign Out" 
