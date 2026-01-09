@@ -5,76 +5,99 @@
 @tailwind utilities;
 
 /* 
-  FLOW - Premium Fitness Training App
-  Design System: Token-based, theme-aware, calm & premium
+  AIO FITNESS - Premium, Calm, Mobile-First Design System
   
-  Accent colors are user-selectable and applied via CSS custom properties.
+  Design Philosophy:
+  - Dark-first with light mode support
+  - Deep navy/charcoal backgrounds with subtle gradients
+  - Electric blue/indigo accent (restrained usage)
+  - Card-based layouts with soft shadows
+  - 8pt/16pt spacing system
+  - Rounded, friendly shapes (16-24px radius)
+  
   All colors use HSL format for consistency.
 */
 
 @layer base {
   :root {
     /* ============================================
-       ACCENT COLOR PALETTE (User-Selectable)
-       Default: Sage/Mint - calm and premium
+       ACCENT COLOR PALETTE
+       Primary: Electric Blue/Indigo (restrained)
        ============================================ */
-    --accent-h: 158;
-    --accent-s: 35%;
-    --accent-l: 45%;
+    --accent-h: 220;
+    --accent-s: 80%;
+    --accent-l: 55%;
     
-    /* Accent color tokens derived from user selection */
+    /* Accent color tokens derived from selection */
     --accent-primary: var(--accent-h) var(--accent-s) var(--accent-l);
-    --accent-primary-soft: var(--accent-h) calc(var(--accent-s) * 0.7) calc(var(--accent-l) + 40%);
-    --accent-primary-subtle: var(--accent-h) calc(var(--accent-s) * 0.5) 94%;
+    --accent-primary-soft: var(--accent-h) calc(var(--accent-s) * 0.5) calc(var(--accent-l) + 35%);
+    --accent-primary-subtle: var(--accent-h) calc(var(--accent-s) * 0.3) 94%;
     --accent-on-primary: 0 0% 100%;
+    --accent-glow: var(--accent-h) var(--accent-s) 65%;
     
     /* ============================================
-       SURFACE & BACKGROUND TOKENS
-       Soft, health-focused surfaces
+       SEMANTIC STATUS COLORS
        ============================================ */
-    --surface-bg-primary: 40 20% 98%;
-    --surface-bg-secondary: 35 15% 96%;
-    --surface-card: 40 15% 99%;
-    --surface-elevated: 40 20% 100%;
-    --surface-sunken: 35 15% 94%;
+    --status-success: 158 55% 42%;
+    --status-success-soft: 158 40% 90%;
+    --status-warning: 38 75% 50%;
+    --status-warning-soft: 38 60% 90%;
+    --status-error: 0 70% 55%;
+    --status-error-soft: 0 50% 92%;
+    
+    /* ============================================
+       SURFACE & BACKGROUND TOKENS (Light Mode)
+       Warm off-white with soft blue/violet tint
+       ============================================ */
+    --surface-bg-primary: 225 25% 97%;
+    --surface-bg-secondary: 225 20% 94%;
+    --surface-card: 0 0% 100%;
+    --surface-elevated: 0 0% 100%;
+    --surface-sunken: 225 20% 92%;
     --surface-overlay: 0 0% 100%;
     
     /* ============================================
-       TEXT TOKENS (Semantic roles)
+       TEXT TOKENS (Light Mode)
        ============================================ */
-    --text-primary: 30 10% 12%;
-    --text-secondary: 30 8% 35%;
-    --text-muted: 30 8% 50%;
+    --text-primary: 225 25% 12%;
+    --text-secondary: 225 15% 35%;
+    --text-muted: 225 12% 50%;
     --text-inverse: 0 0% 100%;
-    --text-accent: var(--accent-h) var(--accent-s) calc(var(--accent-l) - 10%);
+    --text-accent: var(--accent-h) calc(var(--accent-s) - 10%) calc(var(--accent-l) - 10%);
     
     /* ============================================
-       GRADIENT TOKENS (Theme-aware)
+       GRADIENT TOKENS (Light Mode)
        Subtle, low-contrast gradients
        ============================================ */
-    --gradient-card: linear-gradient(135deg, hsl(40 20% 99%) 0%, hsl(35 15% 97%) 100%);
-    --gradient-card-accent: linear-gradient(135deg, hsl(var(--accent-primary-subtle)) 0%, hsl(40 15% 98%) 100%);
-    --gradient-progress: linear-gradient(90deg, hsl(var(--accent-primary)) 0%, hsl(var(--accent-h) calc(var(--accent-s) + 10%) calc(var(--accent-l) + 8%)) 100%);
-    --gradient-metric: linear-gradient(180deg, hsl(var(--accent-primary-subtle)) 0%, transparent 100%);
-    --gradient-chart-fill: linear-gradient(180deg, hsl(var(--accent-primary) / 0.2) 0%, hsl(var(--accent-primary) / 0.02) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(40 20% 98%) 0%, hsl(35 15% 96%) 100%);
+    --gradient-page: linear-gradient(180deg, hsl(225 25% 97%) 0%, hsl(225 20% 95%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(225 15% 98%) 100%);
+    --gradient-card-accent: linear-gradient(135deg, hsl(var(--accent-primary) / 0.05) 0%, hsl(0 0% 100%) 100%);
+    --gradient-progress: linear-gradient(90deg, hsl(var(--accent-primary)) 0%, hsl(var(--accent-glow)) 100%);
+    --gradient-metric: linear-gradient(180deg, hsl(var(--accent-primary) / 0.08) 0%, transparent 100%);
+    --gradient-chart-fill: linear-gradient(180deg, hsl(var(--accent-primary) / 0.15) 0%, hsl(var(--accent-primary) / 0.02) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(225 25% 97%) 0%, hsl(225 20% 95%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(var(--accent-primary)) 0%, hsl(250 70% 60%) 100%);
     
     /* ============================================
-       ELEVATION & SHADOW TOKENS
+       ELEVATION & SHADOW TOKENS (Light Mode)
        Soft, diffused shadows
        ============================================ */
     --elevation-none: none;
-    --elevation-low: 0 1px 3px 0 hsl(30 10% 12% / 0.04), 0 2px 6px -1px hsl(30 10% 12% / 0.06);
-    --elevation-medium: 0 4px 12px -2px hsl(30 10% 12% / 0.08), 0 8px 24px -4px hsl(30 10% 12% / 0.1);
-    --elevation-high: 0 8px 24px -4px hsl(30 10% 12% / 0.12), 0 16px 48px -8px hsl(30 10% 12% / 0.14);
+    --elevation-low: 0 2px 8px -2px hsl(225 30% 20% / 0.06), 0 4px 16px -4px hsl(225 30% 20% / 0.08);
+    --elevation-medium: 0 8px 24px -4px hsl(225 30% 20% / 0.1), 0 16px 48px -8px hsl(225 30% 20% / 0.12);
+    --elevation-high: 0 16px 48px -8px hsl(225 30% 20% / 0.15), 0 32px 64px -16px hsl(225 30% 20% / 0.18);
+    --elevation-glow: 0 0 24px -4px hsl(var(--accent-primary) / 0.3);
     
     /* ============================================
        SHAPE & RADIUS TOKENS
-       Rounded, friendly shapes
+       Rounded, friendly shapes (16-24px)
        ============================================ */
+    --radius-xs: 0.375rem;
     --radius-small: 0.5rem;
     --radius-medium: 1rem;
-    --radius-large: 1.5rem;
+    --radius-large: 1.25rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
     --radius-full: 9999px;
     
     /* ============================================
@@ -82,24 +105,25 @@
        ============================================ */
     --chart-line-primary: var(--accent-primary);
     --chart-fill-gradient: var(--gradient-chart-fill);
-    --chart-axis-muted: 30 8% 75%;
+    --chart-axis-muted: 225 10% 75%;
     --chart-bar-active: var(--accent-primary);
-    --chart-bar-inactive: 35 10% 88%;
+    --chart-bar-inactive: 225 10% 88%;
     
     /* ============================================
        MOTION TOKENS
        Gentle, calming transitions
        ============================================ */
     --motion-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-    --motion-standard: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    --motion-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-standard: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+    --motion-gentle: 350ms cubic-bezier(0.25, 0.1, 0.25, 1);
     
     /* ============================================
        BORDER TOKENS
        ============================================ */
-    --border-subtle: 35 15% 92%;
-    --border-default: 35 15% 88%;
-    --border-strong: 35 12% 80%;
+    --border-subtle: 225 15% 92%;
+    --border-default: 225 15% 88%;
+    --border-strong: 225 12% 80%;
     
     /* ============================================
        HEART RATE ZONE TOKENS
@@ -127,12 +151,16 @@
     --muted-foreground: var(--text-muted);
     --accent: var(--accent-primary-subtle);
     --accent-foreground: var(--text-accent);
-    --destructive: 0 70% 55%;
+    --destructive: var(--status-error);
     --destructive-foreground: 0 0% 100%;
+    --success: var(--status-success);
+    --success-foreground: 0 0% 100%;
+    --warning: var(--status-warning);
+    --warning-foreground: 225 25% 12%;
     --border: var(--border-default);
     --input: var(--border-default);
     --ring: var(--accent-primary);
-    --radius: var(--radius-medium);
+    --radius: var(--radius-large);
     
     /* Sidebar tokens */
     --sidebar-background: var(--surface-bg-primary);
@@ -145,92 +173,116 @@
     --sidebar-ring: var(--accent-primary);
   }
 
+  /* ============================================
+     DARK MODE
+     Deep navy/charcoal with subtle gradient
+     Premium, calm, confident
+     ============================================ */
   .dark {
     /* Accent colors - slightly brighter in dark mode */
-    --accent-primary: var(--accent-h) calc(var(--accent-s) + 5%) calc(var(--accent-l) + 5%);
-    --accent-primary-soft: var(--accent-h) calc(var(--accent-s) * 0.5) 25%;
-    --accent-primary-subtle: var(--accent-h) calc(var(--accent-s) * 0.4) 18%;
-    --accent-on-primary: 30 15% 8%;
+    --accent-primary: var(--accent-h) calc(var(--accent-s) + 5%) calc(var(--accent-l) + 8%);
+    --accent-primary-soft: var(--accent-h) calc(var(--accent-s) * 0.4) 25%;
+    --accent-primary-subtle: var(--accent-h) calc(var(--accent-s) * 0.35) 18%;
+    --accent-on-primary: 0 0% 100%;
+    --accent-glow: var(--accent-h) var(--accent-s) 70%;
     
-    /* Surfaces - deep charcoal, not pure black */
-    --surface-bg-primary: 30 15% 8%;
-    --surface-bg-secondary: 30 12% 11%;
-    --surface-card: 30 12% 12%;
-    --surface-elevated: 30 12% 14%;
-    --surface-sunken: 30 15% 6%;
-    --surface-overlay: 30 12% 14%;
+    /* Status colors - slightly muted in dark mode */
+    --status-success: 158 50% 48%;
+    --status-success-soft: 158 35% 18%;
+    --status-warning: 38 70% 55%;
+    --status-warning-soft: 38 50% 18%;
+    --status-error: 0 65% 55%;
+    --status-error-soft: 0 45% 18%;
     
-    /* Text - warm light tones */
-    --text-primary: 35 15% 92%;
-    --text-secondary: 35 12% 70%;
-    --text-muted: 35 10% 55%;
-    --text-inverse: 30 15% 8%;
-    --text-accent: var(--accent-h) calc(var(--accent-s) + 10%) calc(var(--accent-l) + 20%);
+    /* Surfaces - deep navy/charcoal with subtle warmth */
+    --surface-bg-primary: 225 30% 7%;
+    --surface-bg-secondary: 225 25% 10%;
+    --surface-card: 225 25% 12%;
+    --surface-elevated: 225 22% 15%;
+    --surface-sunken: 225 30% 5%;
+    --surface-overlay: 225 25% 14%;
     
-    /* Gradients - darker, more restrained */
-    --gradient-card: linear-gradient(135deg, hsl(30 12% 13%) 0%, hsl(30 12% 11%) 100%);
-    --gradient-card-accent: linear-gradient(135deg, hsl(var(--accent-primary-subtle)) 0%, hsl(30 12% 12%) 100%);
-    --gradient-progress: linear-gradient(90deg, hsl(var(--accent-primary)) 0%, hsl(var(--accent-h) calc(var(--accent-s) + 5%) calc(var(--accent-l) + 10%)) 100%);
-    --gradient-metric: linear-gradient(180deg, hsl(var(--accent-primary-subtle)) 0%, transparent 100%);
-    --gradient-chart-fill: linear-gradient(180deg, hsl(var(--accent-primary) / 0.3) 0%, hsl(var(--accent-primary) / 0.05) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(30 15% 8%) 0%, hsl(30 15% 6%) 100%);
+    /* Text - clean, high readability */
+    --text-primary: 225 20% 95%;
+    --text-secondary: 225 15% 70%;
+    --text-muted: 225 12% 50%;
+    --text-inverse: 225 30% 7%;
+    --text-accent: var(--accent-h) calc(var(--accent-s) + 15%) calc(var(--accent-l) + 18%);
     
-    /* Shadows - minimal in dark mode */
-    --elevation-low: 0 1px 3px 0 hsl(0 0% 0% / 0.2), 0 2px 6px -1px hsl(0 0% 0% / 0.3);
-    --elevation-medium: 0 4px 12px -2px hsl(0 0% 0% / 0.4), 0 8px 24px -4px hsl(0 0% 0% / 0.5);
-    --elevation-high: 0 8px 24px -4px hsl(0 0% 0% / 0.5), 0 16px 48px -8px hsl(0 0% 0% / 0.6);
+    /* Gradients - subtle, premium */
+    --gradient-page: linear-gradient(180deg, hsl(225 30% 7%) 0%, hsl(225 35% 5%) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(225 25% 13%) 0%, hsl(225 25% 11%) 100%);
+    --gradient-card-accent: linear-gradient(135deg, hsl(var(--accent-primary) / 0.12) 0%, hsl(225 25% 12%) 100%);
+    --gradient-progress: linear-gradient(90deg, hsl(var(--accent-primary)) 0%, hsl(var(--accent-glow)) 100%);
+    --gradient-metric: linear-gradient(180deg, hsl(var(--accent-primary) / 0.15) 0%, transparent 100%);
+    --gradient-chart-fill: linear-gradient(180deg, hsl(var(--accent-primary) / 0.25) 0%, hsl(var(--accent-primary) / 0.03) 100%);
+    --gradient-surface: linear-gradient(180deg, hsl(225 30% 7%) 0%, hsl(225 35% 5%) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(var(--accent-primary)) 0%, hsl(260 70% 55%) 100%);
     
-    /* Borders - subtle in dark mode */
-    --border-subtle: 30 10% 16%;
-    --border-default: 30 10% 20%;
-    --border-strong: 30 8% 28%;
+    /* Shadows - minimal, subtle glow */
+    --elevation-low: 0 2px 8px -2px hsl(0 0% 0% / 0.3), 0 4px 16px -4px hsl(0 0% 0% / 0.4);
+    --elevation-medium: 0 8px 24px -4px hsl(0 0% 0% / 0.5), 0 16px 48px -8px hsl(0 0% 0% / 0.6);
+    --elevation-high: 0 16px 48px -8px hsl(0 0% 0% / 0.7), 0 32px 64px -16px hsl(0 0% 0% / 0.8);
+    --elevation-glow: 0 0 32px -4px hsl(var(--accent-primary) / 0.4);
+    
+    /* Borders - subtle, barely visible */
+    --border-subtle: 225 20% 16%;
+    --border-default: 225 18% 20%;
+    --border-strong: 225 15% 28%;
     
     /* Chart tokens */
-    --chart-axis-muted: 30 8% 35%;
-    --chart-bar-inactive: 30 10% 22%;
+    --chart-axis-muted: 225 10% 35%;
+    --chart-bar-inactive: 225 15% 22%;
     
     /* Destructive */
-    --destructive: 0 65% 50%;
+    --destructive: var(--status-error);
   }
   
   /* ============================================
      ACCENT COLOR PRESETS
-     User-selectable accent colors
+     Electric blue is the default/primary
      ============================================ */
   [data-accent="sage"] {
     --accent-h: 158;
-    --accent-s: 35%;
-    --accent-l: 45%;
-  }
-  
-  [data-accent="mint"] {
-    --accent-h: 168;
     --accent-s: 45%;
     --accent-l: 48%;
   }
   
-  [data-accent="ocean"] {
-    --accent-h: 200;
+  [data-accent="mint"] {
+    --accent-h: 168;
     --accent-s: 50%;
     --accent-l: 50%;
   }
   
+  [data-accent="ocean"] {
+    --accent-h: 200;
+    --accent-s: 70%;
+    --accent-l: 52%;
+  }
+  
   [data-accent="lavender"] {
-    --accent-h: 270;
-    --accent-s: 40%;
-    --accent-l: 55%;
+    --accent-h: 260;
+    --accent-s: 55%;
+    --accent-l: 58%;
   }
   
   [data-accent="coral"] {
     --accent-h: 15;
-    --accent-s: 65%;
+    --accent-s: 70%;
     --accent-l: 55%;
   }
   
   [data-accent="gold"] {
-    --accent-h: 45;
-    --accent-s: 70%;
-    --accent-l: 50%;
+    --accent-h: 42;
+    --accent-s: 75%;
+    --accent-l: 52%;
+  }
+  
+  /* Electric Blue - Default for AIO Fitness */
+  [data-accent="electric"] {
+    --accent-h: 220;
+    --accent-s: 80%;
+    --accent-l: 55%;
   }
 }
 
@@ -249,6 +301,8 @@
     @apply bg-background text-foreground font-sans;
     font-family: 'Outfit', system-ui, sans-serif;
     transition: background-color var(--motion-standard), color var(--motion-standard);
+    background: var(--gradient-page);
+    min-height: 100vh;
   }
 }
 
@@ -272,6 +326,10 @@
     box-shadow: var(--elevation-high);
   }
   
+  .elevation-glow {
+    box-shadow: var(--elevation-glow);
+  }
+  
   /* Legacy shadow utilities (mapped to elevation) */
   .shadow-soft {
     box-shadow: var(--elevation-medium);
@@ -283,6 +341,10 @@
   
   .shadow-elevated {
     box-shadow: var(--elevation-high);
+  }
+  
+  .shadow-glow {
+    box-shadow: var(--elevation-glow);
   }
 
   /* ============================================
@@ -303,6 +365,10 @@
   /* ============================================
      GRADIENT UTILITIES
      ============================================ */
+  .gradient-page {
+    background: var(--gradient-page);
+  }
+  
   .gradient-card {
     background: var(--gradient-card);
   }
@@ -321,6 +387,10 @@
   
   .gradient-surface {
     background: var(--gradient-surface);
+  }
+  
+  .gradient-premium {
+    background: var(--gradient-premium);
   }
 
   /* ============================================
@@ -356,6 +426,55 @@
   .text-secondary-content { color: hsl(var(--text-secondary)); }
   .text-muted-content { color: hsl(var(--text-muted)); }
   .text-accent-content { color: hsl(var(--text-accent)); }
+  
+  /* ============================================
+     STATUS COLOR UTILITIES
+     ============================================ */
+  .text-success { color: hsl(var(--status-success)); }
+  .text-warning { color: hsl(var(--status-warning)); }
+  .text-error { color: hsl(var(--status-error)); }
+  
+  .bg-success { background-color: hsl(var(--status-success)); }
+  .bg-success-soft { background-color: hsl(var(--status-success-soft)); }
+  .bg-warning { background-color: hsl(var(--status-warning)); }
+  .bg-warning-soft { background-color: hsl(var(--status-warning-soft)); }
+  .bg-error { background-color: hsl(var(--status-error)); }
+  .bg-error-soft { background-color: hsl(var(--status-error-soft)); }
+  
+  /* ============================================
+     PREMIUM CARD STYLES
+     ============================================ */
+  .card-premium {
+    background: var(--gradient-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--elevation-low);
+    border: 1px solid hsl(var(--border-subtle));
+  }
+  
+  .card-premium-accent {
+    background: var(--gradient-card-accent);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--elevation-medium);
+    border: 1px solid hsl(var(--accent-primary) / 0.15);
+  }
+  
+  /* ============================================
+     BUTTON PREMIUM STYLES
+     ============================================ */
+  .btn-premium {
+    background: var(--gradient-premium);
+    box-shadow: var(--elevation-low), var(--elevation-glow);
+    transition: all var(--motion-standard);
+  }
+  
+  .btn-premium:hover {
+    box-shadow: var(--elevation-medium), 0 0 40px -4px hsl(var(--accent-primary) / 0.5);
+    transform: translateY(-1px);
+  }
+  
+  .btn-premium:active {
+    transform: translateY(0);
+  }
 }
 
 /* Smooth scrolling */
@@ -375,4 +494,40 @@
 /* Ensure transitions don't flash on initial load */
 html.no-transitions * {
   transition: none !important;
+}
+
+/* ============================================
+   SCROLLBAR STYLING (Dark mode)
+   ============================================ */
+.dark {
+  scrollbar-color: hsl(225 18% 22%) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border-default));
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--border-strong));
+}
+
+/* Hide scrollbar on mobile */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  * {
+    scrollbar-width: none;
+  }
 }
