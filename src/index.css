@@ -9,109 +9,116 @@
   
   Design Philosophy:
   - Dark-first with light mode support
-  - Deep navy/charcoal backgrounds with subtle gradients
-  - Electric blue/indigo accent (restrained usage)
-  - Card-based layouts with soft shadows
-  - 8pt/16pt spacing system
-  - Rounded, friendly shapes (16-24px radius)
-  
-  All colors use HSL format for consistency.
+  - Deep navy backgrounds with smooth radial gradients
+  - Electric blue accent (restrained, one per screen)
+  - Glassmorphic card-based layouts
+  - Generous spacing (16-24px padding)
+  - Soft rounded shapes (16-20px radius)
+  - Subtle glow effects on accents
 */
 
 @layer base {
   :root {
     /* ============================================
        ACCENT COLOR PALETTE
-       Primary: Electric Blue/Indigo (restrained)
+       Electric Blue (Primary highlight)
        ============================================ */
-    --accent-h: 220;
-    --accent-s: 80%;
-    --accent-l: 55%;
+    --accent-h: 217;
+    --accent-s: 91%;
+    --accent-l: 60%;
     
-    /* Accent color tokens derived from selection */
+    /* Derived accent tokens */
     --accent-primary: var(--accent-h) var(--accent-s) var(--accent-l);
-    --accent-primary-soft: var(--accent-h) calc(var(--accent-s) * 0.5) calc(var(--accent-l) + 35%);
-    --accent-primary-subtle: var(--accent-h) calc(var(--accent-s) * 0.3) 94%;
+    --accent-primary-soft: var(--accent-h) 40% 90%;
+    --accent-primary-subtle: var(--accent-h) 30% 94%;
     --accent-on-primary: 0 0% 100%;
-    --accent-glow: var(--accent-h) var(--accent-s) 65%;
+    --accent-glow: var(--accent-h) 95% 68%;
     
     /* ============================================
-       SEMANTIC STATUS COLORS
+       STATUS COLORS
+       Muted, calm tones
        ============================================ */
-    --status-success: 158 55% 42%;
-    --status-success-soft: 158 40% 90%;
-    --status-warning: 38 75% 50%;
-    --status-warning-soft: 38 60% 90%;
-    --status-error: 0 70% 55%;
-    --status-error-soft: 0 50% 92%;
+    --status-success: 158 64% 42%;
+    --status-success-soft: 158 45% 92%;
+    --status-warning: 38 92% 50%;
+    --status-warning-soft: 38 70% 92%;
+    --status-error: 0 72% 51%;
+    --status-error-soft: 0 55% 93%;
     
     /* ============================================
-       SURFACE & BACKGROUND TOKENS (Light Mode)
-       Warm off-white with soft blue/violet tint
+       SURFACES (Light Mode)
+       Warm off-white with soft blue tint
        ============================================ */
-    --surface-bg-primary: 225 25% 97%;
-    --surface-bg-secondary: 225 20% 94%;
+    --surface-bg-primary: 222 47% 97%;
+    --surface-bg-secondary: 222 35% 94%;
     --surface-card: 0 0% 100%;
     --surface-elevated: 0 0% 100%;
-    --surface-sunken: 225 20% 92%;
+    --surface-sunken: 222 30% 92%;
     --surface-overlay: 0 0% 100%;
+    --surface-glass: 0 0% 100% / 0.8;
     
     /* ============================================
-       TEXT TOKENS (Light Mode)
+       TEXT (Light Mode)
        ============================================ */
-    --text-primary: 225 25% 12%;
-    --text-secondary: 225 15% 35%;
-    --text-muted: 225 12% 50%;
+    --text-primary: 222 47% 11%;
+    --text-secondary: 222 20% 40%;
+    --text-muted: 222 15% 55%;
     --text-inverse: 0 0% 100%;
-    --text-accent: var(--accent-h) calc(var(--accent-s) - 10%) calc(var(--accent-l) - 10%);
+    --text-accent: var(--accent-h) 80% 45%;
     
     /* ============================================
-       GRADIENT TOKENS (Light Mode)
-       Subtle, low-contrast gradients
+       GRADIENTS (Light Mode)
        ============================================ */
-    --gradient-page: linear-gradient(180deg, hsl(225 25% 97%) 0%, hsl(225 20% 95%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(225 15% 98%) 100%);
-    --gradient-card-accent: linear-gradient(135deg, hsl(var(--accent-primary) / 0.05) 0%, hsl(0 0% 100%) 100%);
-    --gradient-progress: linear-gradient(90deg, hsl(var(--accent-primary)) 0%, hsl(var(--accent-glow)) 100%);
-    --gradient-metric: linear-gradient(180deg, hsl(var(--accent-primary) / 0.08) 0%, transparent 100%);
-    --gradient-chart-fill: linear-gradient(180deg, hsl(var(--accent-primary) / 0.15) 0%, hsl(var(--accent-primary) / 0.02) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(225 25% 97%) 0%, hsl(225 20% 95%) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(var(--accent-primary)) 0%, hsl(250 70% 60%) 100%);
+    --gradient-page: linear-gradient(180deg, hsl(222 47% 97%) 0%, hsl(222 35% 94%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(222 25% 98%) 100%);
+    --gradient-card-accent: linear-gradient(145deg, hsl(var(--accent-primary) / 0.06) 0%, hsl(0 0% 100%) 100%);
+    --gradient-glass: linear-gradient(145deg, hsl(0 0% 100% / 0.9) 0%, hsl(0 0% 100% / 0.7) 100%);
+    --gradient-nav: linear-gradient(180deg, hsl(0 0% 100% / 0.95) 0%, hsl(0 0% 100% / 0.85) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(var(--accent-primary)) 0%, hsl(255 85% 63%) 100%);
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(var(--accent-primary) / 0.15) 0%, transparent 70%);
     
     /* ============================================
-       ELEVATION & SHADOW TOKENS (Light Mode)
-       Soft, diffused shadows
+       ELEVATION / SHADOWS (Light Mode)
        ============================================ */
     --elevation-none: none;
-    --elevation-low: 0 2px 8px -2px hsl(225 30% 20% / 0.06), 0 4px 16px -4px hsl(225 30% 20% / 0.08);
-    --elevation-medium: 0 8px 24px -4px hsl(225 30% 20% / 0.1), 0 16px 48px -8px hsl(225 30% 20% / 0.12);
-    --elevation-high: 0 16px 48px -8px hsl(225 30% 20% / 0.15), 0 32px 64px -16px hsl(225 30% 20% / 0.18);
-    --elevation-glow: 0 0 24px -4px hsl(var(--accent-primary) / 0.3);
+    --elevation-xs: 0 1px 2px 0 hsl(222 30% 20% / 0.03);
+    --elevation-sm: 0 2px 8px -2px hsl(222 30% 20% / 0.08), 0 4px 12px -4px hsl(222 30% 20% / 0.06);
+    --elevation-md: 0 8px 24px -6px hsl(222 30% 20% / 0.12), 0 12px 36px -8px hsl(222 30% 20% / 0.08);
+    --elevation-lg: 0 16px 48px -8px hsl(222 30% 20% / 0.16), 0 24px 64px -12px hsl(222 30% 20% / 0.10);
+    --elevation-glow: 0 0 32px -8px hsl(var(--accent-primary) / 0.35), 0 0 16px -4px hsl(var(--accent-primary) / 0.25);
+    --elevation-glow-sm: 0 0 16px -4px hsl(var(--accent-primary) / 0.3);
     
     /* ============================================
-       SHAPE & RADIUS TOKENS
-       Rounded, friendly shapes (16-24px)
+       SHAPES
        ============================================ */
     --radius-xs: 0.375rem;
-    --radius-small: 0.5rem;
-    --radius-medium: 1rem;
-    --radius-large: 1.25rem;
-    --radius-xl: 1.5rem;
-    --radius-2xl: 2rem;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.25rem;
+    --radius-2xl: 1.5rem;
+    --radius-3xl: 2rem;
     --radius-full: 9999px;
     
     /* ============================================
-       CHART & DATA VISUALIZATION TOKENS
+       BORDERS
        ============================================ */
-    --chart-line-primary: var(--accent-primary);
-    --chart-fill-gradient: var(--gradient-chart-fill);
-    --chart-axis-muted: 225 10% 75%;
-    --chart-bar-active: var(--accent-primary);
-    --chart-bar-inactive: 225 10% 88%;
+    --border-subtle: 222 20% 92%;
+    --border-default: 222 18% 88%;
+    --border-strong: 222 15% 80%;
+    --border-glass: 0 0% 100% / 0.3;
     
     /* ============================================
-       MOTION TOKENS
-       Gentle, calming transitions
+       CHARTS
+       ============================================ */
+    --chart-line-primary: var(--accent-primary);
+    --chart-fill-gradient: linear-gradient(180deg, hsl(var(--accent-primary) / 0.2) 0%, hsl(var(--accent-primary) / 0.02) 100%);
+    --chart-axis-muted: 222 10% 75%;
+    --chart-bar-active: var(--accent-primary);
+    --chart-bar-inactive: 222 10% 88%;
+    
+    /* ============================================
+       MOTION
        ============================================ */
     --motion-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --motion-standard: 250ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -119,23 +126,16 @@
     --motion-gentle: 350ms cubic-bezier(0.25, 0.1, 0.25, 1);
     
     /* ============================================
-       BORDER TOKENS
+       HR ZONES
        ============================================ */
-    --border-subtle: 225 15% 92%;
-    --border-default: 225 15% 88%;
-    --border-strong: 225 12% 80%;
+    --hr-zone-1: 200 70% 55%;
+    --hr-zone-2: 158 60% 48%;
+    --hr-zone-3: 45 90% 50%;
+    --hr-zone-4: 25 95% 52%;
+    --hr-zone-5: 0 80% 52%;
     
     /* ============================================
-       HEART RATE ZONE TOKENS
-       ============================================ */
-    --hr-zone-1: 200 60% 55%;
-    --hr-zone-2: 158 50% 50%;
-    --hr-zone-3: 45 85% 55%;
-    --hr-zone-4: 25 90% 55%;
-    --hr-zone-5: 0 75% 55%;
-    
-    /* ============================================
-       SHADCN COMPATIBILITY MAPPINGS
+       SHADCN MAPPINGS
        ============================================ */
     --background: var(--surface-bg-primary);
     --foreground: var(--text-primary);
@@ -156,13 +156,13 @@
     --success: var(--status-success);
     --success-foreground: 0 0% 100%;
     --warning: var(--status-warning);
-    --warning-foreground: 225 25% 12%;
+    --warning-foreground: 222 47% 11%;
     --border: var(--border-default);
     --input: var(--border-default);
     --ring: var(--accent-primary);
-    --radius: var(--radius-large);
+    --radius: var(--radius-xl);
     
-    /* Sidebar tokens */
+    /* Sidebar */
     --sidebar-background: var(--surface-bg-primary);
     --sidebar-foreground: var(--text-secondary);
     --sidebar-primary: var(--accent-primary);
@@ -175,117 +175,121 @@
 
   /* ============================================
      DARK MODE
-     Deep navy/charcoal with subtle gradient
+     Deep navy with radial gradient glow
      Premium, calm, confident
      ============================================ */
   .dark {
-    /* Accent colors - slightly brighter in dark mode */
-    --accent-primary: var(--accent-h) calc(var(--accent-s) + 5%) calc(var(--accent-l) + 8%);
-    --accent-primary-soft: var(--accent-h) calc(var(--accent-s) * 0.4) 25%;
-    --accent-primary-subtle: var(--accent-h) calc(var(--accent-s) * 0.35) 18%;
+    /* Accent - slightly brighter in dark */
+    --accent-primary: var(--accent-h) var(--accent-s) 60%;
+    --accent-primary-soft: var(--accent-h) 50% 20%;
+    --accent-primary-subtle: var(--accent-h) 45% 15%;
     --accent-on-primary: 0 0% 100%;
-    --accent-glow: var(--accent-h) var(--accent-s) 70%;
+    --accent-glow: var(--accent-h) 100% 70%;
     
-    /* Status colors - slightly muted in dark mode */
-    --status-success: 158 50% 48%;
-    --status-success-soft: 158 35% 18%;
-    --status-warning: 38 70% 55%;
-    --status-warning-soft: 38 50% 18%;
-    --status-error: 0 65% 55%;
-    --status-error-soft: 0 45% 18%;
+    /* Status */
+    --status-success: 158 55% 50%;
+    --status-success-soft: 158 40% 15%;
+    --status-warning: 38 80% 55%;
+    --status-warning-soft: 38 55% 15%;
+    --status-error: 0 70% 55%;
+    --status-error-soft: 0 50% 15%;
     
-    /* Surfaces - deep navy/charcoal with subtle warmth */
-    --surface-bg-primary: 225 30% 7%;
-    --surface-bg-secondary: 225 25% 10%;
-    --surface-card: 225 25% 12%;
-    --surface-elevated: 225 22% 15%;
-    --surface-sunken: 225 30% 5%;
-    --surface-overlay: 225 25% 14%;
+    /* Surfaces - deep navy with subtle warmth */
+    --surface-bg-primary: 222 47% 6%;
+    --surface-bg-secondary: 222 40% 9%;
+    --surface-card: 222 40% 11%;
+    --surface-elevated: 222 38% 14%;
+    --surface-sunken: 222 50% 4%;
+    --surface-overlay: 222 38% 13%;
+    --surface-glass: 222 40% 12% / 0.85;
     
-    /* Text - clean, high readability */
-    --text-primary: 225 20% 95%;
-    --text-secondary: 225 15% 70%;
-    --text-muted: 225 12% 50%;
-    --text-inverse: 225 30% 7%;
-    --text-accent: var(--accent-h) calc(var(--accent-s) + 15%) calc(var(--accent-l) + 18%);
+    /* Text */
+    --text-primary: 222 20% 96%;
+    --text-secondary: 222 15% 68%;
+    --text-muted: 222 12% 48%;
+    --text-inverse: 222 47% 6%;
+    --text-accent: var(--accent-h) 90% 72%;
     
-    /* Gradients - subtle, premium */
-    --gradient-page: linear-gradient(180deg, hsl(225 30% 7%) 0%, hsl(225 35% 5%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(225 25% 13%) 0%, hsl(225 25% 11%) 100%);
-    --gradient-card-accent: linear-gradient(135deg, hsl(var(--accent-primary) / 0.12) 0%, hsl(225 25% 12%) 100%);
-    --gradient-progress: linear-gradient(90deg, hsl(var(--accent-primary)) 0%, hsl(var(--accent-glow)) 100%);
-    --gradient-metric: linear-gradient(180deg, hsl(var(--accent-primary) / 0.15) 0%, transparent 100%);
-    --gradient-chart-fill: linear-gradient(180deg, hsl(var(--accent-primary) / 0.25) 0%, hsl(var(--accent-primary) / 0.03) 100%);
-    --gradient-surface: linear-gradient(180deg, hsl(225 30% 7%) 0%, hsl(225 35% 5%) 100%);
-    --gradient-premium: linear-gradient(135deg, hsl(var(--accent-primary)) 0%, hsl(260 70% 55%) 100%);
+    /* Gradients - premium deep navy */
+    --gradient-page: 
+      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(var(--accent-h) 60% 15% / 0.5) 0%, transparent 50%),
+      linear-gradient(180deg, hsl(222 47% 7%) 0%, hsl(222 50% 4%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(222 40% 13%) 0%, hsl(222 40% 10%) 100%);
+    --gradient-card-accent: linear-gradient(145deg, hsl(var(--accent-primary) / 0.15) 0%, hsl(222 40% 11%) 100%);
+    --gradient-glass: linear-gradient(145deg, hsl(222 40% 14% / 0.9) 0%, hsl(222 40% 11% / 0.8) 100%);
+    --gradient-nav: linear-gradient(180deg, hsl(222 40% 10% / 0.98) 0%, hsl(222 40% 8% / 0.95) 100%);
+    --gradient-premium: linear-gradient(135deg, hsl(var(--accent-primary)) 0%, hsl(255 85% 65%) 100%);
+    --gradient-glow: radial-gradient(ellipse at 50% 0%, hsl(var(--accent-primary) / 0.25) 0%, transparent 60%);
     
-    /* Shadows - minimal, subtle glow */
-    --elevation-low: 0 2px 8px -2px hsl(0 0% 0% / 0.3), 0 4px 16px -4px hsl(0 0% 0% / 0.4);
-    --elevation-medium: 0 8px 24px -4px hsl(0 0% 0% / 0.5), 0 16px 48px -8px hsl(0 0% 0% / 0.6);
-    --elevation-high: 0 16px 48px -8px hsl(0 0% 0% / 0.7), 0 32px 64px -16px hsl(0 0% 0% / 0.8);
-    --elevation-glow: 0 0 32px -4px hsl(var(--accent-primary) / 0.4);
+    /* Shadows - subtle with glow */
+    --elevation-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --elevation-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.4), 0 4px 12px -4px hsl(0 0% 0% / 0.3);
+    --elevation-md: 0 8px 24px -6px hsl(0 0% 0% / 0.5), 0 12px 36px -8px hsl(0 0% 0% / 0.4);
+    --elevation-lg: 0 16px 48px -8px hsl(0 0% 0% / 0.6), 0 24px 64px -12px hsl(0 0% 0% / 0.5);
+    --elevation-glow: 0 0 40px -10px hsl(var(--accent-primary) / 0.5), 0 0 20px -5px hsl(var(--accent-primary) / 0.3);
+    --elevation-glow-sm: 0 0 20px -5px hsl(var(--accent-primary) / 0.4);
     
-    /* Borders - subtle, barely visible */
-    --border-subtle: 225 20% 16%;
-    --border-default: 225 18% 20%;
-    --border-strong: 225 15% 28%;
+    /* Borders - barely visible */
+    --border-subtle: 222 30% 14%;
+    --border-default: 222 25% 18%;
+    --border-strong: 222 20% 25%;
+    --border-glass: 222 30% 25% / 0.5;
     
-    /* Chart tokens */
-    --chart-axis-muted: 225 10% 35%;
-    --chart-bar-inactive: 225 15% 22%;
-    
-    /* Destructive */
-    --destructive: var(--status-error);
+    /* Charts */
+    --chart-axis-muted: 222 15% 30%;
+    --chart-bar-inactive: 222 20% 18%;
   }
   
   /* ============================================
-     ACCENT COLOR PRESETS
-     Electric blue is the default/primary
+     ACCENT PRESETS
      ============================================ */
   [data-accent="sage"] {
     --accent-h: 158;
-    --accent-s: 45%;
+    --accent-s: 50%;
     --accent-l: 48%;
   }
   
   [data-accent="mint"] {
     --accent-h: 168;
-    --accent-s: 50%;
+    --accent-s: 55%;
     --accent-l: 50%;
   }
   
   [data-accent="ocean"] {
     --accent-h: 200;
-    --accent-s: 70%;
+    --accent-s: 75%;
     --accent-l: 52%;
   }
   
   [data-accent="lavender"] {
     --accent-h: 260;
-    --accent-s: 55%;
+    --accent-s: 60%;
     --accent-l: 58%;
   }
   
   [data-accent="coral"] {
     --accent-h: 15;
-    --accent-s: 70%;
+    --accent-s: 75%;
     --accent-l: 55%;
   }
   
   [data-accent="gold"] {
     --accent-h: 42;
-    --accent-s: 75%;
+    --accent-s: 80%;
     --accent-l: 52%;
   }
   
-  /* Electric Blue - Default for AIO Fitness */
+  /* Electric Blue - Default */
   [data-accent="electric"] {
-    --accent-h: 220;
-    --accent-s: 80%;
-    --accent-l: 55%;
+    --accent-h: 217;
+    --accent-s: 91%;
+    --accent-l: 60%;
   }
 }
 
+/* ============================================
+   BASE STYLES
+   ============================================ */
 @layer base {
   * {
     @apply border-border;
@@ -298,182 +302,138 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply text-foreground font-sans;
     font-family: 'Outfit', system-ui, sans-serif;
-    transition: background-color var(--motion-standard), color var(--motion-standard);
     background: var(--gradient-page);
     min-height: 100vh;
   }
 }
 
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
 @layer utilities {
-  /* ============================================
-     ELEVATION UTILITIES
-     ============================================ */
-  .elevation-none {
-    box-shadow: var(--elevation-none);
+  /* Elevation utilities */
+  .elevation-none { box-shadow: var(--elevation-none); }
+  .elevation-xs { box-shadow: var(--elevation-xs); }
+  .elevation-sm { box-shadow: var(--elevation-sm); }
+  .elevation-md { box-shadow: var(--elevation-md); }
+  .elevation-lg { box-shadow: var(--elevation-lg); }
+  .elevation-glow { box-shadow: var(--elevation-glow); }
+  .elevation-glow-sm { box-shadow: var(--elevation-glow-sm); }
+  
+  /* Legacy shadow mapping */
+  .shadow-card { box-shadow: var(--elevation-sm); }
+  .shadow-soft { box-shadow: var(--elevation-md); }
+  .shadow-elevated { box-shadow: var(--elevation-lg); }
+  .shadow-glow { box-shadow: var(--elevation-glow); }
+
+  /* Gradient utilities */
+  .gradient-page { background: var(--gradient-page); }
+  .gradient-card { background: var(--gradient-card); }
+  .gradient-card-accent { background: var(--gradient-card-accent); }
+  .gradient-glass { background: var(--gradient-glass); }
+  .gradient-nav { background: var(--gradient-nav); }
+  .gradient-premium { background: var(--gradient-premium); }
+  .gradient-glow { background: var(--gradient-glow); }
+  
+  /* Glass effect utilities */
+  .glass {
+    background: var(--gradient-glass);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
   }
   
-  .elevation-low {
-    box-shadow: var(--elevation-low);
-  }
-  
-  .elevation-medium {
-    box-shadow: var(--elevation-medium);
-  }
-  
-  .elevation-high {
-    box-shadow: var(--elevation-high);
-  }
-  
-  .elevation-glow {
-    box-shadow: var(--elevation-glow);
-  }
-  
-  /* Legacy shadow utilities (mapped to elevation) */
-  .shadow-soft {
-    box-shadow: var(--elevation-medium);
-  }
-  
-  .shadow-card {
-    box-shadow: var(--elevation-low);
-  }
-  
-  .shadow-elevated {
-    box-shadow: var(--elevation-high);
-  }
-  
-  .shadow-glow {
-    box-shadow: var(--elevation-glow);
+  .glass-subtle {
+    background: hsl(var(--surface-glass));
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
   }
 
-  /* ============================================
-     SURFACE UTILITIES
-     ============================================ */
-  .surface-elevated {
-    background-color: hsl(var(--surface-elevated));
-  }
+  /* Surface utilities */
+  .surface-card { background-color: hsl(var(--surface-card)); }
+  .surface-elevated { background-color: hsl(var(--surface-elevated)); }
+  .surface-sunken { background-color: hsl(var(--surface-sunken)); }
 
-  .surface-sunken {
-    background-color: hsl(var(--surface-sunken));
-  }
-  
-  .surface-card {
-    background-color: hsl(var(--surface-card));
-  }
+  /* Safe area utilities */
+  .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+  .pt-safe { padding-top: max(0.75rem, env(safe-area-inset-top)); }
 
-  /* ============================================
-     GRADIENT UTILITIES
-     ============================================ */
-  .gradient-page {
-    background: var(--gradient-page);
-  }
-  
-  .gradient-card {
-    background: var(--gradient-card);
-  }
-  
-  .gradient-card-accent {
-    background: var(--gradient-card-accent);
-  }
-  
-  .gradient-progress {
-    background: var(--gradient-progress);
-  }
-  
-  .gradient-metric {
-    background: var(--gradient-metric);
-  }
-  
-  .gradient-surface {
-    background: var(--gradient-surface);
-  }
-  
-  .gradient-premium {
-    background: var(--gradient-premium);
-  }
-
-  /* ============================================
-     SAFE AREA UTILITIES (Mobile)
-     ============================================ */
-  .pb-safe {
-    padding-bottom: max(1rem, env(safe-area-inset-bottom));
-  }
-
-  .pt-safe {
-    padding-top: max(0.75rem, env(safe-area-inset-top));
-  }
-
-  /* ============================================
-     HR ZONE UTILITIES
-     ============================================ */
-  .hr-zone-1 { color: hsl(var(--hr-zone-1)); }
-  .hr-zone-2 { color: hsl(var(--hr-zone-2)); }
-  .hr-zone-3 { color: hsl(var(--hr-zone-3)); }
-  .hr-zone-4 { color: hsl(var(--hr-zone-4)); }
-  .hr-zone-5 { color: hsl(var(--hr-zone-5)); }
-  
-  .bg-hr-zone-1 { background-color: hsl(var(--hr-zone-1)); }
-  .bg-hr-zone-2 { background-color: hsl(var(--hr-zone-2)); }
-  .bg-hr-zone-3 { background-color: hsl(var(--hr-zone-3)); }
-  .bg-hr-zone-4 { background-color: hsl(var(--hr-zone-4)); }
-  .bg-hr-zone-5 { background-color: hsl(var(--hr-zone-5)); }
-  
-  /* ============================================
-     TEXT SEMANTIC UTILITIES
-     ============================================ */
+  /* Text utilities */
   .text-primary-content { color: hsl(var(--text-primary)); }
   .text-secondary-content { color: hsl(var(--text-secondary)); }
   .text-muted-content { color: hsl(var(--text-muted)); }
   .text-accent-content { color: hsl(var(--text-accent)); }
   
-  /* ============================================
-     STATUS COLOR UTILITIES
-     ============================================ */
+  /* Status utilities */
   .text-success { color: hsl(var(--status-success)); }
   .text-warning { color: hsl(var(--status-warning)); }
   .text-error { color: hsl(var(--status-error)); }
-  
   .bg-success { background-color: hsl(var(--status-success)); }
   .bg-success-soft { background-color: hsl(var(--status-success-soft)); }
   .bg-warning { background-color: hsl(var(--status-warning)); }
   .bg-warning-soft { background-color: hsl(var(--status-warning-soft)); }
   .bg-error { background-color: hsl(var(--status-error)); }
   .bg-error-soft { background-color: hsl(var(--status-error-soft)); }
+
+  /* HR Zone utilities */
+  .hr-zone-1 { color: hsl(var(--hr-zone-1)); }
+  .hr-zone-2 { color: hsl(var(--hr-zone-2)); }
+  .hr-zone-3 { color: hsl(var(--hr-zone-3)); }
+  .hr-zone-4 { color: hsl(var(--hr-zone-4)); }
+  .hr-zone-5 { color: hsl(var(--hr-zone-5)); }
+  .bg-hr-zone-1 { background-color: hsl(var(--hr-zone-1)); }
+  .bg-hr-zone-2 { background-color: hsl(var(--hr-zone-2)); }
+  .bg-hr-zone-3 { background-color: hsl(var(--hr-zone-3)); }
+  .bg-hr-zone-4 { background-color: hsl(var(--hr-zone-4)); }
+  .bg-hr-zone-5 { background-color: hsl(var(--hr-zone-5)); }
+
+  /* Premium card classes */
+  .card-glass {
+    background: var(--gradient-glass);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: var(--radius-xl);
+    border: 1px solid hsl(var(--border-glass));
+    box-shadow: var(--elevation-sm);
+  }
   
-  /* ============================================
-     PREMIUM CARD STYLES
-     ============================================ */
-  .card-premium {
+  .card-glass-accent {
+    background: var(--gradient-card-accent);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border-radius: var(--radius-xl);
+    border: 1px solid hsl(var(--accent-primary) / 0.2);
+    box-shadow: var(--elevation-sm), var(--elevation-glow-sm);
+  }
+  
+  .card-solid {
     background: var(--gradient-card);
     border-radius: var(--radius-xl);
-    box-shadow: var(--elevation-low);
     border: 1px solid hsl(var(--border-subtle));
+    box-shadow: var(--elevation-sm);
   }
   
-  .card-premium-accent {
-    background: var(--gradient-card-accent);
-    border-radius: var(--radius-xl);
-    box-shadow: var(--elevation-medium);
-    border: 1px solid hsl(var(--accent-primary) / 0.15);
-  }
-  
-  /* ============================================
-     BUTTON PREMIUM STYLES
-     ============================================ */
-  .btn-premium {
-    background: var(--gradient-premium);
-    box-shadow: var(--elevation-low), var(--elevation-glow);
+  /* Premium button glow */
+  .btn-glow {
+    box-shadow: var(--elevation-glow);
     transition: all var(--motion-standard);
   }
   
-  .btn-premium:hover {
-    box-shadow: var(--elevation-medium), 0 0 40px -4px hsl(var(--accent-primary) / 0.5);
+  .btn-glow:hover {
+    box-shadow: var(--elevation-glow), 0 0 48px -8px hsl(var(--accent-primary) / 0.6);
     transform: translateY(-1px);
   }
   
-  .btn-premium:active {
+  .btn-glow:active {
     transform: translateY(0);
+  }
+  
+  /* Metric highlight */
+  .metric-highlight {
+    background: linear-gradient(180deg, hsl(var(--accent-primary) / 0.12) 0%, transparent 100%);
+    border-radius: var(--radius-lg);
+    padding: 0.75rem 1rem;
   }
 }
 
@@ -491,43 +451,58 @@
   }
 }
 
-/* Ensure transitions don't flash on initial load */
+/* Prevent flash on load */
 html.no-transitions * {
   transition: none !important;
 }
 
-/* ============================================
-   SCROLLBAR STYLING (Dark mode)
-   ============================================ */
-.dark {
-  scrollbar-color: hsl(225 18% 22%) transparent;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--border-default));
-  border-radius: var(--radius-full);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--border-strong));
-}
-
-/* Hide scrollbar on mobile */
-@media (max-width: 768px) {
-  ::-webkit-scrollbar {
-    display: none;
+/* Custom scrollbar */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border-strong)) transparent;
   }
   
-  * {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border-strong));
+    border-radius: 3px;
+  }
+  
+  /* Hide scrollbar on mobile */
+  .scrollbar-none {
     scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Animated gradient shimmer */
+@layer utilities {
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--surface-card)) 0%,
+      hsl(var(--surface-elevated)) 50%,
+      hsl(var(--surface-card)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 }

@@ -133,20 +133,23 @@ export default function Progress() {
 
   if (loading || streakLoading) {
     return (
-      <div className="min-h-screen pt-safe px-4 pb-4 flex items-center justify-center">
+      <div className="min-h-screen gradient-page pt-safe px-4 pb-4 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-safe px-4 pb-24">
+    <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
+      {/* Ambient glow */}
+      <div className="fixed inset-0 gradient-glow pointer-events-none" />
+      
       {/* Header */}
-      <header className="pt-6 pb-4">
+      <header className="relative pt-14 pb-4">
         <motion.h1 
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-semibold tracking-tight"
+          className="text-2xl font-bold tracking-tight"
         >
           Progress
         </motion.h1>
@@ -154,14 +157,14 @@ export default function Progress() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="text-muted-foreground text-sm mt-1"
+          className="text-muted-foreground mt-1"
         >
           Track your journey
         </motion.p>
       </header>
 
       {/* Overview Cards */}
-      <div className="space-y-4 mt-4">
+      <div className="relative space-y-4 mt-4">
         {/* Streak Card */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -180,21 +183,21 @@ export default function Progress() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-card rounded-xl p-5 shadow-card border border-border/50"
+          className="card-glass p-5"
         >
           <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Weekly Volume
               </p>
-              <p className="text-2xl font-semibold mt-1">
+              <p className="text-2xl font-bold mt-1 text-foreground">
                 {currentWeekVolume > 0 
                   ? `${(currentWeekVolume / 1000).toFixed(1)}k kg`
                   : "No data"
                 }
               </p>
               {lastWeekVolume > 0 && (
-                <p className={`text-sm mt-0.5 flex items-center gap-1 ${volumeChange >= 0 ? 'text-accent-foreground' : 'text-muted-foreground'}`}>
+                <p className={`text-sm mt-0.5 flex items-center gap-1 font-medium ${volumeChange >= 0 ? 'text-status-success' : 'text-muted-foreground'}`}>
                   {volumeChange >= 0 ? (
                     <TrendingUp className="h-3.5 w-3.5" />
                   ) : (
@@ -204,12 +207,12 @@ export default function Progress() {
                 </p>
               )}
             </div>
-            <div className="h-10 w-10 rounded-full bg-accent-subtle flex items-center justify-center">
-              <Dumbbell className="h-5 w-5 text-accent-foreground" />
+            <div className="h-10 w-10 rounded-xl bg-primary/12 flex items-center justify-center">
+              <Dumbbell className="h-5 w-5 text-primary" />
             </div>
           </div>
           
-          {/* Simple bar chart */}
+          {/* Bar chart */}
           <div className="flex items-end gap-2 h-16 mt-4">
             {weeklyData.length > 0 ? weeklyData.map((week, i) => {
               const maxVolume = Math.max(...weeklyData.map(w => w.volume), 1);
@@ -219,7 +222,7 @@ export default function Progress() {
               return (
                 <div key={week.week} className="flex-1 flex flex-col items-center gap-1.5">
                   <div 
-                    className={`w-full rounded-md transition-all ${isLatest ? 'bg-chart-bar-active' : 'bg-chart-bar-inactive'}`}
+                    className={`w-full rounded-md transition-all ${isLatest ? 'bg-primary' : 'bg-primary/20'}`}
                     style={{ height: `${Math.max(height, 4)}%` }}
                   />
                   <span className="text-xs text-muted-foreground">{week.week}</span>
@@ -240,15 +243,15 @@ export default function Progress() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="bg-card rounded-xl p-4 shadow-card border border-border/50"
+            className="card-glass p-4"
           >
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 This Week
               </p>
             </div>
-            <p className="text-xl font-semibold">
+            <p className="text-xl font-bold text-foreground">
               {currentWeekSessions}
               <span className="text-muted-foreground text-base font-normal">
                 {" "}session{currentWeekSessions !== 1 ? 's' : ''}
@@ -261,15 +264,15 @@ export default function Progress() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-card rounded-xl p-4 shadow-card border border-border/50"
+            className="card-glass p-4"
           >
             <div className="flex items-center gap-2 mb-2">
               <Award className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 PRs
               </p>
             </div>
-            <p className="text-xl font-semibold">
+            <p className="text-xl font-bold text-foreground">
               {recentPRs.length}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -283,15 +286,15 @@ export default function Progress() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.22 }}
-          className="bg-card rounded-xl p-4 shadow-card border border-border/50"
+          className="card-glass p-4"
         >
           <div className="flex items-center gap-2 mb-2">
             <Timer className="h-4 w-4 text-muted-foreground" />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Total Training Time
             </p>
           </div>
-          <p className="text-xl font-semibold">
+          <p className="text-xl font-bold text-foreground">
             {Math.round(totalMinutes)}
             <span className="text-muted-foreground text-base font-normal"> minutes</span>
           </p>
@@ -306,7 +309,7 @@ export default function Progress() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.24 }}
         >
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
             Workout History
           </p>
           <WorkoutCalendar
@@ -320,9 +323,9 @@ export default function Progress() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.26 }}
-          className="bg-card rounded-xl p-4 shadow-card border border-border/50"
+          className="card-glass p-4"
         >
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
             Recent Personal Records
           </p>
           {recentPRs.length > 0 ? (
@@ -330,15 +333,15 @@ export default function Progress() {
               {recentPRs.map((pr, index) => (
                 <div 
                   key={index}
-                  className="flex items-center justify-between py-2 border-b border-border/50 last:border-0 last:pb-0"
+                  className="flex items-center justify-between py-2 border-b border-border/30 last:border-0 last:pb-0"
                 >
                   <div>
-                    <p className="font-medium text-sm">{pr.exercise_name}</p>
+                    <p className="font-medium text-sm text-foreground">{pr.exercise_name}</p>
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(pr.achieved_at), "MMM d, yyyy")}
                     </p>
                   </div>
-                  <p className="text-sm font-semibold text-accent-foreground">
+                  <p className="text-sm font-bold text-primary">
                     {pr.weight}kg × {pr.reps}
                   </p>
                 </div>

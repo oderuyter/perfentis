@@ -16,59 +16,64 @@ export function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/30 bg-card/90 backdrop-blur-xl pb-safe">
-      {/* Subtle gradient overlay for premium feel */}
-      <div className="absolute inset-0 bg-gradient-to-t from-transparent to-card/50 pointer-events-none" />
-      
-      <div className="relative flex items-center justify-around h-16 max-w-lg mx-auto px-2">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.to;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className="relative flex flex-col items-center justify-center flex-1 h-full py-2 group"
-            >
-              <div className="relative flex flex-col items-center">
-                {isActive && (
-                  <motion.div
-                    layoutId="nav-indicator"
-                    className="absolute -inset-2 rounded-xl bg-primary/15"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <div className="relative">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
+      {/* Glass background with subtle gradient */}
+      <div className="mx-3 mb-2 rounded-2xl border border-border/30 bg-card/85 backdrop-blur-xl shadow-lg dark:bg-surface-card/90 dark:border-border/20">
+        <div className="flex items-center justify-around h-16 px-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.to;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className="relative flex flex-col items-center justify-center flex-1 h-full py-2"
+              >
+                <div className="relative flex flex-col items-center">
+                  {/* Active background pill */}
                   {isActive && (
                     <motion.div
-                      layoutId="nav-glow"
-                      className="absolute inset-0 rounded-full bg-primary/30 blur-md"
+                      layoutId="nav-active-bg"
+                      className="absolute -inset-x-2 -inset-y-1 rounded-xl bg-primary/12 dark:bg-primary/15"
                       transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
-                  <item.icon
+                  
+                  {/* Icon with glow effect */}
+                  <div className="relative">
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-glow"
+                        className="absolute inset-0 rounded-full bg-primary/40 blur-lg scale-150"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <item.icon
+                      className={cn(
+                        "relative h-5 w-5 transition-colors duration-200",
+                        isActive
+                          ? "text-primary"
+                          : "text-muted-foreground/70"
+                      )}
+                      strokeWidth={isActive ? 2.5 : 1.8}
+                    />
+                  </div>
+                  
+                  {/* Label */}
+                  <span
                     className={cn(
-                      "relative h-5 w-5 transition-all duration-standard",
+                      "mt-1 text-[10px] font-medium transition-colors duration-200",
                       isActive
                         ? "text-primary"
-                        : "text-muted-foreground group-hover:text-foreground"
+                        : "text-muted-foreground/70"
                     )}
-                    strokeWidth={isActive ? 2.5 : 1.8}
-                  />
+                  >
+                    {item.label}
+                  </span>
                 </div>
-                <span
-                  className={cn(
-                    "mt-1.5 text-micro font-medium transition-all duration-standard",
-                    isActive
-                      ? "text-primary"
-                      : "text-muted-foreground group-hover:text-foreground"
-                  )}
-                >
-                  {item.label}
-                </span>
-              </div>
-            </NavLink>
-          );
-        })}
+              </NavLink>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );
