@@ -22,6 +22,7 @@ import FindCoach from "./pages/FindCoach";
 import Social from "./pages/Social";
 import Events from "./pages/Events";
 import Help from "./pages/Help";
+import Playlists from "./pages/Playlists";
 import GymPortalLayout from "./pages/gym-portal/GymPortalLayout";
 import GymDashboard from "./pages/gym-portal/GymDashboard";
 import GymMembers from "./pages/gym-portal/GymMembers";
@@ -133,8 +134,8 @@ function AppRoutes() {
         <Route path="/find-coach" element={<FindCoach />} />
         <Route path="/social" element={<Social />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/playlists" element={<Playlists />} />
         <Route path="/help" element={<Help />} />
-        <Route path="/workout/:id" element={<WorkoutDetail />} />
       </Route>
       <Route path="/gym-portal" element={<ProtectedRoute><GymPortalLayout /></ProtectedRoute>}>
         <Route index element={<GymDashboard />} />

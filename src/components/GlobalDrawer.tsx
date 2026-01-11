@@ -13,7 +13,8 @@ import {
   Building2,
   GraduationCap,
   Flag,
-  ShieldCheck
+  ShieldCheck,
+  Music
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ const allDrawerItems: DrawerItem[] = [
   { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
   { to: "/social", icon: MessageCircle, label: "Social", description: "Community feed" },
   { to: "/events", icon: Trophy, label: "Events & Competitions", description: "Compete and track" },
+  { to: "/playlists", icon: Music, label: "Playlists", description: "Workout music" },
   { to: "/profile", icon: Settings, label: "Settings", description: "App preferences" },
   { to: "/help", icon: HelpCircle, label: "Help & Support", description: "Get assistance" },
 ];

@@ -2700,6 +2700,42 @@ export type Database = {
           },
         ]
       }
+      music_provider_connections: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          provider: string
+          refresh_token: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          provider: string
+          refresh_token?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          provider?: string
+          refresh_token?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       nutrition_entries: {
         Row: {
           calories: number | null
@@ -2867,6 +2903,50 @@ export type Database = {
             columns: ["week_id"]
             isOneToOne: false
             referencedRelation: "plan_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlist_tracks: {
+        Row: {
+          artist: string
+          artwork_url: string | null
+          created_at: string
+          duration_seconds: number | null
+          external_track_id: string
+          id: string
+          position_index: number
+          saved_playlist_id: string
+          title: string
+        }
+        Insert: {
+          artist: string
+          artwork_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          external_track_id: string
+          id?: string
+          position_index: number
+          saved_playlist_id: string
+          title: string
+        }
+        Update: {
+          artist?: string
+          artwork_url?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          external_track_id?: string
+          id?: string
+          position_index?: number
+          saved_playlist_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_tracks_saved_playlist_id_fkey"
+            columns: ["saved_playlist_id"]
+            isOneToOne: false
+            referencedRelation: "saved_playlists"
             referencedColumns: ["id"]
           },
         ]
@@ -3068,6 +3148,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      saved_playlists: {
+        Row: {
+          cached_tracks_json: Json | null
+          cover_art_url: string | null
+          created_at: string
+          external_playlist_id: string
+          id: string
+          name: string
+          provider: string
+          track_count: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cached_tracks_json?: Json | null
+          cover_art_url?: string | null
+          created_at?: string
+          external_playlist_id: string
+          id?: string
+          name: string
+          provider: string
+          track_count?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cached_tracks_json?: Json | null
+          cover_art_url?: string | null
+          created_at?: string
+          external_playlist_id?: string
+          id?: string
+          name?: string
+          provider?: string
+          track_count?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       set_logs: {
         Row: {
