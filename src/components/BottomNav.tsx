@@ -1,10 +1,9 @@
-import { Home, Dumbbell, TrendingUp, UtensilsCrossed, Sparkles } from "lucide-react";
+import { Dumbbell, TrendingUp, UtensilsCrossed, Sparkles } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const navItems = [
-  { to: "/", icon: Home, label: "Home" },
   { to: "/train", icon: Dumbbell, label: "Train" },
   { to: "/progress", icon: TrendingUp, label: "Progress" },
   { to: "/nutrition", icon: UtensilsCrossed, label: "Nutrition" },
