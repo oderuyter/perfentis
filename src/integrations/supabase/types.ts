@@ -2907,6 +2907,102 @@ export type Database = {
           },
         ]
       }
+      playlist_library: {
+        Row: {
+          approved_by: string | null
+          cover_art_url: string | null
+          created_at: string
+          description: string | null
+          genre: string
+          id: string
+          name: string
+          platform: string
+          playlist_url: string
+          submitted_by: string | null
+          track_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          cover_art_url?: string | null
+          created_at?: string
+          description?: string | null
+          genre?: string
+          id?: string
+          name: string
+          platform: string
+          playlist_url: string
+          submitted_by?: string | null
+          track_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          cover_art_url?: string | null
+          created_at?: string
+          description?: string | null
+          genre?: string
+          id?: string
+          name?: string
+          platform?: string
+          playlist_url?: string
+          submitted_by?: string | null
+          track_count?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      playlist_submissions: {
+        Row: {
+          cover_art_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          platform: string
+          playlist_url: string
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_genre: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cover_art_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          platform: string
+          playlist_url: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_genre?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cover_art_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          platform?: string
+          playlist_url?: string
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_genre?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       playlist_tracks: {
         Row: {
           artist: string

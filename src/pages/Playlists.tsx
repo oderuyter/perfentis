@@ -1,59 +1,43 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Music, ChevronRight, ExternalLink, Plus, Check, Link2, Trash2 } from "lucide-react";
+import { Music, ChevronRight, ExternalLink, Plus, Check, Link2, Trash2, Send, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useMusicConnections, useSavedPlaylists, type MusicProvider, type PlaylistTrack } from "@/hooks/useMusicConnections";
+import {
+  usePlaylistLibrary,
+  useMySubmissions,
+  PLAYLIST_GENRES,
+  PLATFORM_LABELS,
+  PLATFORM_COLORS,
+  type PlaylistPlatform,
+  type PlaylistLibraryItem,
+} from "@/hooks/usePlaylistLibrary";
 import { PlaylistDetailSheet } from "@/components/playlists/PlaylistDetailSheet";
+import { SubmitPlaylistSheet } from "@/components/playlists/SubmitPlaylistSheet";
 import { useAuth } from "@/hooks/useAuth";
-
-// Mock playlist data for browsing
-const mockBrowsePlaylists = [
-  {
-    provider: "spotify" as MusicProvider,
-    external_playlist_id: "pl1",
-    name: "Workout Beats",
-    cover_art_url: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=300&h=300&fit=crop",
-    track_count: 42,
-    cached_tracks_json: [
-      { external_track_id: "t1", title: "Stronger", artist: "Kanye West", duration_seconds: 312, artwork_url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=100", position_index: 0 },
-      { external_track_id: "t2", title: "Pump It", artist: "Black Eyed Peas", duration_seconds: 213, artwork_url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=100", position_index: 1 },
-      { external_track_id: "t3", title: "Eye of the Tiger", artist: "Survivor", duration_seconds: 245, artwork_url: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=100", position_index: 2 },
-    ] as PlaylistTrack[],
-  },
-  {
-    provider: "spotify" as MusicProvider,
-    external_playlist_id: "pl2",
-    name: "Running Mix",
-    cover_art_url: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=300&h=300&fit=crop",
-    track_count: 28,
-    cached_tracks_json: [
-      { external_track_id: "t4", title: "Run Boy Run", artist: "Woodkid", duration_seconds: 216, artwork_url: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=100", position_index: 0 },
-    ] as PlaylistTrack[],
-  },
-  {
-    provider: "youtube_music" as MusicProvider,
-    external_playlist_id: "pl3",
-    name: "Gym Pump",
-    cover_art_url: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=300&h=300&fit=crop",
-    track_count: 56,
-    cached_tracks_json: [] as PlaylistTrack[],
-  },
-  {
-    provider: "apple_music" as MusicProvider,
-    external_playlist_id: "pl4",
-    name: "Morning Motivation",
-    cover_art_url: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=300&h=300&fit=crop",
-    track_count: 35,
-    cached_tracks_json: [] as PlaylistTrack[],
-  },
-];
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const providerLogos: Record<MusicProvider, string> = {
   spotify: "🎵",
   youtube_music: "▶️",
   apple_music: "🍎",
+};
+
+const platformLogos: Record<PlaylistPlatform, string> = {
+  spotify: "🎵",
+  youtube_music: "▶️",
+  apple_music: "🍎",
+  soundcloud: "☁️",
+  tidal: "🌊",
 };
 
 interface ProviderCardProps {
@@ -128,39 +112,23 @@ export default function Playlists() {
   
   const { playlists: savedPlaylists, savePlaylist, removePlaylist, isSaving } = useSavedPlaylists();
   
-  const [selectedPlaylist, setSelectedPlaylist] = useState<typeof mockBrowsePlaylists[0] | null>(null);
+  // Library browsing state
+  const [platformFilter, setPlatformFilter] = useState<PlaylistPlatform | undefined>();
+  const [genreFilter, setGenreFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [providerFilter, setProviderFilter] = useState<MusicProvider | "all">("all");
-
-  // Filter browse playlists based on connected providers
-  const connectedProviders = connections
-    .filter(c => c.status === "connected")
-    .map(c => c.provider);
   
-  const availablePlaylists = mockBrowsePlaylists.filter(p =>
-    connectedProviders.includes(p.provider)
+  // Sheet states
+  const [selectedPlaylist, setSelectedPlaylist] = useState<PlaylistLibraryItem | null>(null);
+  const [submitSheetOpen, setSubmitSheetOpen] = useState(false);
+  
+  // Fetch library and submissions
+  const { data: libraryPlaylists = [], isLoading: loadingLibrary } = usePlaylistLibrary(platformFilter, genreFilter);
+  const { data: mySubmissions = [], isLoading: loadingSubmissions } = useMySubmissions();
+
+  // Filter library by search
+  const filteredLibrary = libraryPlaylists.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const filteredPlaylists = availablePlaylists.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesProvider = providerFilter === "all" || p.provider === providerFilter;
-    return matchesSearch && matchesProvider;
-  });
-
-  const isPlaylistSaved = (externalId: string, provider: MusicProvider) => {
-    return savedPlaylists.some(p => p.external_playlist_id === externalId && p.provider === provider);
-  };
-
-  const handleSavePlaylist = (playlist: typeof mockBrowsePlaylists[0]) => {
-    savePlaylist({
-      provider: playlist.provider,
-      external_playlist_id: playlist.external_playlist_id,
-      name: playlist.name,
-      cover_art_url: playlist.cover_art_url,
-      track_count: playlist.track_count,
-      cached_tracks_json: playlist.cached_tracks_json,
-    });
-  };
 
   const providers: MusicProvider[] = ["spotify", "youtube_music", "apple_music"];
 
@@ -190,16 +158,137 @@ export default function Playlists() {
           Playlists
         </motion.h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Connect music services and save your workout playlists
+          Browse the library, save favorites, and submit your own
         </p>
       </header>
 
-      <Tabs defaultValue="saved" className="mt-4">
-        <TabsList className="w-full grid grid-cols-3 mb-4">
+      <Tabs defaultValue="library" className="mt-4">
+        <TabsList className="w-full grid grid-cols-4 mb-4">
+          <TabsTrigger value="library">Library</TabsTrigger>
           <TabsTrigger value="saved">Saved</TabsTrigger>
-          <TabsTrigger value="browse">Browse</TabsTrigger>
+          <TabsTrigger value="submissions">My Submissions</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
         </TabsList>
+
+        {/* Library Tab */}
+        <TabsContent value="library" className="space-y-4">
+          {/* Filters */}
+          <div className="flex gap-2 flex-wrap">
+            <input
+              type="text"
+              placeholder="Search playlists..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 min-w-[150px] h-10 px-4 rounded-xl bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+            <Select
+              value={platformFilter || "all"}
+              onValueChange={(v) => setPlatformFilter(v === "all" ? undefined : v as PlaylistPlatform)}
+            >
+              <SelectTrigger className="w-32 rounded-xl bg-muted border-0">
+                <SelectValue placeholder="Platform" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Platforms</SelectItem>
+                {(Object.entries(PLATFORM_LABELS) as [PlaylistPlatform, string][]).map(
+                  ([key, label]) => (
+                    <SelectItem key={key} value={key}>
+                      {label}
+                    </SelectItem>
+                  )
+                )}
+              </SelectContent>
+            </Select>
+            <Select value={genreFilter} onValueChange={setGenreFilter}>
+              <SelectTrigger className="w-32 rounded-xl bg-muted border-0">
+                <SelectValue placeholder="Genre" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Genres</SelectItem>
+                {PLAYLIST_GENRES.map((genre) => (
+                  <SelectItem key={genre} value={genre}>
+                    {genre.charAt(0).toUpperCase() + genre.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Submit CTA */}
+          <motion.button
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => setSubmitSheetOpen(true)}
+            className="w-full card-glass p-4 flex items-center gap-3 text-left group"
+          >
+            <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Plus className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium">Submit a Playlist</p>
+              <p className="text-xs text-muted-foreground">
+                Share your favorite workout playlists with the community
+              </p>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+          </motion.button>
+
+          {/* Library Grid */}
+          {loadingLibrary ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : filteredLibrary.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="card-glass p-8 text-center"
+            >
+              <Music className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground mb-2">No playlists found</p>
+              <p className="text-xs text-muted-foreground">
+                Be the first to submit a playlist!
+              </p>
+            </motion.div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {filteredLibrary.map((playlist, index) => (
+                <motion.button
+                  key={playlist.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                  onClick={() => setSelectedPlaylist(playlist)}
+                  className="card-glass overflow-hidden text-left group"
+                >
+                  <div className="relative aspect-square">
+                    {playlist.cover_art_url ? (
+                      <img
+                        src={playlist.cover_art_url}
+                        alt={playlist.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <Music className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <p className="font-medium text-white text-sm truncate">{playlist.name}</p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                          {playlist.genre}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="absolute top-2 right-2">
+                      <span className="text-sm">{platformLogos[playlist.platform as PlaylistPlatform]}</span>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         {/* Saved Playlists Tab */}
         <TabsContent value="saved" className="space-y-4">
@@ -222,20 +311,12 @@ export default function Playlists() {
                 const needsReconnect = !connection || connection.status !== "connected";
                 
                 return (
-                  <motion.button
+                  <motion.div
                     key={playlist.id}
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
-                    onClick={() => !needsReconnect && setSelectedPlaylist({
-                      provider: playlist.provider,
-                      external_playlist_id: playlist.external_playlist_id,
-                      name: playlist.name,
-                      cover_art_url: playlist.cover_art_url || "",
-                      track_count: playlist.track_count,
-                      cached_tracks_json: (playlist.cached_tracks_json as PlaylistTrack[]) || [],
-                    })}
-                    className="w-full card-glass p-3 flex items-center gap-3 text-left"
+                    className="w-full card-glass p-3 flex items-center gap-3"
                   >
                     {playlist.cover_art_url ? (
                       <img
@@ -263,101 +344,98 @@ export default function Playlists() {
                       </div>
                     </div>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removePlaylist(playlist.id);
-                      }}
+                      onClick={() => removePlaylist(playlist.id)}
                       className="p-2 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
-                  </motion.button>
+                  </motion.div>
                 );
               })}
             </div>
           )}
         </TabsContent>
 
-        {/* Browse Tab */}
-        <TabsContent value="browse" className="space-y-4">
-          {connectedProviders.length === 0 ? (
+        {/* My Submissions Tab */}
+        <TabsContent value="submissions" className="space-y-4">
+          {/* Submit Button */}
+          <Button onClick={() => setSubmitSheetOpen(true)} className="w-full">
+            <Plus className="h-4 w-4 mr-2" />
+            Submit a Playlist
+          </Button>
+
+          {loadingSubmissions ? (
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+          ) : mySubmissions.length === 0 ? (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="card-glass p-8 text-center"
             >
-              <Link2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-              <p className="text-muted-foreground mb-4">No music services connected</p>
+              <Send className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-muted-foreground mb-2">No submissions yet</p>
               <p className="text-xs text-muted-foreground">
-                Go to Services tab to connect Spotify, YouTube Music, or Apple Music
+                Submit your favorite playlists for the community to enjoy
               </p>
             </motion.div>
           ) : (
-            <>
-              {/* Search and filter */}
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Search playlists..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="flex-1 h-10 px-4 rounded-xl bg-muted border-0 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <select
-                  value={providerFilter}
-                  onChange={(e) => setProviderFilter(e.target.value as MusicProvider | "all")}
-                  className="h-10 px-3 rounded-xl bg-muted border-0 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            <div className="space-y-3">
+              {mySubmissions.map((submission, index) => (
+                <motion.div
+                  key={submission.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="card-glass p-4"
                 >
-                  <option value="all">All</option>
-                  {connectedProviders.map(p => (
-                    <option key={p} value={p}>{providerLabels[p]}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Playlist grid */}
-              <div className="grid grid-cols-2 gap-3">
-                {filteredPlaylists.map((playlist, index) => {
-                  const saved = isPlaylistSaved(playlist.external_playlist_id, playlist.provider);
-                  
-                  return (
-                    <motion.button
-                      key={playlist.external_playlist_id}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => setSelectedPlaylist(playlist)}
-                      className="card-glass overflow-hidden text-left group"
-                    >
-                      <div className="relative aspect-square">
-                        <img
-                          src={playlist.cover_art_url}
-                          alt={playlist.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                        <div className="absolute bottom-2 left-2 right-2">
-                          <p className="font-medium text-white text-sm truncate">{playlist.name}</p>
-                          <p className="text-xs text-white/70">{playlist.track_count} tracks</p>
-                        </div>
-                        <div className="absolute top-2 right-2 flex items-center gap-1">
-                          <span className="text-sm">{providerLogos[playlist.provider]}</span>
-                          {saved && (
-                            <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center">
-                              <Check className="h-3 w-3 text-primary-foreground" />
-                            </span>
-                          )}
-                        </div>
+                  <div className="flex items-start gap-3">
+                    {submission.cover_art_url ? (
+                      <img
+                        src={submission.cover_art_url}
+                        alt={submission.name}
+                        className="h-12 w-12 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
+                        <Music className="h-5 w-5 text-muted-foreground" />
                       </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
-
-              {filteredPlaylists.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">No playlists found</p>
-              )}
-            </>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{submission.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge
+                          variant="secondary"
+                          style={{
+                            backgroundColor: `${PLATFORM_COLORS[submission.platform]}20`,
+                            color: PLATFORM_COLORS[submission.platform],
+                          }}
+                          className="text-xs"
+                        >
+                          {PLATFORM_LABELS[submission.platform]}
+                        </Badge>
+                        <Badge
+                          variant={
+                            submission.status === "approved"
+                              ? "default"
+                              : submission.status === "rejected"
+                              ? "destructive"
+                              : "outline"
+                          }
+                          className="text-xs"
+                        >
+                          {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                        </Badge>
+                      </div>
+                      {submission.rejection_reason && (
+                        <p className="text-xs text-destructive mt-2">
+                          {submission.rejection_reason}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           )}
         </TabsContent>
 
@@ -382,17 +460,99 @@ export default function Playlists() {
         </TabsContent>
       </Tabs>
 
-      {/* Playlist Detail Sheet */}
+      {/* Library Playlist Detail Sheet */}
       {selectedPlaylist && (
-        <PlaylistDetailSheet
+        <LibraryPlaylistSheet
           playlist={selectedPlaylist}
           isOpen={!!selectedPlaylist}
           onClose={() => setSelectedPlaylist(null)}
-          isSaved={isPlaylistSaved(selectedPlaylist.external_playlist_id, selectedPlaylist.provider)}
-          onSave={() => handleSavePlaylist(selectedPlaylist)}
-          isSaving={isSaving}
         />
       )}
+
+      {/* Submit Playlist Sheet */}
+      <SubmitPlaylistSheet
+        isOpen={submitSheetOpen}
+        onClose={() => setSubmitSheetOpen(false)}
+      />
     </div>
+  );
+}
+
+// Simple detail sheet for library playlists
+function LibraryPlaylistSheet({
+  playlist,
+  isOpen,
+  onClose,
+}: {
+  playlist: PlaylistLibraryItem;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isOpen ? 1 : 0 }}
+      className={cn(
+        "fixed inset-0 z-50 bg-background/80 backdrop-blur-sm",
+        !isOpen && "pointer-events-none"
+      )}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: isOpen ? 0 : "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        onClick={(e) => e.stopPropagation()}
+        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl max-h-[85vh] overflow-hidden"
+      >
+        <div className="p-6">
+          {/* Handle */}
+          <div className="w-12 h-1 bg-muted rounded-full mx-auto mb-6" />
+
+          {/* Cover */}
+          <div className="flex justify-center mb-6">
+            {playlist.cover_art_url ? (
+              <img
+                src={playlist.cover_art_url}
+                alt={playlist.name}
+                className="h-40 w-40 rounded-xl object-cover shadow-lg"
+              />
+            ) : (
+              <div className="h-40 w-40 rounded-xl bg-muted flex items-center justify-center">
+                <Music className="h-12 w-12 text-muted-foreground" />
+              </div>
+            )}
+          </div>
+
+          {/* Info */}
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold">{playlist.name}</h2>
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <Badge variant="secondary">
+                {PLATFORM_LABELS[playlist.platform as PlaylistPlatform]}
+              </Badge>
+              <Badge variant="outline">{playlist.genre}</Badge>
+            </div>
+            {playlist.description && (
+              <p className="text-sm text-muted-foreground mt-3">
+                {playlist.description}
+              </p>
+            )}
+          </div>
+
+          {/* Open Link */}
+          <Button className="w-full" asChild>
+            <a
+              href={playlist.playlist_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Open in {PLATFORM_LABELS[playlist.platform as PlaylistPlatform]}
+            </a>
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }

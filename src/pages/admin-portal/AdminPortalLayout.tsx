@@ -37,6 +37,7 @@ import {
   ChevronRight,
   LogOut,
   User,
+  Music,
 } from "lucide-react";
 
 interface NavItem {
@@ -54,6 +55,7 @@ const navItems: NavItem[] = [
   { to: "/admin-portal/events", icon: Flag, label: "Events" },
   { to: "/admin-portal/workouts", icon: Dumbbell, label: "Workouts & Programs" },
   { to: "/admin-portal/exercises", icon: BookOpen, label: "Exercise Library" },
+  { to: "/admin-portal/playlists", icon: Music, label: "Playlists" },
   { to: "/admin-portal/billing", icon: CreditCard, label: "Billing" },
   { to: "/admin-portal/social", icon: MessageCircle, label: "Social Moderation" },
   { to: "/admin-portal/notifications", icon: Bell, label: "Notifications" },
