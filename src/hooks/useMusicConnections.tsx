@@ -176,26 +176,18 @@ const { data: playlists = [], isLoading } = useQuery({
       
       const { error } = await supabase
         .from("saved_playlists")
-        .insert({
+        .insert([{
           user_id: user.id,
           provider: playlist.provider,
           external_playlist_id: playlist.external_playlist_id,
           name: playlist.name,
           cover_art_url: playlist.cover_art_url,
           track_count: playlist.track_count,
-          cached_tracks_json: playlist.cached_tracks_json as unknown as Record<string, unknown>[],
-        });
+          cached_tracks_json: playlist.cached_tracks_json ? JSON.parse(JSON.stringify(playlist.cached_tracks_json)) : null,
+        }]);
 
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["saved-playlists"] });
-      toast.success("Playlist saved!");
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["saved-playlists"] });
       toast.success("Playlist saved!");
