@@ -205,22 +205,16 @@ export function SubmitPlaylistSheet({ isOpen, onClose }: SubmitPlaylistSheetProp
             </p>
           </div>
 
-          {/* Playlist Name */}
-          <div className="space-y-2">
-            <Label>Playlist Name *</Label>
-            <Input
-              type="text"
-              placeholder="e.g. My Workout Mix"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-            {metadataFetched && (
-              <p className="text-xs text-muted-foreground">
-                Auto-filled from playlist
-              </p>
-            )}
-          </div>
+          {/* Playlist Name - Display only */}
+          {name && (
+            <div className="space-y-2">
+              <Label className="text-muted-foreground">Playlist Name</Label>
+              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                <Music className="h-4 w-4 text-primary" />
+                <span className="font-medium">{name}</span>
+              </div>
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-2">
