@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy } from "lucide-react";
+import { MediaWidget } from "@/components/workout/MediaWidget";
 import { useParams, useNavigate } from "react-router-dom";
 import { workouts } from "@/data/workouts";
 import { Button } from "@/components/ui/button";
@@ -295,6 +296,11 @@ export default function ActiveWorkout() {
             </motion.div>
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Media Widget */}
+      <div className="px-4 mb-2">
+        <MediaWidget />
       </div>
 
       {/* Action Buttons */}
