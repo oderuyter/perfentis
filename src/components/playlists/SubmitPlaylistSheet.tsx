@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { X, Music, Send, ExternalLink } from "lucide-react";
+import { Music, Send, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import {
   useSubmitPlaylist,
+  fetchPlaylistMetadata,
   PLAYLIST_GENRES,
   PLATFORM_LABELS,
   type PlaylistPlatform,
@@ -30,15 +31,76 @@ interface SubmitPlaylistSheetProps {
   onClose: () => void;
 }
 
+// Detect platform from URL
+function detectPlatformFromUrl(url: string): PlaylistPlatform | null {
+  if (url.includes("spotify.com")) return "spotify";
+  if (url.includes("music.youtube.com") || url.includes("youtube.com")) return "youtube_music";
+  if (url.includes("music.apple.com")) return "apple_music";
+  if (url.includes("soundcloud.com")) return "soundcloud";
+  if (url.includes("tidal.com")) return "tidal";
+  return null;
+}
+
 export function SubmitPlaylistSheet({ isOpen, onClose }: SubmitPlaylistSheetProps) {
-  const [platform, setPlatform] = useState<PlaylistPlatform>("spotify");
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [coverArtUrl, setCoverArtUrl] = useState("");
   const [suggestedGenre, setSuggestedGenre] = useState("");
+  const [platform, setPlatform] = useState<PlaylistPlatform>("spotify");
+  const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
+  const [metadataFetched, setMetadataFetched] = useState(false);
 
   const { mutate: submitPlaylist, isPending } = useSubmitPlaylist();
+
+  // Auto-fetch metadata when URL changes
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      if (!playlistUrl || playlistUrl.length < 20) {
+        setMetadataFetched(false);
+        return;
+      }
+
+      // Detect platform from URL
+      const detectedPlatform = detectPlatformFromUrl(playlistUrl);
+      if (detectedPlatform) {
+        setPlatform(detectedPlatform);
+      }
+
+      // Only fetch if it looks like a valid URL
+      if (!playlistUrl.startsWith("http")) return;
+
+      setIsFetchingMetadata(true);
+      setMetadataFetched(false);
+
+      try {
+        const metadata = await fetchPlaylistMetadata(playlistUrl);
+        
+        if (metadata) {
+          if (metadata.name && !name) {
+            setName(metadata.name);
+          }
+          if (metadata.description && !description) {
+            setDescription(metadata.description);
+          }
+          if (metadata.cover_art_url) {
+            setCoverArtUrl(metadata.cover_art_url);
+          }
+          if (metadata.platform) {
+            setPlatform(metadata.platform as PlaylistPlatform);
+          }
+          setMetadataFetched(true);
+        }
+      } catch (error) {
+        console.error("Failed to fetch metadata:", error);
+      } finally {
+        setIsFetchingMetadata(false);
+      }
+    };
+
+    const debounce = setTimeout(fetchMetadata, 500);
+    return () => clearTimeout(debounce);
+  }, [playlistUrl]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,12 +119,13 @@ export function SubmitPlaylistSheet({ isOpen, onClose }: SubmitPlaylistSheetProp
       {
         onSuccess: () => {
           // Reset form
-          setPlatform("spotify");
           setPlaylistUrl("");
           setName("");
           setDescription("");
           setCoverArtUrl("");
           setSuggestedGenre("");
+          setPlatform("spotify");
+          setMetadataFetched(false);
           onClose();
         },
       }
@@ -80,9 +143,49 @@ export function SubmitPlaylistSheet({ isOpen, onClose }: SubmitPlaylistSheetProp
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[calc(85vh-100px)] pb-8">
-          {/* Platform */}
+          {/* Playlist URL - Primary input */}
           <div className="space-y-2">
-            <Label>Platform *</Label>
+            <Label>Playlist URL *</Label>
+            <div className="relative">
+              <Input
+                type="url"
+                placeholder="Paste your playlist link here..."
+                value={playlistUrl}
+                onChange={(e) => setPlaylistUrl(e.target.value)}
+                required
+                className="pr-10"
+              />
+              {isFetchingMetadata && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {metadataFetched && !isFetchingMetadata && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Paste the share link from Spotify, YouTube Music, Apple Music, etc.
+            </p>
+          </div>
+
+          {/* Cover Art Preview */}
+          {coverArtUrl && (
+            <div className="flex justify-center">
+              <img
+                src={coverArtUrl}
+                alt="Playlist cover"
+                className="h-32 w-32 rounded-xl object-cover shadow-lg"
+                onError={() => setCoverArtUrl("")}
+              />
+            </div>
+          )}
+
+          {/* Platform (auto-detected but editable) */}
+          <div className="space-y-2">
+            <Label>Platform</Label>
             <Select value={platform} onValueChange={(v) => setPlatform(v as PlaylistPlatform)}>
               <SelectTrigger>
                 <SelectValue />
@@ -97,20 +200,8 @@ export function SubmitPlaylistSheet({ isOpen, onClose }: SubmitPlaylistSheetProp
                 )}
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Playlist URL */}
-          <div className="space-y-2">
-            <Label>Playlist URL *</Label>
-            <Input
-              type="url"
-              placeholder="https://open.spotify.com/playlist/..."
-              value={playlistUrl}
-              onChange={(e) => setPlaylistUrl(e.target.value)}
-              required
-            />
             <p className="text-xs text-muted-foreground">
-              Paste the share link from your music app
+              Auto-detected from URL
             </p>
           </div>
 
@@ -119,45 +210,27 @@ export function SubmitPlaylistSheet({ isOpen, onClose }: SubmitPlaylistSheetProp
             <Label>Playlist Name *</Label>
             <Input
               type="text"
-              placeholder="My Workout Mix"
+              placeholder="e.g. My Workout Mix"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
+            {metadataFetched && (
+              <p className="text-xs text-muted-foreground">
+                Auto-filled from playlist
+              </p>
+            )}
           </div>
 
           {/* Description */}
           <div className="space-y-2">
-            <Label>Description</Label>
+            <Label>Description (optional)</Label>
             <Textarea
               placeholder="What makes this playlist great for workouts?"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
             />
-          </div>
-
-          {/* Cover Art URL */}
-          <div className="space-y-2">
-            <Label>Cover Image URL</Label>
-            <Input
-              type="url"
-              placeholder="https://..."
-              value={coverArtUrl}
-              onChange={(e) => setCoverArtUrl(e.target.value)}
-            />
-            {coverArtUrl && (
-              <div className="mt-2">
-                <img
-                  src={coverArtUrl}
-                  alt="Cover preview"
-                  className="h-20 w-20 rounded-lg object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
-              </div>
-            )}
           </div>
 
           {/* Suggested Genre */}
@@ -178,9 +251,16 @@ export function SubmitPlaylistSheet({ isOpen, onClose }: SubmitPlaylistSheetProp
           </div>
 
           {/* Submit Button */}
-          <Button type="submit" className="w-full" disabled={isPending || !playlistUrl || !name}>
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isPending || isFetchingMetadata || !playlistUrl || !name}
+          >
             {isPending ? (
-              "Submitting..."
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Submitting...
+              </>
             ) : (
               <>
                 <Send className="h-4 w-4 mr-2" />

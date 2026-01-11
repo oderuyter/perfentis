@@ -5,6 +5,21 @@ import { toast } from "sonner";
 
 export type PlaylistPlatform = 'spotify' | 'youtube_music' | 'apple_music' | 'soundcloud' | 'tidal';
 
+// Fetch playlist metadata from URL
+export async function fetchPlaylistMetadata(url: string) {
+  try {
+    const { data, error } = await supabase.functions.invoke('fetch-playlist-metadata', {
+      body: { url },
+    });
+
+    if (error) throw error;
+    return data?.metadata || null;
+  } catch (error) {
+    console.error('Error fetching playlist metadata:', error);
+    return null;
+  }
+}
+
 export interface PlaylistLibraryItem {
   id: string;
   platform: PlaylistPlatform;
