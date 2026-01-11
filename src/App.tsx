@@ -73,6 +73,7 @@ import AdminCoaches from "./pages/admin-portal/AdminCoaches";
 import AdminEvents from "./pages/admin-portal/AdminEvents";
 import AdminWorkouts from "./pages/admin-portal/AdminWorkouts";
 import AdminExercises from "./pages/admin-portal/AdminExercises";
+import AdminPlaylists from "./pages/admin-portal/AdminPlaylists";
 import AdminBilling from "./pages/admin-portal/AdminBilling";
 import AdminSocial from "./pages/admin-portal/AdminSocial";
 import AdminNotifications from "./pages/admin-portal/AdminNotifications";
@@ -189,6 +190,7 @@ function AppRoutes() {
         <Route path="events" element={<AdminEvents />} />
         <Route path="workouts" element={<AdminWorkouts />} />
         <Route path="exercises" element={<AdminExercises />} />
+        <Route path="playlists" element={<AdminPlaylists />} />
         <Route path="billing" element={<AdminBilling />} />
         <Route path="social" element={<AdminSocial />} />
         <Route path="notifications" element={<AdminNotifications />} />
