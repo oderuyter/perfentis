@@ -29,10 +29,14 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
             {/* Left: Hamburger */}
             <HamburgerButton onClick={() => setDrawerOpen(true)} />
             
-            {/* Center: Logo/Brand placeholder */}
-            <div className="absolute left-1/2 -translate-x-1/2">
+            {/* Center: Logo/Brand - Clickable to go home */}
+            <button
+              onClick={() => navigate("/")}
+              className="absolute left-1/2 -translate-x-1/2 p-2 -m-2 rounded-full hover:bg-white/10 transition-colors"
+              aria-label="Go to home"
+            >
               <Dumbbell className="h-6 w-6 text-white" />
-            </div>
+            </button>
             
             {/* Right: Profile Avatar */}
             <button
@@ -50,7 +54,7 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
         </header>
       )}
 
-      <main className={hideNav ? "" : "pt-16 pb-24"}>
+      <main className={hideNav ? "" : "pt-16 pb-28"}>
         <Outlet />
       </main>
       
