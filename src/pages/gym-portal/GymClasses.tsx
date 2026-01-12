@@ -527,12 +527,12 @@ export default function GymClasses() {
             </div>
             <div>
               <Label>Instructor</Label>
-              <Select value={newSchedule.instructorId} onValueChange={(v) => setNewSchedule({ ...newSchedule, instructorId: v })}>
+              <Select value={newSchedule.instructorId || "none"} onValueChange={(v) => setNewSchedule({ ...newSchedule, instructorId: v === "none" ? "" : v })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select instructor (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No instructor</SelectItem>
+                  <SelectItem value="none">No instructor</SelectItem>
                   {staff.map((s) => (
                     <SelectItem key={s.user_id} value={s.user_id}>
                       {s.profile?.display_name || "Unknown"} {s.position && `(${s.position})`}
@@ -544,12 +544,12 @@ export default function GymClasses() {
             {spaces.length > 0 && (
               <div>
                 <Label>Space/Room</Label>
-                <Select value={newSchedule.spaceId} onValueChange={(v) => setNewSchedule({ ...newSchedule, spaceId: v })}>
+                <Select value={newSchedule.spaceId || "none"} onValueChange={(v) => setNewSchedule({ ...newSchedule, spaceId: v === "none" ? "" : v })}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select space (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No specific space</SelectItem>
+                    <SelectItem value="none">No specific space</SelectItem>
                     {spaces.map((s) => (
                       <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
