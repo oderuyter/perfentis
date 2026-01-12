@@ -2156,6 +2156,119 @@ export type Database = {
           },
         ]
       }
+      gym_facilities: {
+        Row: {
+          basketball_court: boolean | null
+          boxing_area: boolean | null
+          cafe: boolean | null
+          cardio_area: boolean | null
+          climbing_wall: boolean | null
+          created_at: string
+          dumbbells: boolean | null
+          free_weights: boolean | null
+          functional_training: boolean | null
+          group_exercise_studio: boolean | null
+          gym_id: string
+          id: string
+          lockers: boolean | null
+          outdoor_training: boolean | null
+          parking: boolean | null
+          personal_training: boolean | null
+          physio: boolean | null
+          sauna: boolean | null
+          showers: boolean | null
+          spa: boolean | null
+          spin_studio: boolean | null
+          sprint_track: boolean | null
+          squash_court: boolean | null
+          steam_room: boolean | null
+          swimming_pool: boolean | null
+          tennis_court: boolean | null
+          towel_service: boolean | null
+          turf_area: boolean | null
+          updated_at: string
+          weight_machines: boolean | null
+          wifi: boolean | null
+          yoga_studio: boolean | null
+        }
+        Insert: {
+          basketball_court?: boolean | null
+          boxing_area?: boolean | null
+          cafe?: boolean | null
+          cardio_area?: boolean | null
+          climbing_wall?: boolean | null
+          created_at?: string
+          dumbbells?: boolean | null
+          free_weights?: boolean | null
+          functional_training?: boolean | null
+          group_exercise_studio?: boolean | null
+          gym_id: string
+          id?: string
+          lockers?: boolean | null
+          outdoor_training?: boolean | null
+          parking?: boolean | null
+          personal_training?: boolean | null
+          physio?: boolean | null
+          sauna?: boolean | null
+          showers?: boolean | null
+          spa?: boolean | null
+          spin_studio?: boolean | null
+          sprint_track?: boolean | null
+          squash_court?: boolean | null
+          steam_room?: boolean | null
+          swimming_pool?: boolean | null
+          tennis_court?: boolean | null
+          towel_service?: boolean | null
+          turf_area?: boolean | null
+          updated_at?: string
+          weight_machines?: boolean | null
+          wifi?: boolean | null
+          yoga_studio?: boolean | null
+        }
+        Update: {
+          basketball_court?: boolean | null
+          boxing_area?: boolean | null
+          cafe?: boolean | null
+          cardio_area?: boolean | null
+          climbing_wall?: boolean | null
+          created_at?: string
+          dumbbells?: boolean | null
+          free_weights?: boolean | null
+          functional_training?: boolean | null
+          group_exercise_studio?: boolean | null
+          gym_id?: string
+          id?: string
+          lockers?: boolean | null
+          outdoor_training?: boolean | null
+          parking?: boolean | null
+          personal_training?: boolean | null
+          physio?: boolean | null
+          sauna?: boolean | null
+          showers?: boolean | null
+          spa?: boolean | null
+          spin_studio?: boolean | null
+          sprint_track?: boolean | null
+          squash_court?: boolean | null
+          steam_room?: boolean | null
+          swimming_pool?: boolean | null
+          tennis_court?: boolean | null
+          towel_service?: boolean | null
+          turf_area?: boolean | null
+          updated_at?: string
+          weight_machines?: boolean | null
+          wifi?: boolean | null
+          yoga_studio?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_facilities_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: true
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_invitations: {
         Row: {
           accepted_at: string | null
@@ -2228,6 +2341,7 @@ export type Database = {
           is_active: boolean
           name: string
           price: number | null
+          signup_fee: number | null
           updated_at: string
         }
         Insert: {
@@ -2241,6 +2355,7 @@ export type Database = {
           is_active?: boolean
           name: string
           price?: number | null
+          signup_fee?: number | null
           updated_at?: string
         }
         Update: {
@@ -2254,6 +2369,7 @@ export type Database = {
           is_active?: boolean
           name?: string
           price?: number | null
+          signup_fee?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -2268,6 +2384,9 @@ export type Database = {
       }
       gym_staff: {
         Row: {
+          accreditations: string[] | null
+          bio: string | null
+          certifications: string[] | null
           created_at: string
           gym_id: string
           hire_date: string | null
@@ -2278,6 +2397,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accreditations?: string[] | null
+          bio?: string | null
+          certifications?: string[] | null
           created_at?: string
           gym_id: string
           hire_date?: string | null
@@ -2288,6 +2410,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accreditations?: string[] | null
+          bio?: string | null
+          certifications?: string[] | null
           created_at?: string
           gym_id?: string
           hire_date?: string | null
@@ -2566,6 +2691,7 @@ export type Database = {
       member_notes: {
         Row: {
           author_id: string
+          author_name: string | null
           created_at: string
           id: string
           membership_id: string
@@ -2575,6 +2701,7 @@ export type Database = {
         }
         Insert: {
           author_id: string
+          author_name?: string | null
           created_at?: string
           id?: string
           membership_id: string
@@ -2584,6 +2711,7 @@ export type Database = {
         }
         Update: {
           author_id?: string
+          author_name?: string | null
           created_at?: string
           id?: string
           membership_id?: string
@@ -2637,9 +2765,13 @@ export type Database = {
           membership_number: string | null
           membership_token: string
           next_payment_date: string | null
+          offboarded_at: string | null
           payment_status: string | null
           start_date: string | null
           status: string
+          suspended_at: string | null
+          suspended_until: string | null
+          suspension_reason: string | null
           tier: string | null
           updated_at: string
           user_id: string
@@ -2653,9 +2785,13 @@ export type Database = {
           membership_number?: string | null
           membership_token?: string
           next_payment_date?: string | null
+          offboarded_at?: string | null
           payment_status?: string | null
           start_date?: string | null
           status?: string
+          suspended_at?: string | null
+          suspended_until?: string | null
+          suspension_reason?: string | null
           tier?: string | null
           updated_at?: string
           user_id: string
@@ -2669,9 +2805,13 @@ export type Database = {
           membership_number?: string | null
           membership_token?: string
           next_payment_date?: string | null
+          offboarded_at?: string | null
           payment_status?: string | null
           start_date?: string | null
           status?: string
+          suspended_at?: string | null
+          suspended_until?: string | null
+          suspension_reason?: string | null
           tier?: string | null
           updated_at?: string
           user_id?: string
@@ -3401,6 +3541,7 @@ export type Database = {
           gym_id: string
           id: string
           notes: string | null
+          pattern_id: string | null
           shift_date: string
           staff_id: string
           start_time: string
@@ -3411,6 +3552,7 @@ export type Database = {
           gym_id: string
           id?: string
           notes?: string | null
+          pattern_id?: string | null
           shift_date: string
           staff_id: string
           start_time: string
@@ -3421,6 +3563,7 @@ export type Database = {
           gym_id?: string
           id?: string
           notes?: string | null
+          pattern_id?: string | null
           shift_date?: string
           staff_id?: string
           start_time?: string
@@ -3434,10 +3577,58 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "staff_rotas_pattern_id_fkey"
+            columns: ["pattern_id"]
+            isOneToOne: false
+            referencedRelation: "staff_shift_patterns"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "staff_rotas_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "gym_staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_shift_patterns: {
+        Row: {
+          created_at: string
+          description: string | null
+          gym_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          pattern_data: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          gym_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          pattern_data?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          gym_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          pattern_data?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_shift_patterns_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
             referencedColumns: ["id"]
           },
         ]

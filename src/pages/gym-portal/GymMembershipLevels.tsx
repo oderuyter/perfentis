@@ -9,7 +9,7 @@ import {
   ToggleRight,
   Loader2,
   GripVertical,
-  DollarSign
+  PoundSterling
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,6 +65,7 @@ export default function GymMembershipLevels() {
     name: "",
     description: "",
     price: "",
+    signup_fee: "",
     billing_cycle: "monthly",
     access_notes: ""
   });
@@ -75,6 +76,7 @@ export default function GymMembershipLevels() {
       name: "",
       description: "",
       price: "",
+      signup_fee: "",
       billing_cycle: "monthly",
       access_notes: ""
     });
@@ -87,6 +89,7 @@ export default function GymMembershipLevels() {
       name: level.name,
       description: level.description || "",
       price: level.price?.toString() || "",
+      signup_fee: (level as any).signup_fee?.toString() || "",
       billing_cycle: level.billing_cycle || "monthly",
       access_notes: level.access_notes || ""
     });
@@ -166,7 +169,7 @@ export default function GymMembershipLevels() {
         </div>
       ) : levels.length === 0 ? (
         <div className="bg-card rounded-xl border border-border p-8 text-center">
-          <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+          <PoundSterling className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium mb-2">No Membership Levels</h3>
           <p className="text-muted-foreground mb-4">
             Create membership levels to assign to members during signup or invitation.
@@ -211,11 +214,14 @@ export default function GymMembershipLevels() {
                 <div className="text-right hidden sm:block">
                   {level.price ? (
                     <div>
-                      <span className="font-semibold">${level.price}</span>
+                      <span className="font-semibold">£{level.price}</span>
                       <span className="text-sm text-muted-foreground">/{level.billing_cycle}</span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground text-sm">No price set</span>
+                  )}
+                  {(level as any).signup_fee && (
+                    <p className="text-xs text-muted-foreground">+ £{(level as any).signup_fee} signup fee</p>
                   )}
                 </div>
 
@@ -286,9 +292,9 @@ export default function GymMembershipLevels() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price</Label>
+                <Label htmlFor="price">Monthly Fee (£)</Label>
                 <div className="relative">
-                  <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="price"
                     type="number"
@@ -303,23 +309,40 @@ export default function GymMembershipLevels() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="billing_cycle">Billing Cycle</Label>
-                <Select 
-                  value={formData.billing_cycle} 
-                  onValueChange={(v) => setFormData({ ...formData, billing_cycle: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {BILLING_CYCLES.map((cycle) => (
-                      <SelectItem key={cycle.value} value={cycle.value}>
-                        {cycle.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="signup_fee">Signup Fee (£)</Label>
+                <div className="relative">
+                  <PoundSterling className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="signup_fee"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.signup_fee}
+                    onChange={(e) => setFormData({ ...formData, signup_fee: e.target.value })}
+                    placeholder="0.00"
+                    className="pl-9"
+                  />
+                </div>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="billing_cycle">Billing Cycle</Label>
+              <Select 
+                value={formData.billing_cycle} 
+                onValueChange={(v) => setFormData({ ...formData, billing_cycle: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {BILLING_CYCLES.map((cycle) => (
+                    <SelectItem key={cycle.value} value={cycle.value}>
+                      {cycle.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

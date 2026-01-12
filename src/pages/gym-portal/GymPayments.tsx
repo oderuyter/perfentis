@@ -4,13 +4,15 @@ import {
   Wallet,
   Search,
   Download,
-  RefreshCcw,
   Loader2,
-  DollarSign,
+  PoundSterling,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Calendar
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 interface ContextType {
   selectedGymId: string | null;
@@ -35,12 +44,81 @@ export default function GymPayments() {
   const { selectedGymId } = useOutletContext<ContextType>();
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const [exportOptions, setExportOptions] = useState({
+    startDate: "",
+    endDate: "",
+    includeCompleted: true,
+    includePending: true,
+    includeRefunds: true,
+    includeMemberDetails: true,
+    includePaymentMethod: false
+  });
 
   const stats = {
     totalRevenue: 2499.50,
     thisMonth: 849.97,
     refunds: 25.00,
     pending: 49.99
+  };
+
+  const handleExport = async () => {
+    if (!exportOptions.startDate || !exportOptions.endDate) {
+      toast.error("Please select date range");
+      return;
+    }
+
+    setIsExporting(true);
+    try {
+      // Build CSV data
+      const headers = ["Date", "Member", "Amount (£)", "Type", "Status"];
+      if (exportOptions.includeMemberDetails) {
+        headers.push("Email");
+      }
+      if (exportOptions.includePaymentMethod) {
+        headers.push("Payment Method");
+      }
+
+      let filteredPayments = mockPayments.filter(p => {
+        const date = new Date(p.date);
+        const start = new Date(exportOptions.startDate);
+        const end = new Date(exportOptions.endDate);
+        if (date < start || date > end) return false;
+        if (p.status === "completed" && !exportOptions.includeCompleted) return false;
+        if (p.status === "pending" && !exportOptions.includePending) return false;
+        if (p.type === "refund" && !exportOptions.includeRefunds) return false;
+        return true;
+      });
+
+      const rows = filteredPayments.map(p => {
+        const row = [p.date, p.member, Math.abs(p.amount).toFixed(2), p.type, p.status];
+        if (exportOptions.includeMemberDetails) {
+          row.push(`${p.member.toLowerCase().replace(' ', '.')}@example.com`);
+        }
+        if (exportOptions.includePaymentMethod) {
+          row.push("Card");
+        }
+        return row;
+      });
+
+      const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `payments-${exportOptions.startDate}-to-${exportOptions.endDate}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${filteredPayments.length} payments`);
+      setShowExportDialog(false);
+    } catch (error) {
+      toast.error("Failed to export");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   if (!selectedGymId) {
@@ -58,7 +136,10 @@ export default function GymPayments() {
           <h2 className="text-2xl font-semibold">Payments & Refunds</h2>
           <p className="text-muted-foreground">Track revenue and process refunds</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg font-medium hover:bg-muted">
+        <button 
+          onClick={() => setShowExportDialog(true)}
+          className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg font-medium hover:bg-muted"
+        >
           <Download className="h-4 w-4" />
           Export
         </button>
@@ -69,10 +150,10 @@ export default function GymPayments() {
         <div className="bg-card rounded-xl border border-border p-4">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-              <DollarSign className="h-5 w-5 text-green-600" />
+              <PoundSterling className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-semibold">${stats.totalRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-semibold">£{stats.totalRevenue.toFixed(2)}</p>
               <p className="text-sm text-muted-foreground">Total Revenue</p>
             </div>
           </div>
@@ -83,7 +164,7 @@ export default function GymPayments() {
               <TrendingUp className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-2xl font-semibold">${stats.thisMonth.toFixed(2)}</p>
+              <p className="text-2xl font-semibold">£{stats.thisMonth.toFixed(2)}</p>
               <p className="text-sm text-muted-foreground">This Month</p>
             </div>
           </div>
@@ -94,7 +175,7 @@ export default function GymPayments() {
               <TrendingDown className="h-5 w-5 text-red-600" />
             </div>
             <div>
-              <p className="text-2xl font-semibold">${stats.refunds.toFixed(2)}</p>
+              <p className="text-2xl font-semibold">£{stats.refunds.toFixed(2)}</p>
               <p className="text-sm text-muted-foreground">Refunds</p>
             </div>
           </div>
@@ -105,7 +186,7 @@ export default function GymPayments() {
               <Wallet className="h-5 w-5 text-orange-600" />
             </div>
             <div>
-              <p className="text-2xl font-semibold">${stats.pending.toFixed(2)}</p>
+              <p className="text-2xl font-semibold">£{stats.pending.toFixed(2)}</p>
               <p className="text-sm text-muted-foreground">Pending</p>
             </div>
           </div>
@@ -160,7 +241,7 @@ export default function GymPayments() {
                 <tr key={p.id} className="border-b border-border last:border-0 hover:bg-muted/30">
                   <td className="py-3 px-4 font-medium">{p.member}</td>
                   <td className={`py-3 px-4 font-medium ${p.amount < 0 ? "text-red-600" : "text-green-600"}`}>
-                    {p.amount < 0 ? "-" : "+"}${Math.abs(p.amount).toFixed(2)}
+                    {p.amount < 0 ? "-" : "+"}£{Math.abs(p.amount).toFixed(2)}
                   </td>
                   <td className="py-3 px-4 hidden md:table-cell capitalize">{p.type}</td>
                   <td className="py-3 px-4">
@@ -186,6 +267,100 @@ export default function GymPayments() {
           </table>
         </div>
       </div>
+
+      {/* Export Dialog */}
+      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export Payments</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Input
+                  type="date"
+                  value={exportOptions.startDate}
+                  onChange={(e) => setExportOptions({ ...exportOptions, startDate: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Input
+                  type="date"
+                  value={exportOptions.endDate}
+                  onChange={(e) => setExportOptions({ ...exportOptions, endDate: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Include Payment Types</Label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={exportOptions.includeCompleted}
+                    onCheckedChange={(checked) => setExportOptions({ ...exportOptions, includeCompleted: !!checked })}
+                  />
+                  <span className="text-sm">Completed payments</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={exportOptions.includePending}
+                    onCheckedChange={(checked) => setExportOptions({ ...exportOptions, includePending: !!checked })}
+                  />
+                  <span className="text-sm">Pending payments</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={exportOptions.includeRefunds}
+                    onCheckedChange={(checked) => setExportOptions({ ...exportOptions, includeRefunds: !!checked })}
+                  />
+                  <span className="text-sm">Refunds</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Additional Data</Label>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={exportOptions.includeMemberDetails}
+                    onCheckedChange={(checked) => setExportOptions({ ...exportOptions, includeMemberDetails: !!checked })}
+                  />
+                  <span className="text-sm">Member email addresses</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <Checkbox
+                    checked={exportOptions.includePaymentMethod}
+                    onCheckedChange={(checked) => setExportOptions({ ...exportOptions, includePaymentMethod: !!checked })}
+                  />
+                  <span className="text-sm">Payment method</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4">
+              <button
+                onClick={() => setShowExportDialog(false)}
+                className="px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50"
+              >
+                {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Export CSV
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
