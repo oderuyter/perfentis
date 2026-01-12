@@ -11,7 +11,8 @@ import {
   Trash2,
   MapPin,
   User,
-  ListOrdered
+  ListOrdered,
+  X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -38,6 +39,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 interface ContextType {
   selectedGymId: string | null;
@@ -62,9 +69,9 @@ interface ClassSchedule {
   start_time: string;
   end_time: string;
   instructor_id: string | null;
+  space_id: string | null;
   gym_classes?: { name: string; gym_id: string; capacity: number } | null;
   gym_spaces?: { name: string } | null;
-  space_id?: string | null;
 }
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -79,9 +86,10 @@ export default function GymClasses() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddClass, setShowAddClass] = useState(false);
   const [showAddSchedule, setShowAddSchedule] = useState(false);
+  const [showScheduleDetail, setShowScheduleDetail] = useState<ClassSchedule | null>(null);
   const [showWaitlist, setShowWaitlist] = useState(false);
-  const [selectedScheduleForWaitlist, setSelectedScheduleForWaitlist] = useState<string | null>(null);
   const [waitlistEntries, setWaitlistEntries] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
   const [waitlistLoading, setWaitlistLoading] = useState(false);
   
   const [newClass, setNewClass] = useState({ name: "", description: "", duration: 60, capacity: 20 });
@@ -116,12 +124,13 @@ export default function GymClasses() {
 
       setClasses(classData || []);
 
-      // Fetch schedules with instructor info
+      // Fetch schedules with instructor and space info
       const { data: scheduleData } = await supabase
         .from("class_schedules")
         .select(`
           *,
-          gym_classes!inner(name, gym_id, capacity)
+          gym_classes!inner(name, gym_id, capacity),
+          gym_spaces(name)
         `)
         .eq("gym_classes.gym_id", selectedGymId)
         .eq("is_active", true)
@@ -152,7 +161,7 @@ export default function GymClasses() {
       }
 
       // Fetch spaces
-      const { data: spacesData } = await (supabase as any)
+      const { data: spacesData } = await supabase
         .from("gym_spaces")
         .select("id, name")
         .eq("gym_id", selectedGymId)
@@ -201,7 +210,8 @@ export default function GymClasses() {
         day_of_week: newSchedule.dayOfWeek,
         start_time: newSchedule.startTime,
         end_time: newSchedule.endTime,
-        instructor_id: newSchedule.instructorId || null
+        instructor_id: newSchedule.instructorId || null,
+        space_id: newSchedule.spaceId || null
       });
 
       toast.success("Schedule added");
@@ -225,24 +235,36 @@ export default function GymClasses() {
     }
   };
 
-  const openWaitlistModal = async (scheduleId: string) => {
-    setSelectedScheduleForWaitlist(scheduleId);
-    setShowWaitlist(true);
+  const openScheduleDetail = async (schedule: ClassSchedule) => {
+    setShowScheduleDetail(schedule);
     setWaitlistLoading(true);
 
     try {
-      const { data } = await (supabase as any)
+      // Fetch bookings for this schedule
+      const { data: bookingData } = await supabase
+        .from("class_bookings")
+        .select(`
+          *,
+          profiles:user_id(display_name, avatar_url)
+        `)
+        .eq("schedule_id", schedule.id)
+        .order("created_at", { ascending: false });
+
+      setBookings(bookingData || []);
+
+      // Fetch waitlist
+      const { data: waitlistData } = await supabase
         .from("class_waitlist")
         .select(`
           *,
           profiles:user_id(display_name)
         `)
-        .eq("schedule_id", scheduleId)
+        .eq("schedule_id", schedule.id)
         .order("created_at", { ascending: true });
 
-      setWaitlistEntries(data || []);
+      setWaitlistEntries(waitlistData || []);
     } catch (error) {
-      console.error("Error fetching waitlist:", error);
+      console.error("Error fetching schedule details:", error);
     } finally {
       setWaitlistLoading(false);
     }
@@ -252,6 +274,12 @@ export default function GymClasses() {
     if (!instructorId) return null;
     const instructor = staff.find(s => s.user_id === instructorId);
     return instructor?.profile?.display_name || "Unknown";
+  };
+
+  const getSpaceName = (spaceId: string | null) => {
+    if (!spaceId) return null;
+    const space = spaces.find(s => s.id === spaceId);
+    return space?.name || null;
   };
 
   const getScheduleForCalendar = (dayIndex: number, hour: number) => {
@@ -371,28 +399,31 @@ export default function GymClasses() {
                           <p className="text-xs font-medium text-muted-foreground uppercase mb-2">{day}</p>
                           <div className="space-y-2">
                             {daySchedules.map((s) => (
-                              <div key={s.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm">
+                              <div 
+                                key={s.id} 
+                                className="flex items-center justify-between p-2 bg-muted/50 rounded-lg text-sm cursor-pointer hover:bg-muted"
+                                onClick={() => openScheduleDetail(s)}
+                              >
                                 <div>
                                   <span className="font-medium">{s.gym_classes?.name}</span>
-                                  {s.instructor_id && (
-                                    <span className="ml-2 text-xs text-muted-foreground flex items-center gap-1 inline-flex">
-                                      <User className="h-3 w-3" />
-                                      {getInstructorName(s.instructor_id)}
-                                    </span>
-                                  )}
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    {s.instructor_id && (
+                                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <User className="h-3 w-3" />
+                                        {getInstructorName(s.instructor_id)}
+                                      </span>
+                                    )}
+                                    {s.space_id && (
+                                      <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <MapPin className="h-3 w-3" />
+                                        {getSpaceName(s.space_id)}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground">
-                                    {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
-                                  </span>
-                                  <button
-                                    onClick={() => openWaitlistModal(s.id)}
-                                    className="p-1 hover:bg-muted rounded text-muted-foreground"
-                                    title="View waitlist"
-                                  >
-                                    <ListOrdered className="h-4 w-4" />
-                                  </button>
-                                </div>
+                                <span className="text-muted-foreground">
+                                  {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -431,7 +462,7 @@ export default function GymClasses() {
                                 <div 
                                   key={s.id} 
                                   className="text-xs p-1.5 bg-primary/10 text-primary rounded mb-1 cursor-pointer hover:bg-primary/20"
-                                  onClick={() => openWaitlistModal(s.id)}
+                                  onClick={() => openScheduleDetail(s)}
                                 >
                                   <p className="font-medium truncate">{s.gym_classes?.name}</p>
                                   <p className="text-[10px] opacity-75">
@@ -602,45 +633,126 @@ export default function GymClasses() {
         </DialogContent>
       </Dialog>
 
-      {/* Waitlist Dialog */}
-      <Dialog open={showWaitlist} onOpenChange={setShowWaitlist}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ListOrdered className="h-5 w-5" />
-              Waitlist
-            </DialogTitle>
-          </DialogHeader>
-          <div className="mt-4">
-            {waitlistLoading ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : waitlistEntries.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                No one on the waitlist
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {waitlistEntries.map((entry, index) => (
-                  <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-muted-foreground w-6">#{index + 1}</span>
-                      <span className="font-medium">{entry.profiles?.display_name || "Unknown"}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(entry.created_at).toLocaleDateString()}
+      {/* Schedule Detail Sheet */}
+      <Sheet open={!!showScheduleDetail} onOpenChange={() => setShowScheduleDetail(null)}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              {showScheduleDetail?.gym_classes?.name}
+            </SheetTitle>
+          </SheetHeader>
+
+          {showScheduleDetail && (
+            <div className="mt-6 space-y-6">
+              {/* Schedule Info */}
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Day</span>
+                  <span className="font-medium">{DAYS[showScheduleDetail.day_of_week]}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Time</span>
+                  <span className="font-medium">
+                    {showScheduleDetail.start_time.slice(0, 5)} - {showScheduleDetail.end_time.slice(0, 5)}
+                  </span>
+                </div>
+                {showScheduleDetail.instructor_id && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Instructor</span>
+                    <span className="font-medium flex items-center gap-1">
+                      <User className="h-3.5 w-3.5" />
+                      {getInstructorName(showScheduleDetail.instructor_id)}
                     </span>
                   </div>
-                ))}
+                )}
+                {showScheduleDetail.space_id && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Location</span>
+                    <span className="font-medium flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {getSpaceName(showScheduleDetail.space_id)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Capacity</span>
+                  <span className="font-medium">{showScheduleDetail.gym_classes?.capacity || "—"}</span>
+                </div>
               </div>
-            )}
-            <p className="text-xs text-muted-foreground mt-4">
-              When a spot opens, all waitlisted members are notified. First to book gets the spot.
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+
+              {/* Tabs for Bookings and Waitlist */}
+              <Tabs defaultValue="bookings">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="bookings">
+                    Booked ({bookings.filter(b => b.status === 'confirmed').length})
+                  </TabsTrigger>
+                  <TabsTrigger value="waitlist">
+                    Waitlist ({waitlistEntries.length})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="bookings" className="mt-4">
+                  {waitlistLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : bookings.filter(b => b.status === 'confirmed').length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      No bookings yet
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {bookings.filter(b => b.status === 'confirmed').map((booking) => (
+                        <div key={booking.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="font-medium">{booking.profiles?.display_name || "Unknown"}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(booking.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                <TabsContent value="waitlist" className="mt-4">
+                  {waitlistLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : waitlistEntries.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      No one on the waitlist
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {waitlistEntries.map((entry, index) => (
+                        <div key={entry.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-muted-foreground w-6">#{index + 1}</span>
+                            <span className="font-medium">{entry.profiles?.display_name || "Unknown"}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(entry.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-4">
+                    When a spot opens, all waitlisted members are notified. First to book gets the spot.
+                  </p>
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

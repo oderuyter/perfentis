@@ -11,7 +11,10 @@ import {
   MapPin,
   ArrowRight,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Dumbbell,
+  Filter,
+  Check
 } from "lucide-react";
 import { GymDetailSheet } from "@/components/gym/GymDetailSheet";
 import { MembershipDetailSheet } from "@/components/gym/MembershipDetailSheet";
@@ -25,6 +28,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type GymDirectory = {
   id: string;
@@ -33,6 +42,26 @@ type GymDirectory = {
   description: string | null;
   logo_url: string | null;
   status: string;
+  facilities?: Record<string, boolean> | null;
+};
+
+const FACILITY_LABELS: Record<string, string> = {
+  weight_machines: "Weight Machines",
+  free_weights: "Free Weights",
+  cardio_area: "Cardio Area",
+  swimming_pool: "Swimming Pool",
+  sauna: "Sauna",
+  steam_room: "Steam Room",
+  yoga_studio: "Yoga Studio",
+  spin_studio: "Spin Studio",
+  group_exercise_studio: "Group Classes",
+  personal_training: "Personal Training",
+  parking: "Parking",
+  showers: "Showers",
+  lockers: "Lockers",
+  towel_service: "Towel Service",
+  wifi: "WiFi",
+  cafe: "Café"
 };
 
 export default function GymMembership() {
@@ -46,6 +75,7 @@ export default function GymMembership() {
   const [gymSearchQuery, setGymSearchQuery] = useState("");
   const [loadingDirectory, setLoadingDirectory] = useState(false);
   const [selectedDirectoryGymId, setSelectedDirectoryGymId] = useState<string | null>(null);
+  const [selectedFacilityFilters, setSelectedFacilityFilters] = useState<string[]>([]);
   
   // Membership management state
   const [selectedMembership, setSelectedMembership] = useState<typeof memberships[0] | null>(null);
@@ -56,30 +86,75 @@ export default function GymMembership() {
   const inactiveMemberships = memberships.filter((m) => m.status !== "active");
   const { checkins } = useMembershipCheckins(activeMembership?.id || null);
   
-  // Fetch gym directory
+  // Fetch gym directory with facilities
   useEffect(() => {
     const fetchGymDirectory = async () => {
       setLoadingDirectory(true);
-      const { data, error } = await supabase
+      
+      // Fetch gyms
+      const { data: gymsData, error: gymsError } = await supabase
         .from("gyms")
         .select("id, name, address, description, logo_url, status")
         .eq("status", "active")
         .order("name");
       
-      if (!error && data) {
-        setGymDirectory(data);
+      if (gymsError || !gymsData) {
+        setLoadingDirectory(false);
+        return;
       }
+
+      // Fetch facilities for all gyms
+      const gymIds = gymsData.map(g => g.id);
+      const { data: facilitiesData } = await supabase
+        .from("gym_facilities")
+        .select("*")
+        .in("gym_id", gymIds);
+
+      // Map facilities to gyms
+      const facilitiesMap = new Map<string, Record<string, boolean>>();
+      (facilitiesData || []).forEach(f => {
+        const facilities: Record<string, boolean> = {};
+        Object.keys(FACILITY_LABELS).forEach(key => {
+          if (f[key]) facilities[key] = true;
+        });
+        facilitiesMap.set(f.gym_id, facilities);
+      });
+
+      const gymsWithFacilities = gymsData.map(gym => ({
+        ...gym,
+        facilities: facilitiesMap.get(gym.id) || null
+      }));
+
+      setGymDirectory(gymsWithFacilities);
       setLoadingDirectory(false);
     };
     
     fetchGymDirectory();
   }, []);
   
-  // Filter gym directory by search
-  const filteredGyms = gymDirectory.filter(gym => 
-    gym.name.toLowerCase().includes(gymSearchQuery.toLowerCase()) ||
-    (gym.address?.toLowerCase().includes(gymSearchQuery.toLowerCase()))
-  );
+  // Filter gym directory by search and facilities
+  const filteredGyms = gymDirectory.filter(gym => {
+    const matchesSearch = gym.name.toLowerCase().includes(gymSearchQuery.toLowerCase()) ||
+      (gym.address?.toLowerCase().includes(gymSearchQuery.toLowerCase()));
+    
+    if (!matchesSearch) return false;
+    
+    // Filter by facilities
+    if (selectedFacilityFilters.length > 0) {
+      if (!gym.facilities) return false;
+      return selectedFacilityFilters.every(filter => gym.facilities?.[filter]);
+    }
+    
+    return true;
+  });
+
+  const toggleFacilityFilter = (facility: string) => {
+    setSelectedFacilityFilters(prev => 
+      prev.includes(facility) 
+        ? prev.filter(f => f !== facility)
+        : [...prev, facility]
+    );
+  };
 
   // Generate QR code as SVG
   const generateQRCode = (token: string) => {
@@ -131,6 +206,13 @@ export default function GymMembership() {
         )}
       </svg>
     );
+  };
+
+  const getActiveFacilities = (facilities: Record<string, boolean> | null | undefined) => {
+    if (!facilities) return [];
+    return Object.entries(facilities)
+      .filter(([_, value]) => value)
+      .map(([key]) => key);
   };
 
   if (membershipsLoading) {
@@ -346,16 +428,61 @@ export default function GymMembership() {
 
         {/* Gym Directory Tab */}
         <TabsContent value="directory" className="mt-4 space-y-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              value={gymSearchQuery}
-              onChange={(e) => setGymSearchQuery(e.target.value)}
-              placeholder="Search gyms by name or location..."
-              className="pl-10"
-            />
+          {/* Search and Filters */}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={gymSearchQuery}
+                onChange={(e) => setGymSearchQuery(e.target.value)}
+                placeholder="Search gyms by name or location..."
+                className="pl-10"
+              />
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className={`flex items-center gap-2 px-3 py-2 border rounded-lg hover:bg-muted transition-colors ${selectedFacilityFilters.length > 0 ? 'border-primary bg-primary/10' : 'border-border'}`}>
+                  <Filter className="h-4 w-4" />
+                  {selectedFacilityFilters.length > 0 && (
+                    <span className="text-xs font-medium">{selectedFacilityFilters.length}</span>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 max-h-80 overflow-y-auto">
+                {Object.entries(FACILITY_LABELS).map(([key, label]) => (
+                  <DropdownMenuCheckboxItem
+                    key={key}
+                    checked={selectedFacilityFilters.includes(key)}
+                    onCheckedChange={() => toggleFacilityFilter(key)}
+                  >
+                    {label}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+
+          {/* Active Filters */}
+          {selectedFacilityFilters.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedFacilityFilters.map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => toggleFacilityFilter(filter)}
+                  className="flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs rounded-full hover:bg-primary/20"
+                >
+                  {FACILITY_LABELS[filter]}
+                  <X className="h-3 w-3" />
+                </button>
+              ))}
+              <button
+                onClick={() => setSelectedFacilityFilters([])}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
           
           {loadingDirectory ? (
             <div className="flex justify-center py-12">
@@ -363,40 +490,63 @@ export default function GymMembership() {
             </div>
           ) : filteredGyms.length > 0 ? (
             <div className="space-y-3">
-              {filteredGyms.map((gym) => (
-                <motion.div
-                  key={gym.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  onClick={() => setSelectedDirectoryGymId(gym.id)}
-                  className="bg-card rounded-xl p-4 shadow-card border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                      {gym.logo_url ? (
-                        <img src={gym.logo_url} alt={gym.name} className="h-full w-full object-cover rounded-lg" />
-                      ) : (
-                        <Building2 className="h-7 w-7 text-muted-foreground" />
-                      )}
+              {filteredGyms.map((gym) => {
+                const activeFacilities = getActiveFacilities(gym.facilities);
+                return (
+                  <motion.div
+                    key={gym.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    onClick={() => setSelectedDirectoryGymId(gym.id)}
+                    className="bg-card rounded-xl p-4 shadow-card border border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                        {gym.logo_url ? (
+                          <img src={gym.logo_url} alt={gym.name} className="h-full w-full object-cover rounded-lg" />
+                        ) : (
+                          <Building2 className="h-7 w-7 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold truncate">{gym.name}</h3>
+                        {gym.address && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <MapPin className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{gym.address}</span>
+                          </p>
+                        )}
+                        {gym.description && (
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{gym.description}</p>
+                        )}
+                        
+                        {/* Facilities Preview */}
+                        {activeFacilities.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {activeFacilities.slice(0, 4).map(facility => (
+                              <span 
+                                key={facility} 
+                                className="px-1.5 py-0.5 bg-muted text-muted-foreground text-[10px] rounded flex items-center gap-0.5"
+                              >
+                                <Check className="h-2.5 w-2.5" />
+                                {FACILITY_LABELS[facility]}
+                              </span>
+                            ))}
+                            {activeFacilities.length > 4 && (
+                              <span className="px-1.5 py-0.5 bg-muted text-muted-foreground text-[10px] rounded">
+                                +{activeFacilities.length - 4} more
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <button className="flex-shrink-0 p-2 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold truncate">{gym.name}</h3>
-                      {gym.address && (
-                        <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-3 w-3 flex-shrink-0" />
-                          <span className="truncate">{gym.address}</span>
-                        </p>
-                      )}
-                      {gym.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{gym.description}</p>
-                      )}
-                    </div>
-                    <button className="flex-shrink-0 p-2 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                      <ArrowRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           ) : (
             <div className="bg-card rounded-xl p-8 shadow-card border border-border/50 text-center">
@@ -404,11 +554,11 @@ export default function GymMembership() {
                 <Building2 className="h-8 w-8 text-muted-foreground" />
               </div>
               <h2 className="font-semibold mb-2">
-                {gymSearchQuery ? "No Gyms Found" : "No Gyms Available"}
+                {gymSearchQuery || selectedFacilityFilters.length > 0 ? "No Gyms Found" : "No Gyms Available"}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {gymSearchQuery 
-                  ? "Try adjusting your search terms"
+                {gymSearchQuery || selectedFacilityFilters.length > 0
+                  ? "Try adjusting your search or filters"
                   : "Check back later for available gyms in your area"
                 }
               </p>
@@ -426,36 +576,36 @@ export default function GymMembership() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[69]"
+              className="fixed inset-0 bg-black/50 z-50"
               onClick={() => setShowQR(null)}
             />
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="fixed inset-4 m-auto w-[90%] max-w-sm h-fit bg-card rounded-2xl z-[70] shadow-elevated p-6"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 bg-card rounded-2xl p-6 z-50 max-w-sm mx-auto"
             >
               <button
                 onClick={() => setShowQR(null)}
-                className="absolute right-4 top-4 p-2 rounded-full bg-muted"
+                className="absolute top-4 right-4 p-2 hover:bg-muted rounded-full"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
-
-              <h2 className="text-lg font-semibold text-center mb-2">Check-in QR Code</h2>
-              {showQR.number && (
-                <p className="text-center font-mono text-sm text-muted-foreground mb-4">
-                  {showQR.number}
-                </p>
-              )}
               
-              <div className="flex justify-center mb-4 bg-white p-4 rounded-xl">
-                {generateQRCode(showQR.token)}
+              <div className="text-center">
+                <h3 className="text-lg font-semibold mb-2">Your QR Code</h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Scan this at check-in
+                </p>
+                
+                <div className="bg-white p-4 rounded-xl inline-block mb-4">
+                  {generateQRCode(showQR.token)}
+                </div>
+                
+                {showQR.number && (
+                  <p className="font-mono text-lg font-semibold">{showQR.number}</p>
+                )}
               </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                Show this to staff to check in
-              </p>
             </motion.div>
           </>
         )}
@@ -469,12 +619,13 @@ export default function GymMembership() {
       />
 
       {/* Membership Detail Sheet */}
-      <MembershipDetailSheet
-        membership={selectedMembership}
-        open={!!selectedMembership}
-        onOpenChange={(open) => !open && setSelectedMembership(null)}
-        onMembershipUpdated={refetchMemberships}
-      />
+      {selectedMembership && (
+        <MembershipDetailSheet
+          membership={selectedMembership}
+          open={!!selectedMembership}
+          onOpenChange={(open) => !open && setSelectedMembership(null)}
+        />
+      )}
     </div>
   );
 }
