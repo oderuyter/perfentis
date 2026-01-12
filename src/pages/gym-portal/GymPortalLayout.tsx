@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
-  CreditCard,
   Calendar,
   CalendarCheck,
   UserCog,
@@ -17,7 +16,8 @@ import {
   X,
   ChevronDown,
   LogOut,
-  Layers
+  Layers,
+  MapPin
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
@@ -40,8 +40,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: "/gym-portal/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/gym-portal/members", icon: Users, label: "Members" },
-  { to: "/gym-portal/memberships", icon: CreditCard, label: "Memberships" },
   { to: "/gym-portal/membership-levels", icon: Layers, label: "Membership Levels" },
+  { to: "/gym-portal/spaces", icon: MapPin, label: "Spaces" },
   { to: "/gym-portal/classes", icon: Calendar, label: "Classes & Schedule" },
   { to: "/gym-portal/bookings", icon: CalendarCheck, label: "Bookings" },
   { to: "/gym-portal/staff", icon: UserCog, label: "Staff" },
