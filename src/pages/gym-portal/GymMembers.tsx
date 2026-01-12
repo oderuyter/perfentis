@@ -20,7 +20,10 @@ import {
   AlertTriangle,
   FileText,
   Loader2,
-  UserPlus
+  UserPlus,
+  QrCode,
+  Trash2,
+  Send
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -74,6 +77,8 @@ interface MemberWithDetails {
   tier: string | null;
   created_at: string;
   start_date: string | null;
+  suspended_until: string | null;
+  suspension_reason: string | null;
   profile: {
     display_name: string | null;
     avatar_url: string | null;
@@ -94,6 +99,7 @@ interface MemberNote {
   tag: string | null;
   created_at: string;
   author_id: string;
+  author_name: string | null;
 }
 
 const NOTE_TAGS = ["general", "billing", "injury", "behaviour", "admin"];
@@ -119,31 +125,22 @@ export default function GymMembers() {
   const [newNoteTag, setNewNoteTag] = useState("general");
   const [addingNote, setAddingNote] = useState(false);
 
-  // Add member modal
-  const [showAddMember, setShowAddMember] = useState(false);
-  const [addMemberData, setAddMemberData] = useState({
-    email: "",
-    displayName: "",
-    phone: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    postcode: "",
-    country: "",
-    emergencyName: "",
-    emergencyRelationship: "",
-    emergencyPhone: "",
-    tier: "standard"
-  });
-  const [addingMember, setAddingMember] = useState(false);
-  const [matchedUser, setMatchedUser] = useState<{ id: string; display_name: string | null } | null>(null);
-  const [checkingEmail, setCheckingEmail] = useState(false);
+  // Invite member modal
+  const [showInviteMember, setShowInviteMember] = useState(false);
 
   // Confirm dialogs
   const [confirmAction, setConfirmAction] = useState<{
     type: "suspend" | "reinstate" | "offboard";
     member: MemberWithDetails;
   } | null>(null);
+
+  // Suspend modal with date picker
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [suspendData, setSuspendData] = useState({
+    suspendUntil: "",
+    reason: ""
+  });
+  const [suspendingMember, setSuspendingMember] = useState<MemberWithDetails | null>(null);
 
   // Contact editing
   const [editingContact, setEditingContact] = useState(false);
@@ -160,21 +157,34 @@ export default function GymMembers() {
   });
   const [savingContact, setSavingContact] = useState(false);
 
+  // Staff profiles for author lookup
+  const [staffProfiles, setStaffProfiles] = useState<Map<string, string>>(new Map());
+
   useEffect(() => {
     if (selectedGymId) {
       fetchMembers();
+      fetchStaffProfiles();
     }
   }, [selectedGymId, statusFilter, tierFilter, page]);
+
+  const fetchStaffProfiles = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_id, display_name");
+    if (data) {
+      const map = new Map(data.map(p => [p.user_id, p.display_name || "Unknown"]));
+      setStaffProfiles(map);
+    }
+  };
 
   const fetchMembers = async () => {
     if (!selectedGymId) return;
     setIsLoading(true);
 
     try {
-      // First fetch memberships
       let query = supabase
         .from("memberships")
-        .select("id, user_id, membership_number, status, tier, created_at, start_date")
+        .select("id, user_id, membership_number, status, tier, created_at, start_date, suspended_until, suspension_reason")
         .eq("gym_id", selectedGymId)
         .order("created_at", { ascending: false })
         .range((page - 1) * pageSize, page * pageSize - 1);
@@ -195,7 +205,6 @@ export default function GymMembers() {
         return;
       }
 
-      // Get unique user IDs and fetch their profiles separately
       const userIds = [...new Set(memberships.map(m => m.user_id))];
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
@@ -206,12 +215,10 @@ export default function GymMembers() {
         console.warn("Error fetching profiles:", profilesError);
       }
 
-      // Create a map for quick profile lookup
       const profileMap = new Map(
         (profiles || []).map(p => [p.user_id, { display_name: p.display_name, avatar_url: p.avatar_url }])
       );
 
-      // Map the data with profiles
       const mappedMembers: MemberWithDetails[] = memberships.map((m) => ({
         id: m.id,
         user_id: m.user_id,
@@ -220,6 +227,8 @@ export default function GymMembers() {
         tier: m.tier,
         created_at: m.created_at,
         start_date: m.start_date,
+        suspended_until: m.suspended_until,
+        suspension_reason: m.suspension_reason,
         profile: profileMap.get(m.user_id) || null
       }));
 
@@ -232,96 +241,10 @@ export default function GymMembers() {
     }
   };
 
-  // Email lookup for identity matching (placeholder - would use edge function in production)
-  const checkEmailForMatch = async (email: string) => {
-    if (!email.includes("@")) {
-      setMatchedUser(null);
-      return;
-    }
-
-    setCheckingEmail(true);
-    try {
-      // Placeholder: In production, you'd have an edge function to check auth.users by email
-      // For now, we just clear any matched user
-      setMatchedUser(null);
-    } catch (error) {
-      console.error("Error checking email:", error);
-    } finally {
-      setCheckingEmail(false);
-    }
-  };
-
-  const handleAddMember = async () => {
-    if (!selectedGymId || !addMemberData.email) {
-      toast.error("Email is required");
-      return;
-    }
-
-    setAddingMember(true);
-    try {
-      // For now, create a membership placeholder
-      // In production, you'd either link to existing user or send invite
-
-      const { data: membership, error: membershipError } = await supabase
-        .from("memberships")
-        .insert({
-          gym_id: selectedGymId,
-          user_id: user?.id, // Placeholder - should be matched user or new user
-          status: "active",
-          tier: addMemberData.tier,
-          start_date: new Date().toISOString().split("T")[0]
-        })
-        .select()
-        .single();
-
-      if (membershipError) throw membershipError;
-
-      // Create contact details
-      if (membership) {
-        await supabase.from("member_contacts").insert({
-          membership_id: membership.id,
-          phone: addMemberData.phone || null,
-          address_line1: addMemberData.addressLine1 || null,
-          address_line2: addMemberData.addressLine2 || null,
-          city: addMemberData.city || null,
-          postcode: addMemberData.postcode || null,
-          country: addMemberData.country || null,
-          emergency_name: addMemberData.emergencyName || null,
-          emergency_relationship: addMemberData.emergencyRelationship || null,
-          emergency_phone: addMemberData.emergencyPhone || null
-        });
-      }
-
-      toast.success("Member added successfully");
-      setShowAddMember(false);
-      setAddMemberData({
-        email: "",
-        displayName: "",
-        phone: "",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        postcode: "",
-        country: "",
-        emergencyName: "",
-        emergencyRelationship: "",
-        emergencyPhone: "",
-        tier: "standard"
-      });
-      fetchMembers();
-    } catch (error) {
-      console.error("Error adding member:", error);
-      toast.error("Failed to add member");
-    } finally {
-      setAddingMember(false);
-    }
-  };
-
   const openMemberDetail = async (member: MemberWithDetails) => {
     setSelectedMember(member);
     setNotesLoading(true);
 
-    // Fetch contact details
     const { data: contact } = await supabase
       .from("member_contacts")
       .select("*")
@@ -340,9 +263,20 @@ export default function GymMembers() {
         emergency_relationship: contact.emergency_relationship || "",
         emergency_phone: contact.emergency_phone || ""
       });
+    } else {
+      setContactData({
+        phone: "",
+        address_line1: "",
+        address_line2: "",
+        city: "",
+        postcode: "",
+        country: "",
+        emergency_name: "",
+        emergency_relationship: "",
+        emergency_phone: ""
+      });
     }
 
-    // Fetch notes
     const { data: notes } = await supabase
       .from("member_notes")
       .select("*")
@@ -354,13 +288,16 @@ export default function GymMembers() {
   };
 
   const handleAddNote = async () => {
-    if (!selectedMember || !newNote.trim()) return;
+    if (!selectedMember || !newNote.trim() || !user) return;
 
     setAddingNote(true);
     try {
+      const authorName = staffProfiles.get(user.id) || "Staff";
+      
       const { error } = await supabase.from("member_notes").insert({
         membership_id: selectedMember.id,
-        author_id: user?.id,
+        author_id: user.id,
+        author_name: authorName,
         note_text: newNote.trim(),
         tag: newNoteTag
       });
@@ -370,7 +307,6 @@ export default function GymMembers() {
       toast.success("Note added");
       setNewNote("");
       
-      // Refresh notes
       const { data: notes } = await supabase
         .from("member_notes")
         .select("*")
@@ -385,12 +321,30 @@ export default function GymMembers() {
     }
   };
 
+  const handleDeleteNote = async (noteId: string) => {
+    if (!selectedMember) return;
+    
+    try {
+      const { error } = await supabase
+        .from("member_notes")
+        .delete()
+        .eq("id", noteId);
+
+      if (error) throw error;
+
+      toast.success("Note deleted");
+      setMemberNotes(prev => prev.filter(n => n.id !== noteId));
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      toast.error("Failed to delete note");
+    }
+  };
+
   const handleSaveContact = async () => {
     if (!selectedMember) return;
 
     setSavingContact(true);
     try {
-      // Upsert contact
       const { error } = await supabase
         .from("member_contacts")
         .upsert({
@@ -412,15 +366,67 @@ export default function GymMembers() {
     }
   };
 
-  const handleMemberAction = async (type: "suspend" | "reinstate" | "offboard") => {
+  const openSuspendModal = (member: MemberWithDetails) => {
+    setSuspendingMember(member);
+    setSuspendData({ suspendUntil: "", reason: "" });
+    setShowSuspendModal(true);
+  };
+
+  const handleSuspendWithDate = async () => {
+    if (!suspendingMember) return;
+
+    try {
+      const updateData: any = { 
+        status: "suspended",
+        suspended_at: new Date().toISOString()
+      };
+      
+      if (suspendData.suspendUntil) {
+        updateData.suspended_until = new Date(suspendData.suspendUntil).toISOString();
+      }
+      if (suspendData.reason) {
+        updateData.suspension_reason = suspendData.reason;
+      }
+
+      const { error } = await supabase
+        .from("memberships")
+        .update(updateData)
+        .eq("id", suspendingMember.id);
+
+      if (error) throw error;
+
+      toast.success("Member suspended");
+      setShowSuspendModal(false);
+      setSuspendingMember(null);
+      fetchMembers();
+      if (selectedMember?.id === suspendingMember.id) {
+        setSelectedMember(null);
+      }
+    } catch (error) {
+      console.error("Error suspending member:", error);
+      toast.error("Failed to suspend member");
+    }
+  };
+
+  const handleMemberAction = async (type: "reinstate" | "offboard") => {
     if (!confirmAction) return;
 
     try {
-      const newStatus = type === "suspend" ? "suspended" : type === "reinstate" ? "active" : "cancelled";
+      const updateData: any = {};
+      
+      if (type === "reinstate") {
+        updateData.status = "active";
+        updateData.suspended_until = null;
+        updateData.suspension_reason = null;
+        updateData.suspended_at = null;
+      } else if (type === "offboard") {
+        updateData.status = "cancelled";
+        updateData.offboarded_at = new Date().toISOString();
+      }
       
       const { error } = await supabase
         .from("memberships")
-        .update({ status: newStatus })
+        .update(updateData)
         .eq("id", confirmAction.member.id);
 
       if (error) throw error;
@@ -435,6 +441,12 @@ export default function GymMembers() {
       console.error(`Error ${type}ing member:`, error);
       toast.error(`Failed to ${type} member`);
     }
+  };
+
+  const generateQRCodeUrl = (membershipNumber: string | null) => {
+    if (!membershipNumber) return null;
+    // Using a QR code API
+    return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(membershipNumber)}`;
   };
 
   const filteredMembers = members.filter((member) => {
@@ -491,11 +503,11 @@ export default function GymMembers() {
           <p className="text-muted-foreground">Manage your gym members</p>
         </div>
         <button
-          onClick={() => setShowAddMember(true)}
+          onClick={() => setShowInviteMember(true)}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
         >
-          <Plus className="h-4 w-4" />
-          Add Member
+          <Send className="h-4 w-4" />
+          Invite Member
         </button>
       </div>
 
@@ -587,9 +599,16 @@ export default function GymMembers() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadgeClass(member.status)}`}>
-                        {member.status}
-                      </span>
+                      <div>
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getStatusBadgeClass(member.status)}`}>
+                          {member.status}
+                        </span>
+                        {member.status === "suspended" && member.suspended_until && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Until {format(new Date(member.suspended_until), "MMM d, yyyy")}
+                          </p>
+                        )}
+                      </div>
                     </td>
                     <td className="py-3 px-4 hidden lg:table-cell capitalize">
                       {member.tier || "Standard"}
@@ -614,7 +633,7 @@ export default function GymMembers() {
                           <DropdownMenuSeparator />
                           {member.status === "active" ? (
                             <DropdownMenuItem
-                              onClick={() => setConfirmAction({ type: "suspend", member })}
+                              onClick={() => openSuspendModal(member)}
                               className="text-orange-600"
                             >
                               <UserX className="h-4 w-4 mr-2" />
@@ -705,6 +724,19 @@ export default function GymMembers() {
                   </span>
                 </div>
 
+                {selectedMember.status === "suspended" && selectedMember.suspended_until && (
+                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p className="text-sm text-orange-700">
+                      <strong>Suspended until:</strong> {format(new Date(selectedMember.suspended_until), "MMMM d, yyyy 'at' h:mm a")}
+                    </p>
+                    {selectedMember.suspension_reason && (
+                      <p className="text-sm text-orange-600 mt-1">
+                        <strong>Reason:</strong> {selectedMember.suspension_reason}
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-muted/50 rounded-lg p-3">
                     <p className="text-xs text-muted-foreground">Tier</p>
@@ -720,21 +752,35 @@ export default function GymMembers() {
                   </div>
                 </div>
 
-                {/* QR Code Preview */}
+                {/* QR Code */}
                 <div className="bg-muted/50 rounded-lg p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-2">Membership QR Code</p>
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center justify-center gap-2">
+                    <QrCode className="h-4 w-4" />
+                    Membership QR Code
+                  </p>
                   <div className="inline-block p-4 bg-white rounded-lg">
-                    <div className="h-24 w-24 bg-muted flex items-center justify-center text-xs text-muted-foreground">
-                      QR Preview
-                    </div>
+                    {selectedMember.membership_number ? (
+                      <img 
+                        src={generateQRCodeUrl(selectedMember.membership_number) || ""} 
+                        alt="Membership QR Code"
+                        className="h-32 w-32"
+                      />
+                    ) : (
+                      <div className="h-32 w-32 flex items-center justify-center text-xs text-muted-foreground">
+                        No membership number
+                      </div>
+                    )}
                   </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Scan to check in at the gym
+                  </p>
                 </div>
 
                 {/* Actions */}
                 <div className="flex gap-2 pt-4 border-t border-border">
                   {selectedMember.status === "active" && (
                     <button
-                      onClick={() => setConfirmAction({ type: "suspend", member: selectedMember })}
+                      onClick={() => openSuspendModal(selectedMember)}
                       className="flex-1 py-2 border border-orange-500 text-orange-600 rounded-lg font-medium hover:bg-orange-50 transition-colors"
                     >
                       Suspend
@@ -858,7 +904,13 @@ export default function GymMembers() {
                       <Phone className="h-5 w-5 text-muted-foreground mt-0.5" />
                       <div>
                         <p className="text-xs text-muted-foreground">Phone</p>
-                        <p className="font-medium">{contactData.phone || "Not provided"}</p>
+                        {contactData.phone ? (
+                          <a href={`tel:${contactData.phone}`} className="font-medium text-primary hover:underline">
+                            {contactData.phone}
+                          </a>
+                        ) : (
+                          <p className="font-medium">Not provided</p>
+                        )}
                       </div>
                     </div>
 
@@ -887,7 +939,11 @@ export default function GymMembers() {
                         <div>
                           <p className="font-medium">{contactData.emergency_name}</p>
                           <p className="text-sm text-muted-foreground">
-                            {contactData.emergency_relationship} • {contactData.emergency_phone}
+                            {contactData.emergency_relationship} • {contactData.emergency_phone && (
+                              <a href={`tel:${contactData.emergency_phone}`} className="text-primary hover:underline">
+                                {contactData.emergency_phone}
+                              </a>
+                            )}
                           </p>
                         </div>
                       ) : (
@@ -955,14 +1011,28 @@ export default function GymMembers() {
                     </p>
                   ) : (
                     memberNotes.map((note) => (
-                      <div key={note.id} className="p-3 bg-muted/50 rounded-lg">
+                      <div key={note.id} className="p-3 bg-muted/50 rounded-lg group">
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${getNoteTagClass(note.tag)}`}>
-                            {note.tag || "general"}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(note.created_at), "MMM d, yyyy 'at' h:mm a")}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${getNoteTagClass(note.tag)}`}>
+                              {note.tag || "general"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              by {note.author_name || staffProfiles.get(note.author_id) || "Unknown"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(note.created_at), "MMM d, yyyy 'at' h:mm a")}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteNote(note.id)}
+                              className="p-1 opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-destructive rounded transition-all"
+                              title="Delete note"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                         <p className="text-sm">{note.note_text}</p>
                       </div>
@@ -975,156 +1045,58 @@ export default function GymMembers() {
         </DialogContent>
       </Dialog>
 
-      {/* Add Member Modal */}
-      <Dialog open={showAddMember} onOpenChange={setShowAddMember}>
-        <DialogContent className="max-w-lg">
+      {/* Invite Member Dialog */}
+      <InviteMemberDialog
+        open={showInviteMember}
+        onOpenChange={setShowInviteMember}
+        gymId={selectedGymId}
+        onSuccess={fetchMembers}
+      />
+
+      {/* Suspend Member Modal with Date */}
+      <Dialog open={showSuspendModal} onOpenChange={setShowSuspendModal}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Add New Member</DialogTitle>
+            <DialogTitle>Suspend Member</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4 mt-4">
-            {/* Email with identity matching */}
+            <p className="text-sm text-muted-foreground">
+              Suspend {suspendingMember?.profile?.display_name || "this member"}? They will lose access until reinstated.
+            </p>
+            
             <div>
-              <Label>Email *</Label>
-              <div className="relative">
-                <Input
-                  type="email"
-                  value={addMemberData.email}
-                  onChange={(e) => {
-                    setAddMemberData({ ...addMemberData, email: e.target.value });
-                    checkEmailForMatch(e.target.value);
-                  }}
-                  placeholder="member@example.com"
-                />
-                {checkingEmail && (
-                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-                )}
-              </div>
-              {matchedUser && (
-                <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
-                  ✓ Found existing user: {matchedUser.display_name}
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Display Name</Label>
-                <Input
-                  value={addMemberData.displayName}
-                  onChange={(e) => setAddMemberData({ ...addMemberData, displayName: e.target.value })}
-                  placeholder="John Smith"
-                  disabled={!!matchedUser}
-                />
-              </div>
-              <div>
-                <Label>Tier</Label>
-                <Select
-                  value={addMemberData.tier}
-                  onValueChange={(v) => setAddMemberData({ ...addMemberData, tier: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="standard">Standard</SelectItem>
-                    <SelectItem value="premium">Premium</SelectItem>
-                    <SelectItem value="vip">VIP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label>Phone</Label>
+              <Label>Suspend Until (optional)</Label>
               <Input
-                value={addMemberData.phone}
-                onChange={(e) => setAddMemberData({ ...addMemberData, phone: e.target.value })}
-                placeholder="+1 234 567 8900"
+                type="datetime-local"
+                value={suspendData.suspendUntil}
+                onChange={(e) => setSuspendData({ ...suspendData, suspendUntil: e.target.value })}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave empty for indefinite suspension
+              </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Address Line 1</Label>
-                <Input
-                  value={addMemberData.addressLine1}
-                  onChange={(e) => setAddMemberData({ ...addMemberData, addressLine1: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Address Line 2</Label>
-                <Input
-                  value={addMemberData.addressLine2}
-                  onChange={(e) => setAddMemberData({ ...addMemberData, addressLine2: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>City</Label>
-                <Input
-                  value={addMemberData.city}
-                  onChange={(e) => setAddMemberData({ ...addMemberData, city: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Postcode</Label>
-                <Input
-                  value={addMemberData.postcode}
-                  onChange={(e) => setAddMemberData({ ...addMemberData, postcode: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label>Country</Label>
-                <Input
-                  value={addMemberData.country}
-                  onChange={(e) => setAddMemberData({ ...addMemberData, country: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-border">
-              <h4 className="font-medium mb-3">Emergency Contact</h4>
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>Name</Label>
-                  <Input
-                    value={addMemberData.emergencyName}
-                    onChange={(e) => setAddMemberData({ ...addMemberData, emergencyName: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>Relationship</Label>
-                  <Input
-                    value={addMemberData.emergencyRelationship}
-                    onChange={(e) => setAddMemberData({ ...addMemberData, emergencyRelationship: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label>Phone</Label>
-                  <Input
-                    value={addMemberData.emergencyPhone}
-                    onChange={(e) => setAddMemberData({ ...addMemberData, emergencyPhone: e.target.value })}
-                  />
-                </div>
-              </div>
+            <div>
+              <Label>Reason (optional)</Label>
+              <Textarea
+                value={suspendData.reason}
+                onChange={(e) => setSuspendData({ ...suspendData, reason: e.target.value })}
+                placeholder="Enter suspension reason..."
+              />
             </div>
 
             <div className="flex gap-2 pt-4">
               <button
-                onClick={() => setShowAddMember(false)}
+                onClick={() => setShowSuspendModal(false)}
                 className="flex-1 py-2 border border-border rounded-lg font-medium hover:bg-muted transition-colors"
               >
                 Cancel
               </button>
               <button
-                onClick={handleAddMember}
-                disabled={addingMember || !addMemberData.email}
-                className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                onClick={handleSuspendWithDate}
+                className="flex-1 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 transition-colors"
               >
-                {addingMember ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Add Member"}
+                Suspend Member
               </button>
             </div>
           </div>
@@ -1136,13 +1108,10 @@ export default function GymMembers() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmAction?.type === "suspend" && "Suspend Member"}
               {confirmAction?.type === "reinstate" && "Reinstate Member"}
               {confirmAction?.type === "offboard" && "Offboard Member"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {confirmAction?.type === "suspend" && 
-                `Are you sure you want to suspend ${confirmAction.member.profile?.display_name || "this member"}? They will lose access until reinstated.`}
               {confirmAction?.type === "reinstate" && 
                 `Are you sure you want to reinstate ${confirmAction.member.profile?.display_name || "this member"}? Their access will be restored.`}
               {confirmAction?.type === "offboard" && 
@@ -1152,7 +1121,7 @@ export default function GymMembers() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => handleMemberAction(confirmAction!.type)}
+              onClick={() => handleMemberAction(confirmAction!.type as "reinstate" | "offboard")}
               className={confirmAction?.type === "offboard" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
             >
               Confirm
