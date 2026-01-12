@@ -71,14 +71,14 @@ export default function GymSpaces() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase
-        .from("gym_spaces" as any)
+      const { data, error } = await (supabase as any)
+        .from("gym_spaces")
         .select("*")
         .eq("gym_id", selectedGymId)
         .order("display_order");
 
       if (error) throw error;
-      setSpaces((data || []) as GymSpace[]);
+      setSpaces((data || []) as unknown as GymSpace[]);
     } catch (error) {
       console.error("Error fetching spaces:", error);
       toast.error("Failed to load spaces");
