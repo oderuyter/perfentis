@@ -78,7 +78,7 @@ export default function GymSpaces() {
         .order("display_order");
 
       if (error) throw error;
-      setSpaces((data || []) as unknown as GymSpace[]);
+      setSpaces((data || []) as GymSpace[]);
     } catch (error) {
       console.error("Error fetching spaces:", error);
       toast.error("Failed to load spaces");
@@ -110,8 +110,8 @@ export default function GymSpaces() {
     setIsSaving(true);
     try {
       if (editingSpace) {
-        const { error } = await supabase
-          .from("gym_spaces" as any)
+        const { error } = await (supabase as any)
+          .from("gym_spaces")
           .update({
             name: formData.name,
             description: formData.description || null,
@@ -122,8 +122,8 @@ export default function GymSpaces() {
         if (error) throw error;
         toast.success("Space updated");
       } else {
-        const { error } = await supabase
-          .from("gym_spaces" as any)
+        const { error } = await (supabase as any)
+          .from("gym_spaces")
           .insert({
             gym_id: selectedGymId,
             name: formData.name,
@@ -147,8 +147,8 @@ export default function GymSpaces() {
 
   const handleToggleActive = async (space: GymSpace) => {
     try {
-      const { error } = await supabase
-        .from("gym_spaces" as any)
+      const { error } = await (supabase as any)
+        .from("gym_spaces")
         .update({ is_active: !space.is_active })
         .eq("id", space.id);
 
@@ -164,8 +164,8 @@ export default function GymSpaces() {
     if (!deleteConfirm) return;
 
     try {
-      const { error } = await supabase
-        .from("gym_spaces" as any)
+      const { error } = await (supabase as any)
+        .from("gym_spaces")
         .delete()
         .eq("id", deleteConfirm.id);
 
