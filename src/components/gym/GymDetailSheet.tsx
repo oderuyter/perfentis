@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Building2, MapPin, Mail, Phone, Globe, Loader2, MessageSquare, CreditCard, ArrowLeft, CheckCircle } from "lucide-react";
+import { Building2, MapPin, Mail, Phone, Globe, Loader2, MessageSquare, CreditCard, ArrowLeft, CheckCircle, Dumbbell, Droplets, Car, Wifi, Users, Heart, Waves, Flame, Bike, PersonStanding, Trees, Swords, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -38,6 +38,8 @@ type MembershipLevel = {
   is_active: boolean;
 };
 
+type GymFacilities = Record<string, boolean | string | null>;
+
 type FlowStep = "select" | "request-info" | "signup" | "payment" | "success";
 
 interface GymDetailSheetProps {
@@ -46,10 +48,40 @@ interface GymDetailSheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const FACILITY_CONFIG: { key: string; label: string; icon: any; category: string }[] = [
+  // Equipment
+  { key: "weight_machines", label: "Weight Machines", icon: Dumbbell, category: "Equipment" },
+  { key: "free_weights", label: "Free Weights", icon: Dumbbell, category: "Equipment" },
+  { key: "dumbbells", label: "Dumbbells", icon: Dumbbell, category: "Equipment" },
+  { key: "cardio_area", label: "Cardio Area", icon: Heart, category: "Equipment" },
+  { key: "functional_training", label: "Functional Training", icon: PersonStanding, category: "Equipment" },
+  { key: "turf_area", label: "Turf Area", icon: Trees, category: "Equipment" },
+  // Studios
+  { key: "group_exercise_studio", label: "Group Exercise", icon: Users, category: "Studios" },
+  { key: "yoga_studio", label: "Yoga Studio", icon: PersonStanding, category: "Studios" },
+  { key: "spin_studio", label: "Spin Studio", icon: Bike, category: "Studios" },
+  { key: "boxing_area", label: "Boxing Area", icon: Swords, category: "Studios" },
+  // Recreation
+  { key: "swimming_pool", label: "Swimming Pool", icon: Waves, category: "Recreation" },
+  { key: "spa", label: "Spa", icon: Droplets, category: "Recreation" },
+  { key: "sauna", label: "Sauna", icon: Flame, category: "Recreation" },
+  { key: "steam_room", label: "Steam Room", icon: Droplets, category: "Recreation" },
+  { key: "outdoor_training", label: "Outdoor Training", icon: Trees, category: "Recreation" },
+  // Amenities
+  { key: "lockers", label: "Lockers", icon: Building2, category: "Amenities" },
+  { key: "showers", label: "Showers", icon: Droplets, category: "Amenities" },
+  { key: "towel_service", label: "Towel Service", icon: Award, category: "Amenities" },
+  { key: "parking", label: "Parking", icon: Car, category: "Amenities" },
+  { key: "wifi", label: "WiFi", icon: Wifi, category: "Amenities" },
+  { key: "personal_training", label: "Personal Training", icon: Users, category: "Services" },
+  { key: "cafe", label: "Café", icon: Building2, category: "Services" },
+];
+
 export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProps) {
   const { user } = useAuth();
   const [gym, setGym] = useState<GymDetail | null>(null);
   const [levels, setLevels] = useState<MembershipLevel[]>([]);
+  const [facilities, setFacilities] = useState<GymFacilities | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   
@@ -82,7 +114,7 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
     
     setLoading(true);
     
-    const [gymResult, levelsResult] = await Promise.all([
+    const [gymResult, levelsResult, facilitiesResult] = await Promise.all([
       supabase
         .from("gyms")
         .select("id, name, address, description, logo_url, email, phone, website")
@@ -93,7 +125,12 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
         .select("*")
         .eq("gym_id", gymId)
         .eq("is_active", true)
-        .order("display_order", { ascending: true })
+        .order("display_order", { ascending: true }),
+      supabase
+        .from("gym_facilities")
+        .select("*")
+        .eq("gym_id", gymId)
+        .single()
     ]);
     
     if (gymResult.data) {
@@ -105,6 +142,10 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
       if (levelsResult.data.length > 0) {
         setSelectedLevelId(levelsResult.data[0].id);
       }
+    }
+    
+    if (facilitiesResult.data) {
+      setFacilities(facilitiesResult.data);
     }
     
     setLoading(false);
@@ -297,6 +338,48 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
                   )}
                 </div>
                 
+                {/* Facilities */}
+                {facilities && (() => {
+                  const availableFacilities = FACILITY_CONFIG.filter(f => facilities[f.key] === true);
+                  if (availableFacilities.length === 0) return null;
+                  
+                  const groupedByCategory = availableFacilities.reduce((acc, f) => {
+                    if (!acc[f.category]) acc[f.category] = [];
+                    acc[f.category].push(f);
+                    return acc;
+                  }, {} as Record<string, typeof FACILITY_CONFIG>);
+                  
+                  return (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
+                        <Dumbbell className="h-4 w-4" />
+                        Facilities
+                      </h3>
+                      <div className="space-y-4">
+                        {Object.entries(groupedByCategory).map(([category, items]) => (
+                          <div key={category}>
+                            <p className="text-xs font-medium text-muted-foreground mb-2">{category}</p>
+                            <div className="flex flex-wrap gap-2">
+                              {items.map((item) => {
+                                const IconComponent = item.icon;
+                                return (
+                                  <div
+                                    key={item.key}
+                                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/10 text-primary rounded-full text-xs font-medium"
+                                  >
+                                    <IconComponent className="h-3 w-3" />
+                                    {item.label}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Membership Levels Preview */}
                 {levels.length > 0 && (
                   <div className="mb-6">
