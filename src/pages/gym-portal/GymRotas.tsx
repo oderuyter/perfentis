@@ -634,9 +634,9 @@ export default function GymRotas() {
               Clone all {rotas.length} shifts from the current week to selected future weeks.
             </p>
             
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[300px] overflow-y-auto">
               <Label>Select target weeks:</Label>
-              {[1, 2, 3, 4].map(weekOffset => {
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(weekOffset => {
                 const targetWeekStart = addWeeks(weekStart, weekOffset);
                 return (
                   <label key={weekOffset} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted">

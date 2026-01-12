@@ -23,8 +23,11 @@ import {
   UserPlus,
   QrCode,
   Trash2,
-  Send
+  Send,
+  CreditCard,
+  Receipt
 } from "lucide-react";
+import { MemberPaymentsTab } from "@/components/gym-portal/MemberPaymentsTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -699,10 +702,11 @@ export default function GymMembers() {
 
           {selectedMember && (
             <Tabs defaultValue="profile" className="mt-4">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="contact">Contact</TabsTrigger>
-                <TabsTrigger value="notes">Staff Notes</TabsTrigger>
+                <TabsTrigger value="payments">Payments</TabsTrigger>
+                <TabsTrigger value="notes">Notes</TabsTrigger>
               </TabsList>
 
               {/* Profile Tab */}
@@ -959,6 +963,14 @@ export default function GymMembers() {
                     </button>
                   </div>
                 )}
+              </TabsContent>
+
+              {/* Payments Tab */}
+              <TabsContent value="payments" className="space-y-4 mt-4">
+                <MemberPaymentsTab 
+                  membershipId={selectedMember.id} 
+                  gymId={selectedGymId!}
+                />
               </TabsContent>
 
               {/* Notes Tab */}

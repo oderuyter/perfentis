@@ -2430,6 +2430,66 @@ export type Database = {
           },
         ]
       }
+      gym_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string | null
+          description: string | null
+          gym_id: string
+          id: string
+          invoice_number: string | null
+          membership_id: string
+          payment_date: string
+          payment_method: string | null
+          payment_type: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          gym_id: string
+          id?: string
+          invoice_number?: string | null
+          membership_id: string
+          payment_date?: string
+          payment_method?: string | null
+          payment_type?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          gym_id?: string
+          id?: string
+          invoice_number?: string | null
+          membership_id?: string
+          payment_date?: string
+          payment_method?: string | null
+          payment_type?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_payments_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_payments_membership_id_fkey"
+            columns: ["membership_id"]
+            isOneToOne: false
+            referencedRelation: "memberships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_spaces: {
         Row: {
           capacity: number | null
