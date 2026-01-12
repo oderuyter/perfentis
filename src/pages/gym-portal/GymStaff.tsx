@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, Link } from "react-router-dom";
 import {
   UserCog,
   Plus,
@@ -11,7 +11,8 @@ import {
   Trash2,
   Award,
   FileText,
-  User
+  User,
+  ExternalLink
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -53,12 +54,15 @@ interface ContextType {
 
 interface StaffMember {
   id: string;
-  user_id: string;
+  user_id: string | null;
   position: string | null;
   hire_date: string | null;
   bio: string | null;
   certifications: string[] | null;
   accreditations: string[] | null;
+  email: string | null;
+  phone: string | null;
+  name: string | null;
   profiles: {
     display_name: string | null;
     avatar_url: string | null;
@@ -72,13 +76,23 @@ export default function GymStaff() {
   const [showAddStaff, setShowAddStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [editingStaff, setEditingStaff] = useState(false);
-  const [newStaff, setNewStaff] = useState({ email: "", position: "", role: "gym_staff" });
+  const [newStaff, setNewStaff] = useState({ 
+    email: "", 
+    name: "",
+    phone: "",
+    position: "", 
+    role: "gym_staff",
+    linkToUser: false
+  });
   const [adding, setAdding] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editData, setEditData] = useState({
     bio: "",
     certifications: "",
-    accreditations: ""
+    accreditations: "",
+    email: "",
+    phone: "",
+    name: ""
   });
 
   useEffect(() => {
@@ -94,15 +108,26 @@ export default function GymStaff() {
     try {
       const { data, error } = await (supabase as any)
         .from("gym_staff")
-        .select(`
-          *,
-          profiles:user_id(display_name, avatar_url)
-        `)
+        .select("*")
         .eq("gym_id", selectedGymId)
         .eq("is_active", true);
 
       if (error) throw error;
-      setStaff(data || []);
+      
+      // Fetch profiles separately for linked users
+      const staffWithProfiles = await Promise.all((data || []).map(async (s: any) => {
+        if (s.user_id) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("display_name, avatar_url")
+            .eq("user_id", s.user_id)
+            .single();
+          return { ...s, profiles: profile };
+        }
+        return { ...s, profiles: null };
+      }));
+      
+      setStaff(staffWithProfiles as StaffMember[]);
     } catch (error) {
       console.error("Error fetching staff:", error);
     } finally {
@@ -111,17 +136,43 @@ export default function GymStaff() {
   };
 
   const handleAddStaff = async () => {
-    if (!selectedGymId || !newStaff.email) return;
+    if (!selectedGymId || (!newStaff.email && !newStaff.name)) return;
     setAdding(true);
 
     try {
-      // In production, this would send an invitation email
-      // For now, show a placeholder message
-      toast.info("Staff invitation would be sent to " + newStaff.email);
+      // Check if this email is already a user
+      let userId = null;
+      if (newStaff.email && newStaff.linkToUser) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .eq("email", newStaff.email)
+          .single();
+        
+        if (profileData) {
+          userId = profileData.user_id;
+        }
+      }
+
+      // Create staff record
+      const { error } = await supabase.from("gym_staff").insert({
+        gym_id: selectedGymId,
+        user_id: userId,
+        position: newStaff.position || null,
+        email: newStaff.email || null,
+        phone: newStaff.phone || null,
+        name: newStaff.name || null,
+        hire_date: new Date().toISOString()
+      });
+
+      if (error) throw error;
+
+      toast.success(userId ? "Staff member linked" : "Staff member added");
       setShowAddStaff(false);
-      setNewStaff({ email: "", position: "", role: "gym_staff" });
+      setNewStaff({ email: "", name: "", phone: "", position: "", role: "gym_staff", linkToUser: false });
+      fetchStaff();
     } catch (error) {
-      toast.error("Failed to send invitation");
+      toast.error("Failed to add staff member");
     } finally {
       setAdding(false);
     }
@@ -145,7 +196,10 @@ export default function GymStaff() {
     setEditData({
       bio: member.bio || "",
       certifications: member.certifications?.join(", ") || "",
-      accreditations: member.accreditations?.join(", ") || ""
+      accreditations: member.accreditations?.join(", ") || "",
+      email: member.email || "",
+      phone: member.phone || "",
+      name: member.name || ""
     });
     setEditingStaff(false);
   };
@@ -169,7 +223,10 @@ export default function GymStaff() {
         .update({
           bio: editData.bio || null,
           certifications: certArray.length > 0 ? certArray : null,
-          accreditations: accredArray.length > 0 ? accredArray : null
+          accreditations: accredArray.length > 0 ? accredArray : null,
+          email: editData.email || null,
+          phone: editData.phone || null,
+          name: editData.name || null
         })
         .eq("id", selectedStaff.id);
 
@@ -184,13 +241,20 @@ export default function GymStaff() {
         ...prev,
         bio: editData.bio || null,
         certifications: certArray.length > 0 ? certArray : null,
-        accreditations: accredArray.length > 0 ? accredArray : null
+        accreditations: accredArray.length > 0 ? accredArray : null,
+        email: editData.email || null,
+        phone: editData.phone || null,
+        name: editData.name || null
       } : null);
     } catch (error) {
       toast.error("Failed to update profile");
     } finally {
       setSaving(false);
     }
+  };
+
+  const getDisplayName = (member: StaffMember) => {
+    return member.profiles?.display_name || member.name || "Unknown";
   };
 
   if (!selectedGymId) {
@@ -251,7 +315,14 @@ export default function GymStaff() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium">{s.profiles?.display_name || "Unknown"}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium">{getDisplayName(s)}</p>
+                      {s.user_id && (
+                        <span className="px-1.5 py-0.5 bg-green-500/20 text-green-700 dark:text-green-400 text-[10px] rounded-full">
+                          Linked
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">{s.position || "Staff"}</p>
                   </div>
                 </div>
@@ -277,11 +348,37 @@ export default function GymStaff() {
                 </DropdownMenu>
               </div>
               
+              {/* Contact Info */}
+              {(s.email || s.phone) && (
+                <div className="mt-3 space-y-1">
+                  {s.email && (
+                    <a 
+                      href={`mailto:${s.email}`} 
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                    >
+                      <Mail className="h-3 w-3" />
+                      {s.email}
+                    </a>
+                  )}
+                  {s.phone && (
+                    <a 
+                      href={`tel:${s.phone}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                    >
+                      <Phone className="h-3 w-3" />
+                      {s.phone}
+                    </a>
+                  )}
+                </div>
+              )}
+              
               {s.bio && (
                 <p className="text-sm text-muted-foreground mt-3 line-clamp-2">{s.bio}</p>
               )}
               
-              {(s.certifications?.length || s.accreditations?.length) && (
+              {(s.certifications?.length || s.accreditations?.length) ? (
                 <div className="mt-3 flex flex-wrap gap-1">
                   {s.certifications?.slice(0, 2).map((cert, i) => (
                     <span key={i} className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full">
@@ -294,7 +391,7 @@ export default function GymStaff() {
                     </span>
                   )}
                 </div>
-              )}
+              ) : null}
               
               <div className="mt-4 pt-4 border-t border-border">
                 <p className="text-xs text-muted-foreground">
@@ -314,12 +411,29 @@ export default function GymStaff() {
           </DialogHeader>
           <div className="space-y-4 mt-4">
             <div>
+              <Label>Name *</Label>
+              <Input
+                value={newStaff.name}
+                onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+                placeholder="Full name"
+              />
+            </div>
+            <div>
               <Label>Email</Label>
               <Input
                 type="email"
                 value={newStaff.email}
                 onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
                 placeholder="staff@example.com"
+              />
+            </div>
+            <div>
+              <Label>Phone</Label>
+              <Input
+                type="tel"
+                value={newStaff.phone}
+                onChange={(e) => setNewStaff({ ...newStaff, phone: e.target.value })}
+                placeholder="+44 123 456 7890"
               />
             </div>
             <div>
@@ -342,12 +456,24 @@ export default function GymStaff() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="linkToUser"
+                checked={newStaff.linkToUser}
+                onChange={(e) => setNewStaff({ ...newStaff, linkToUser: e.target.checked })}
+                className="rounded border-border"
+              />
+              <Label htmlFor="linkToUser" className="text-sm font-normal cursor-pointer">
+                Link to existing user account (if email matches)
+              </Label>
+            </div>
             <button
               onClick={handleAddStaff}
-              disabled={adding || !newStaff.email}
+              disabled={adding || (!newStaff.name && !newStaff.email)}
               className="w-full py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50"
             >
-              {adding ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Send Invitation"}
+              {adding ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Add Staff Member"}
             </button>
           </div>
         </DialogContent>
@@ -371,9 +497,17 @@ export default function GymStaff() {
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="text-xl font-semibold">
-                    {selectedStaff.profiles?.display_name || "Unknown"}
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-semibold">
+                      {getDisplayName(selectedStaff)}
+                    </h3>
+                    {selectedStaff.user_id && (
+                      <span className="px-2 py-0.5 bg-green-500/20 text-green-700 dark:text-green-400 text-xs rounded-full flex items-center gap-1">
+                        <ExternalLink className="h-3 w-3" />
+                        Linked User
+                      </span>
+                    )}
+                  </div>
                   <p className="text-muted-foreground">{selectedStaff.position || "Staff"}</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     Joined {selectedStaff.hire_date ? format(new Date(selectedStaff.hire_date), "MMM d, yyyy") : "—"}
@@ -382,14 +516,23 @@ export default function GymStaff() {
               </div>
 
               <Tabs defaultValue="about" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="about">About</TabsTrigger>
+                  <TabsTrigger value="contact">Contact</TabsTrigger>
                   <TabsTrigger value="credentials">Credentials</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="about" className="space-y-4 mt-4">
                   {editingStaff ? (
                     <>
+                      <div>
+                        <Label>Name</Label>
+                        <Input
+                          value={editData.name}
+                          onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                          placeholder="Full name"
+                        />
+                      </div>
                       <div>
                         <Label>Bio</Label>
                         <Textarea
@@ -437,6 +580,84 @@ export default function GymStaff() {
                   )}
                 </TabsContent>
 
+                <TabsContent value="contact" className="space-y-4 mt-4">
+                  {editingStaff ? (
+                    <>
+                      <div>
+                        <Label>Email</Label>
+                        <Input
+                          type="email"
+                          value={editData.email}
+                          onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                          placeholder="email@example.com"
+                        />
+                      </div>
+                      <div>
+                        <Label>Phone</Label>
+                        <Input
+                          type="tel"
+                          value={editData.phone}
+                          onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                          placeholder="+44 123 456 7890"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setEditingStaff(false)}
+                          className="flex-1 py-2 border border-border rounded-lg font-medium hover:bg-muted"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveProfile}
+                          disabled={saving}
+                          className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50"
+                        >
+                          {saving ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Save"}
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-3">
+                        <div className="bg-muted/50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Email</span>
+                          </div>
+                          {selectedStaff.email ? (
+                            <a href={`mailto:${selectedStaff.email}`} className="text-sm text-primary hover:underline">
+                              {selectedStaff.email}
+                            </a>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not set</p>
+                          )}
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Phone</span>
+                          </div>
+                          {selectedStaff.phone ? (
+                            <a href={`tel:${selectedStaff.phone}`} className="text-sm text-primary hover:underline">
+                              {selectedStaff.phone}
+                            </a>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">Not set</p>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setEditingStaff(true)}
+                        className="w-full py-2 border border-border rounded-lg font-medium hover:bg-muted"
+                      >
+                        <Edit className="h-4 w-4 inline mr-2" />
+                        Edit Contact Info
+                      </button>
+                    </>
+                  )}
+                </TabsContent>
+
                 <TabsContent value="credentials" className="space-y-4 mt-4">
                   {editingStaff ? (
                     <>
@@ -476,42 +697,42 @@ export default function GymStaff() {
                     </>
                   ) : (
                     <>
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Award className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Certifications</span>
-                        </div>
-                        {selectedStaff.certifications?.length ? (
-                          <div className="flex flex-wrap gap-2">
-                            {selectedStaff.certifications.map((cert, i) => (
-                              <span key={i} className="px-2 py-1 bg-primary/10 text-primary text-sm rounded-full">
-                                {cert}
-                              </span>
-                            ))}
+                      <div className="space-y-3">
+                        <div className="bg-muted/50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Award className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Certifications</span>
                           </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No certifications added.</p>
-                        )}
-                      </div>
-
-                      <div className="bg-muted/50 rounded-lg p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Award className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">Accreditations</span>
+                          {selectedStaff.certifications?.length ? (
+                            <div className="flex flex-wrap gap-2">
+                              {selectedStaff.certifications.map((cert, i) => (
+                                <span key={i} className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-full">
+                                  {cert}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">None added</p>
+                          )}
                         </div>
-                        {selectedStaff.accreditations?.length ? (
-                          <div className="flex flex-wrap gap-2">
-                            {selectedStaff.accreditations.map((acc, i) => (
-                              <span key={i} className="px-2 py-1 bg-secondary text-secondary-foreground text-sm rounded-full">
-                                {acc}
-                              </span>
-                            ))}
+                        <div className="bg-muted/50 rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Award className="h-4 w-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Accreditations</span>
                           </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">No accreditations added.</p>
-                        )}
+                          {selectedStaff.accreditations?.length ? (
+                            <div className="flex flex-wrap gap-2">
+                              {selectedStaff.accreditations.map((acc, i) => (
+                                <span key={i} className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded-full">
+                                  {acc}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">None added</p>
+                          )}
+                        </div>
                       </div>
-
                       <button
                         onClick={() => setEditingStaff(true)}
                         className="w-full py-2 border border-border rounded-lg font-medium hover:bg-muted"

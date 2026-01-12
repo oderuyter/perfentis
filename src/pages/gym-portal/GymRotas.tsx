@@ -8,13 +8,15 @@ import {
   Loader2,
   Copy,
   Repeat,
-  Trash2
+  Trash2,
+  Calendar
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, startOfWeek, addDays, addWeeks, subWeeks } from "date-fns";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +50,7 @@ interface StaffMember {
   id: string;
   user_id: string;
   position: string | null;
+  name: string | null;
   profiles: {
     display_name: string | null;
   } | null;
@@ -67,6 +70,7 @@ interface Shift {
   end_time: string;
   notes: string | null;
   gym_staff: {
+    name: string | null;
     profiles: {
       display_name: string | null;
     } | null;
@@ -96,6 +100,7 @@ export default function GymRotas() {
     name: "",
     staffId: ""
   });
+  const [cloneTargetWeeks, setCloneTargetWeeks] = useState<number[]>([1]);
   const [adding, setAdding] = useState(false);
   const [cloning, setCloning] = useState(false);
   const [activeTab, setActiveTab] = useState("schedule");
@@ -114,24 +119,33 @@ export default function GymRotas() {
       // Fetch staff
       const { data: staffData, error: staffError } = await (supabase as any)
         .from("gym_staff")
-        .select("id, user_id, position, profiles:user_id(display_name)")
+        .select("id, user_id, position, name")
         .eq("gym_id", selectedGymId)
         .eq("is_active", true);
 
       if (staffError) throw staffError;
-      setStaff((staffData || []) as StaffMember[]);
+      
+      // Fetch profiles for staff
+      const staffWithProfiles = await Promise.all((staffData || []).map(async (s: any) => {
+        if (s.user_id) {
+          const { data: profile } = await supabase.from("profiles").select("display_name").eq("user_id", s.user_id).single();
+          return { ...s, profiles: profile };
+        }
+        return { ...s, profiles: null };
+      }));
+      setStaff(staffWithProfiles as StaffMember[]);
 
       // Fetch rotas for the week
       const weekEnd = addDays(weekStart, 6);
       const { data: rotaData, error: rotaError } = await (supabase as any)
         .from("staff_rotas")
-        .select("*, gym_staff!inner(profiles:user_id(display_name))")
+        .select("*, gym_staff!inner(name)")
         .eq("gym_id", selectedGymId)
         .gte("shift_date", format(weekStart, "yyyy-MM-dd"))
         .lte("shift_date", format(weekEnd, "yyyy-MM-dd"));
 
       if (rotaError) throw rotaError;
-      setRotas((rotaData || []) as Shift[]);
+      setRotas((rotaData || []).map((r: any) => ({ ...r, gym_staff: { ...r.gym_staff, profiles: null } })) as Shift[]);
 
       // Fetch shift patterns
       const { data: patternData } = await (supabase as any)
@@ -203,35 +217,38 @@ export default function GymRotas() {
   };
 
   const handleCloneWeek = async () => {
-    if (!selectedGymId) return;
+    if (!selectedGymId || cloneTargetWeeks.length === 0) return;
     setCloning(true);
 
     try {
-      // Get current week's shifts
-      const shiftsToClone = rotas.map(shift => ({
-        gym_id: selectedGymId,
-        staff_id: shift.staff_id,
-        shift_date: format(addWeeks(new Date(shift.shift_date), 1), "yyyy-MM-dd"),
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        notes: shift.notes
-      }));
+      const allShifts: any[] = [];
+      
+      for (const weekOffset of cloneTargetWeeks) {
+        const shiftsToClone = rotas.map(shift => ({
+          gym_id: selectedGymId,
+          staff_id: shift.staff_id,
+          shift_date: format(addWeeks(new Date(shift.shift_date), weekOffset), "yyyy-MM-dd"),
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          notes: shift.notes
+        }));
+        allShifts.push(...shiftsToClone);
+      }
 
-      if (shiftsToClone.length === 0) {
+      if (allShifts.length === 0) {
         toast.error("No shifts to clone");
         return;
       }
 
       const { error } = await supabase
         .from("staff_rotas")
-        .insert(shiftsToClone);
+        .insert(allShifts);
 
       if (error) throw error;
 
-      toast.success(`Cloned ${shiftsToClone.length} shifts to next week`);
+      toast.success(`Cloned ${rotas.length} shifts to ${cloneTargetWeeks.length} week(s)`);
       setShowCloneWeek(false);
-      // Navigate to next week
-      setWeekStart(addWeeks(weekStart, 1));
+      setCloneTargetWeeks([1]);
     } catch (error) {
       toast.error("Failed to clone shifts");
     } finally {
@@ -245,7 +262,7 @@ export default function GymRotas() {
 
     try {
       // Create pattern from current week's shifts for selected staff
-      const staffShifts = newPattern.staffId 
+      const staffShifts = newPattern.staffId && newPattern.staffId !== "all"
         ? rotas.filter(r => r.staff_id === newPattern.staffId)
         : rotas;
 
@@ -258,7 +275,7 @@ export default function GymRotas() {
       const { error } = await supabase.from("staff_shift_patterns").insert({
         gym_id: selectedGymId,
         name: newPattern.name,
-        pattern: patternData
+        pattern_data: patternData
       });
 
       if (error) throw error;
@@ -304,6 +321,22 @@ export default function GymRotas() {
   const getShiftsForDay = (dayIndex: number) => {
     const date = format(addDays(weekStart, dayIndex), "yyyy-MM-dd");
     return rotas.filter(r => r.shift_date === date);
+  };
+
+  const getStaffName = (staffMember: StaffMember) => {
+    return staffMember.profiles?.display_name || staffMember.name || "Staff";
+  };
+
+  const getShiftStaffName = (shift: Shift) => {
+    return shift.gym_staff?.profiles?.display_name || shift.gym_staff?.name || "Staff";
+  };
+
+  const toggleCloneWeek = (weekOffset: number) => {
+    setCloneTargetWeeks(prev => 
+      prev.includes(weekOffset) 
+        ? prev.filter(w => w !== weekOffset)
+        : [...prev, weekOffset].sort((a, b) => a - b)
+    );
   };
 
   if (!selectedGymId) {
@@ -404,7 +437,7 @@ export default function GymRotas() {
                               <Trash2 className="h-3 w-3" />
                             </button>
                             <p className="font-medium truncate pr-4">
-                              {shift.gym_staff?.profiles?.display_name || "Staff"}
+                              {getShiftStaffName(shift)}
                             </p>
                             <p className="text-muted-foreground">
                               {shift.start_time?.slice(0, 5)} - {shift.end_time?.slice(0, 5)}
@@ -459,7 +492,7 @@ export default function GymRotas() {
                       <SelectContent>
                         {staff.map((s) => (
                           <SelectItem key={s.id} value={s.id}>
-                            {s.profiles?.display_name || "Staff"}
+                            {getStaffName(s)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -488,7 +521,7 @@ export default function GymRotas() {
                 <SelectContent>
                   {staff.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.profiles?.display_name || "Staff"}
+                      {getStaffName(s)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -560,17 +593,17 @@ export default function GymRotas() {
             <div>
               <Label>Staff Member (optional - leave empty for all staff)</Label>
               <Select 
-                value={newPattern.staffId} 
-                onValueChange={(v) => setNewPattern({ ...newPattern, staffId: v })}
+                value={newPattern.staffId || "all"} 
+                onValueChange={(v) => setNewPattern({ ...newPattern, staffId: v === "all" ? "" : v })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All staff" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All staff</SelectItem>
+                  <SelectItem value="all">All staff</SelectItem>
                   {staff.map((s) => (
                     <SelectItem key={s.id} value={s.id}>
-                      {s.profiles?.display_name || "Staff"}
+                      {getStaffName(s)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -587,24 +620,61 @@ export default function GymRotas() {
         </DialogContent>
       </Dialog>
 
-      {/* Clone Week Confirmation */}
-      <AlertDialog open={showCloneWeek} onOpenChange={setShowCloneWeek}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clone Week?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will copy all {rotas.length} shifts from the current week to next week 
-              ({format(addWeeks(weekStart, 1), "MMM d")} - {format(addDays(addWeeks(weekStart, 1), 6), "MMM d")}).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCloneWeek} disabled={cloning}>
-              {cloning ? <Loader2 className="h-4 w-4 animate-spin" /> : "Clone"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Clone Week Dialog */}
+      <Dialog open={showCloneWeek} onOpenChange={setShowCloneWeek}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Clone Week
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <p className="text-sm text-muted-foreground">
+              Clone all {rotas.length} shifts from the current week to selected future weeks.
+            </p>
+            
+            <div className="space-y-2">
+              <Label>Select target weeks:</Label>
+              {[1, 2, 3, 4].map(weekOffset => {
+                const targetWeekStart = addWeeks(weekStart, weekOffset);
+                return (
+                  <label key={weekOffset} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted">
+                    <Checkbox
+                      checked={cloneTargetWeeks.includes(weekOffset)}
+                      onCheckedChange={() => toggleCloneWeek(weekOffset)}
+                    />
+                    <div>
+                      <p className="font-medium text-sm">
+                        {format(targetWeekStart, "MMM d")} - {format(addDays(targetWeekStart, 6), "MMM d, yyyy")}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {weekOffset === 1 ? "Next week" : `${weekOffset} weeks from now`}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={() => setShowCloneWeek(false)}
+                className="flex-1 py-2 border border-border rounded-lg font-medium hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCloneWeek}
+                disabled={cloning || cloneTargetWeeks.length === 0 || rotas.length === 0}
+                className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50"
+              >
+                {cloning ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : `Clone to ${cloneTargetWeeks.length} Week(s)`}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -251,6 +251,7 @@ export type Database = {
           id: string
           instructor_id: string | null
           is_active: boolean
+          space_id: string | null
           start_time: string
         }
         Insert: {
@@ -261,6 +262,7 @@ export type Database = {
           id?: string
           instructor_id?: string | null
           is_active?: boolean
+          space_id?: string | null
           start_time: string
         }
         Update: {
@@ -271,6 +273,7 @@ export type Database = {
           id?: string
           instructor_id?: string | null
           is_active?: boolean
+          space_id?: string | null
           start_time?: string
         }
         Relationships: [
@@ -279,6 +282,51 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "gym_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedules_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "gym_spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_waitlist: {
+        Row: {
+          booking_date: string
+          created_at: string
+          id: string
+          notified_at: string | null
+          schedule_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          booking_date: string
+          created_at?: string
+          id?: string
+          notified_at?: string | null
+          schedule_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          booking_date?: string
+          created_at?: string
+          id?: string
+          notified_at?: string | null
+          schedule_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_waitlist_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -2382,16 +2430,63 @@ export type Database = {
           },
         ]
       }
+      gym_spaces: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          description: string | null
+          display_order: number
+          gym_id: string
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          gym_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          gym_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_spaces_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_staff: {
         Row: {
           accreditations: string[] | null
           bio: string | null
           certifications: string[] | null
           created_at: string
+          email: string | null
           gym_id: string
           hire_date: string | null
           id: string
           is_active: boolean
+          name: string | null
+          phone: string | null
           position: string | null
           updated_at: string
           user_id: string
@@ -2401,10 +2496,13 @@ export type Database = {
           bio?: string | null
           certifications?: string[] | null
           created_at?: string
+          email?: string | null
           gym_id: string
           hire_date?: string | null
           id?: string
           is_active?: boolean
+          name?: string | null
+          phone?: string | null
           position?: string | null
           updated_at?: string
           user_id: string
@@ -2414,10 +2512,13 @@ export type Database = {
           bio?: string | null
           certifications?: string[] | null
           created_at?: string
+          email?: string | null
           gym_id?: string
           hire_date?: string | null
           id?: string
           is_active?: boolean
+          name?: string | null
+          phone?: string | null
           position?: string | null
           updated_at?: string
           user_id?: string
