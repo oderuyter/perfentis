@@ -624,6 +624,9 @@ export default function GymMembership() {
           membership={selectedMembership}
           open={!!selectedMembership}
           onOpenChange={(open) => !open && setSelectedMembership(null)}
+          onMembershipUpdated={() => {
+            refetchMemberships();
+          }}
         />
       )}
     </div>

@@ -11,7 +11,7 @@ import {
   Trash2,
   MapPin,
   User,
-  ListOrdered,
+  UserPlus,
   X
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +45,16 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ContextType {
   selectedGymId: string | null;
@@ -54,12 +64,22 @@ interface Staff {
   id: string;
   user_id: string;
   position: string | null;
+  name: string | null;
   profile: { display_name: string | null } | null;
 }
 
 interface GymSpace {
   id: string;
   name: string;
+}
+
+interface GymClass {
+  id: string;
+  name: string;
+  description: string | null;
+  duration_minutes: number;
+  capacity: number | null;
+  is_active: boolean;
 }
 
 interface ClassSchedule {
@@ -79,20 +99,29 @@ const HOURS = Array.from({ length: 15 }, (_, i) => i + 6); // 6am to 8pm
 
 export default function GymClasses() {
   const { selectedGymId } = useOutletContext<ContextType>();
-  const [classes, setClasses] = useState<any[]>([]);
+  const [classes, setClasses] = useState<GymClass[]>([]);
   const [schedules, setSchedules] = useState<ClassSchedule[]>([]);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [spaces, setSpaces] = useState<GymSpace[]>([]);
+  const [members, setMembers] = useState<{ id: string; user_id: string; display_name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddClass, setShowAddClass] = useState(false);
+  const [showEditClass, setShowEditClass] = useState<GymClass | null>(null);
   const [showAddSchedule, setShowAddSchedule] = useState(false);
   const [showScheduleDetail, setShowScheduleDetail] = useState<ClassSchedule | null>(null);
-  const [showWaitlist, setShowWaitlist] = useState(false);
   const [waitlistEntries, setWaitlistEntries] = useState<any[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
+  const [addingToType, setAddingToType] = useState<"booking" | "waitlist">("booking");
+  const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [addingMember, setAddingMember] = useState(false);
+  
+  // Delete confirmation
+  const [confirmDelete, setConfirmDelete] = useState<{ type: "class" | "schedule"; id: string } | null>(null);
   
   const [newClass, setNewClass] = useState({ name: "", description: "", duration: 60, capacity: 20 });
+  const [editClassData, setEditClassData] = useState({ name: "", description: "", duration: 60, capacity: 20 });
   const [newSchedule, setNewSchedule] = useState({ 
     classId: "", 
     dayOfWeek: 1, 
@@ -102,6 +131,7 @@ export default function GymClasses() {
     spaceId: ""
   });
   const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [activeView, setActiveView] = useState<"list" | "calendar">("list");
 
   useEffect(() => {
@@ -141,23 +171,29 @@ export default function GymClasses() {
       // Fetch staff for instructor selection
       const { data: staffData } = await supabase
         .from("gym_staff")
-        .select("id, user_id, position")
+        .select("id, user_id, position, name")
         .eq("gym_id", selectedGymId)
         .eq("is_active", true);
 
       if (staffData && staffData.length > 0) {
-        const userIds = staffData.map(s => s.user_id);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, display_name")
-          .in("user_id", userIds);
-
-        const profileMap = new Map((profiles || []).map(p => [p.user_id, p.display_name]));
+        const userIds = staffData.filter(s => s.user_id).map(s => s.user_id);
+        let profileMap = new Map<string, string>();
+        
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, display_name")
+            .in("user_id", userIds);
+          
+          profileMap = new Map((profiles || []).map(p => [p.user_id, p.display_name || ""]));
+        }
         
         setStaff(staffData.map(s => ({
           ...s,
-          profile: { display_name: profileMap.get(s.user_id) || null }
+          profile: { display_name: s.user_id ? profileMap.get(s.user_id) || s.name : s.name }
         })));
+      } else {
+        setStaff([]);
       }
 
       // Fetch spaces
@@ -168,6 +204,29 @@ export default function GymClasses() {
         .eq("is_active", true);
 
       setSpaces(spacesData || []);
+
+      // Fetch members for adding to bookings
+      const { data: memberData } = await supabase
+        .from("memberships")
+        .select("id, user_id")
+        .eq("gym_id", selectedGymId)
+        .eq("status", "active");
+
+      if (memberData && memberData.length > 0) {
+        const memberUserIds = memberData.map(m => m.user_id);
+        const { data: memberProfiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name")
+          .in("user_id", memberUserIds);
+
+        const profileMap = new Map((memberProfiles || []).map(p => [p.user_id, p.display_name || "Unknown"]));
+        
+        setMembers(memberData.map(m => ({
+          id: m.id,
+          user_id: m.user_id,
+          display_name: profileMap.get(m.user_id) || "Unknown"
+        })));
+      }
 
     } catch (error) {
       console.error("Error fetching classes:", error);
@@ -200,6 +259,43 @@ export default function GymClasses() {
     }
   };
 
+  const handleEditClass = async () => {
+    if (!showEditClass) return;
+    setSaving(true);
+
+    try {
+      const { error } = await supabase
+        .from("gym_classes")
+        .update({
+          name: editClassData.name,
+          description: editClassData.description || null,
+          duration_minutes: editClassData.duration,
+          capacity: editClassData.capacity
+        })
+        .eq("id", showEditClass.id);
+
+      if (error) throw error;
+
+      toast.success("Class updated");
+      setShowEditClass(null);
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to update class");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const openEditClass = (cls: GymClass) => {
+    setEditClassData({
+      name: cls.name,
+      description: cls.description || "",
+      duration: cls.duration_minutes,
+      capacity: cls.capacity || 20
+    });
+    setShowEditClass(cls);
+  };
+
   const handleAddSchedule = async () => {
     if (!newSchedule.classId) return;
     setAdding(true);
@@ -225,13 +321,30 @@ export default function GymClasses() {
     }
   };
 
-  const handleDeleteClass = async (classId: string) => {
+  const handleDeleteClass = async () => {
+    if (!confirmDelete || confirmDelete.type !== "class") return;
+    
     try {
-      await supabase.from("gym_classes").update({ is_active: false }).eq("id", classId);
+      await supabase.from("gym_classes").update({ is_active: false }).eq("id", confirmDelete.id);
       toast.success("Class deleted");
+      setConfirmDelete(null);
       fetchData();
     } catch (error) {
       toast.error("Failed to delete class");
+    }
+  };
+
+  const handleDeleteSchedule = async () => {
+    if (!confirmDelete || confirmDelete.type !== "schedule") return;
+    
+    try {
+      await supabase.from("class_schedules").update({ is_active: false }).eq("id", confirmDelete.id);
+      toast.success("Schedule removed");
+      setConfirmDelete(null);
+      setShowScheduleDetail(null);
+      fetchData();
+    } catch (error) {
+      toast.error("Failed to delete schedule");
     }
   };
 
@@ -243,26 +356,43 @@ export default function GymClasses() {
       // Fetch bookings for this schedule
       const { data: bookingData } = await supabase
         .from("class_bookings")
-        .select(`
-          *,
-          profiles:user_id(display_name, avatar_url)
-        `)
+        .select("*")
         .eq("schedule_id", schedule.id)
         .order("created_at", { ascending: false });
 
-      setBookings(bookingData || []);
+      // Fetch profiles for bookings
+      if (bookingData && bookingData.length > 0) {
+        const userIds = bookingData.map(b => b.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, avatar_url")
+          .in("user_id", userIds);
+        
+        const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+        setBookings(bookingData.map(b => ({ ...b, profiles: profileMap.get(b.user_id) })));
+      } else {
+        setBookings([]);
+      }
 
       // Fetch waitlist
       const { data: waitlistData } = await supabase
         .from("class_waitlist")
-        .select(`
-          *,
-          profiles:user_id(display_name)
-        `)
+        .select("*")
         .eq("schedule_id", schedule.id)
         .order("created_at", { ascending: true });
 
-      setWaitlistEntries(waitlistData || []);
+      if (waitlistData && waitlistData.length > 0) {
+        const userIds = waitlistData.map(w => w.user_id);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name")
+          .in("user_id", userIds);
+        
+        const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+        setWaitlistEntries(waitlistData.map(w => ({ ...w, profiles: profileMap.get(w.user_id) })));
+      } else {
+        setWaitlistEntries([]);
+      }
     } catch (error) {
       console.error("Error fetching schedule details:", error);
     } finally {
@@ -270,10 +400,72 @@ export default function GymClasses() {
     }
   };
 
+  const handleAddMemberToClass = async () => {
+    if (!showScheduleDetail || !selectedMemberId) return;
+    setAddingMember(true);
+
+    try {
+      const member = members.find(m => m.id === selectedMemberId);
+      if (!member) throw new Error("Member not found");
+
+      if (addingToType === "booking") {
+        const { error } = await supabase.from("class_bookings").insert({
+          schedule_id: showScheduleDetail.id,
+          user_id: member.user_id,
+          booking_date: new Date().toISOString().split("T")[0],
+          status: "confirmed"
+        });
+        if (error) throw error;
+        toast.success("Member added to class");
+      } else {
+        const { error } = await supabase.from("class_waitlist").insert({
+          schedule_id: showScheduleDetail.id,
+          user_id: member.user_id,
+          booking_date: new Date().toISOString().split("T")[0],
+          status: "waiting"
+        });
+        if (error) throw error;
+        toast.success("Member added to waitlist");
+      }
+
+      setShowAddMemberDialog(false);
+      setSelectedMemberId("");
+      openScheduleDetail(showScheduleDetail);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to add member");
+    } finally {
+      setAddingMember(false);
+    }
+  };
+
+  const handleRemoveBooking = async (bookingId: string) => {
+    try {
+      await supabase.from("class_bookings").delete().eq("id", bookingId);
+      toast.success("Booking removed");
+      if (showScheduleDetail) {
+        openScheduleDetail(showScheduleDetail);
+      }
+    } catch (error) {
+      toast.error("Failed to remove booking");
+    }
+  };
+
+  const handleRemoveFromWaitlist = async (waitlistId: string) => {
+    try {
+      await supabase.from("class_waitlist").delete().eq("id", waitlistId);
+      toast.success("Removed from waitlist");
+      if (showScheduleDetail) {
+        openScheduleDetail(showScheduleDetail);
+      }
+    } catch (error) {
+      toast.error("Failed to remove from waitlist");
+    }
+  };
+
   const getInstructorName = (instructorId: string | null) => {
     if (!instructorId) return null;
     const instructor = staff.find(s => s.user_id === instructorId);
-    return instructor?.profile?.display_name || "Unknown";
+    return instructor?.profile?.display_name || instructor?.name || "Unknown";
   };
 
   const getSpaceName = (spaceId: string | null) => {
@@ -366,11 +558,11 @@ export default function GymClasses() {
                             </button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditClass(c)}>
                               <Edit className="h-4 w-4 mr-2" />
                               Edit
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteClass(c.id)} className="text-destructive">
+                            <DropdownMenuItem onClick={() => setConfirmDelete({ type: "class", id: c.id })} className="text-destructive">
                               <Trash2 className="h-4 w-4 mr-2" />
                               Delete
                             </DropdownMenuItem>
@@ -536,6 +728,58 @@ export default function GymClasses() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Class Dialog */}
+      <Dialog open={!!showEditClass} onOpenChange={() => setShowEditClass(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Class</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Class Name *</Label>
+              <Input
+                value={editClassData.name}
+                onChange={(e) => setEditClassData({ ...editClassData, name: e.target.value })}
+                placeholder="e.g., HIIT Training"
+              />
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea
+                value={editClassData.description}
+                onChange={(e) => setEditClassData({ ...editClassData, description: e.target.value })}
+                placeholder="Class description..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Duration (minutes)</Label>
+                <Input
+                  type="number"
+                  value={editClassData.duration}
+                  onChange={(e) => setEditClassData({ ...editClassData, duration: parseInt(e.target.value) || 60 })}
+                />
+              </div>
+              <div>
+                <Label>Capacity</Label>
+                <Input
+                  type="number"
+                  value={editClassData.capacity}
+                  onChange={(e) => setEditClassData({ ...editClassData, capacity: parseInt(e.target.value) || 20 })}
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleEditClass}
+              disabled={saving || !editClassData.name}
+              className="w-full py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50"
+            >
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Save Changes"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Add Schedule Dialog */}
       <Dialog open={showAddSchedule} onOpenChange={setShowAddSchedule}>
         <DialogContent>
@@ -565,8 +809,8 @@ export default function GymClasses() {
                 <SelectContent>
                   <SelectItem value="none">No instructor</SelectItem>
                   {staff.map((s) => (
-                    <SelectItem key={s.user_id} value={s.user_id}>
-                      {s.profile?.display_name || "Unknown"} {s.position && `(${s.position})`}
+                    <SelectItem key={s.id} value={s.user_id || s.id}>
+                      {s.profile?.display_name || s.name || "Unknown"} {s.position && `(${s.position})`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -681,6 +925,26 @@ export default function GymClasses() {
                 </div>
               </div>
 
+              {/* Actions */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setAddingToType("booking");
+                    setShowAddMemberDialog(true);
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 py-2 bg-primary text-primary-foreground rounded-lg font-medium"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Add to Booking
+                </button>
+                <button
+                  onClick={() => setConfirmDelete({ type: "schedule", id: showScheduleDetail.id })}
+                  className="p-2 text-destructive hover:bg-destructive/10 rounded-lg"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+
               {/* Tabs for Bookings and Waitlist */}
               <Tabs defaultValue="bookings">
                 <TabsList className="grid w-full grid-cols-2">
@@ -711,9 +975,12 @@ export default function GymClasses() {
                             </div>
                             <span className="font-medium">{booking.profiles?.display_name || "Unknown"}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(booking.created_at).toLocaleDateString()}
-                          </span>
+                          <button
+                            onClick={() => handleRemoveBooking(booking.id)}
+                            className="p-1.5 text-destructive hover:bg-destructive/10 rounded"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -721,6 +988,18 @@ export default function GymClasses() {
                 </TabsContent>
 
                 <TabsContent value="waitlist" className="mt-4">
+                  <div className="flex justify-end mb-3">
+                    <button
+                      onClick={() => {
+                        setAddingToType("waitlist");
+                        setShowAddMemberDialog(true);
+                      }}
+                      className="text-sm text-primary hover:underline flex items-center gap-1"
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Add to Waitlist
+                    </button>
+                  </div>
                   {waitlistLoading ? (
                     <div className="flex justify-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -737,9 +1016,12 @@ export default function GymClasses() {
                             <span className="text-sm font-medium text-muted-foreground w-6">#{index + 1}</span>
                             <span className="font-medium">{entry.profiles?.display_name || "Unknown"}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(entry.created_at).toLocaleDateString()}
-                          </span>
+                          <button
+                            onClick={() => handleRemoveFromWaitlist(entry.id)}
+                            className="p-1.5 text-destructive hover:bg-destructive/10 rounded"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -753,6 +1035,64 @@ export default function GymClasses() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Add Member to Booking/Waitlist Dialog */}
+      <Dialog open={showAddMemberDialog} onOpenChange={setShowAddMemberDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Add Member to {addingToType === "booking" ? "Booking" : "Waitlist"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label>Select Member</Label>
+              <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a member..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>{m.display_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <button
+              onClick={handleAddMemberToClass}
+              disabled={addingMember || !selectedMemberId}
+              className="w-full py-2 bg-primary text-primary-foreground rounded-lg font-medium disabled:opacity-50"
+            >
+              {addingMember ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : `Add to ${addingToType === "booking" ? "Booking" : "Waitlist"}`}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Delete Dialog */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={() => setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {confirmDelete?.type === "class" ? "Class" : "Schedule"}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmDelete?.type === "class" 
+                ? "This will remove the class and all associated schedules. This action cannot be undone."
+                : "This will remove this schedule instance. This action cannot be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete?.type === "class" ? handleDeleteClass : handleDeleteSchedule}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
