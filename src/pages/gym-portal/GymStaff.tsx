@@ -69,6 +69,18 @@ interface StaffMember {
   } | null;
 }
 
+const STAFF_POSITIONS = [
+  "Personal Trainer",
+  "Fitness Instructor",
+  "Group Class Instructor", 
+  "Manager",
+  "Assistant Manager",
+  "Reception Staff",
+  "Cleaner",
+  "Maintenance",
+  "Other"
+];
+
 export default function GymStaff() {
   const { selectedGymId } = useOutletContext<ContextType>();
   const [staff, setStaff] = useState<StaffMember[]>([]);
@@ -92,7 +104,8 @@ export default function GymStaff() {
     accreditations: "",
     email: "",
     phone: "",
-    name: ""
+    name: "",
+    position: ""
   });
 
   useEffect(() => {
@@ -106,7 +119,7 @@ export default function GymStaff() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("gym_staff")
         .select("*")
         .eq("gym_id", selectedGymId)
@@ -115,19 +128,21 @@ export default function GymStaff() {
       if (error) throw error;
       
       // Fetch profiles separately for linked users
-      const staffWithProfiles = await Promise.all((data || []).map(async (s: any) => {
+      const staffList: StaffMember[] = [];
+      for (const s of data || []) {
+        let profiles = null;
         if (s.user_id) {
           const { data: profile } = await supabase
             .from("profiles")
             .select("display_name, avatar_url")
             .eq("user_id", s.user_id)
             .single();
-          return { ...s, profiles: profile };
+          profiles = profile;
         }
-        return { ...s, profiles: null };
-      }));
+        staffList.push({ ...s, profiles } as StaffMember);
+      }
       
-      setStaff(staffWithProfiles as StaffMember[]);
+      setStaff(staffList);
     } catch (error) {
       console.error("Error fetching staff:", error);
     } finally {
@@ -141,16 +156,15 @@ export default function GymStaff() {
 
     try {
       // Check if this email is already a user
-      let userId = null;
+      let userId: string | null = null;
       if (newStaff.email && newStaff.linkToUser) {
         const { data: profileData } = await supabase
           .from("profiles")
           .select("user_id")
-          .eq("email", newStaff.email)
-          .single();
+          .ilike("email", newStaff.email);
         
-        if (profileData) {
-          userId = profileData.user_id;
+        if (profileData && profileData.length > 0) {
+          userId = profileData[0].user_id;
         }
       }
 
@@ -199,7 +213,8 @@ export default function GymStaff() {
       accreditations: member.accreditations?.join(", ") || "",
       email: member.email || "",
       phone: member.phone || "",
-      name: member.name || ""
+      name: member.name || "",
+      position: member.position || ""
     });
     setEditingStaff(false);
   };
@@ -226,7 +241,8 @@ export default function GymStaff() {
           accreditations: accredArray.length > 0 ? accredArray : null,
           email: editData.email || null,
           phone: editData.phone || null,
-          name: editData.name || null
+          name: editData.name || null,
+          position: editData.position || null
         })
         .eq("id", selectedStaff.id);
 
@@ -244,7 +260,8 @@ export default function GymStaff() {
         accreditations: accredArray.length > 0 ? accredArray : null,
         email: editData.email || null,
         phone: editData.phone || null,
-        name: editData.name || null
+        name: editData.name || null,
+        position: editData.position || null
       } : null);
     } catch (error) {
       toast.error("Failed to update profile");
@@ -532,6 +549,19 @@ export default function GymStaff() {
                           onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                           placeholder="Full name"
                         />
+                      </div>
+                      <div>
+                        <Label>Position/Title</Label>
+                        <Select value={editData.position || "other"} onValueChange={(v) => setEditData({ ...editData, position: v === "other" ? "" : v })}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select position" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STAFF_POSITIONS.map((pos) => (
+                              <SelectItem key={pos} value={pos}>{pos}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label>Bio</Label>
