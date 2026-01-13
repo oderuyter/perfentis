@@ -4,15 +4,19 @@ import { motion } from "framer-motion";
 import {
   Users,
   TrendingUp,
-  TrendingDown,
   CalendarCheck,
   CreditCard,
   Activity,
   Clock,
-  DollarSign
+  DollarSign,
+  UserCheck
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfMonth } from "date-fns";
+import { InviteMemberDialog } from "@/components/gym-portal/InviteMemberDialog";
+import { ManualCheckinDialog } from "@/components/gym-portal/ManualCheckinDialog";
+import { ClassCheckinDialog } from "@/components/gym-portal/ClassCheckinDialog";
+import { ProcessPaymentDialog } from "@/components/gym-portal/ProcessPaymentDialog";
 
 interface ContextType {
   selectedGymId: string | null;
@@ -40,6 +44,12 @@ export default function GymDashboard() {
   });
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Dialog states
+  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [showCheckinDialog, setShowCheckinDialog] = useState(false);
+  const [showClassCheckinDialog, setShowClassCheckinDialog] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   useEffect(() => {
     if (!selectedGymId) return;
@@ -51,7 +61,6 @@ export default function GymDashboard() {
     setIsLoading(true);
 
     try {
-      // Fetch membership stats
       const { data: memberships } = await supabase
         .from("memberships")
         .select("id, status, created_at, payment_status")
@@ -69,7 +78,6 @@ export default function GymDashboard() {
         m => m.payment_status === "pending"
       ).length || 0;
 
-      // Fetch today's check-ins
       const todayStart = format(today, "yyyy-MM-dd");
       const { count: todayCheckins } = await supabase
         .from("membership_checkins")
@@ -77,7 +85,6 @@ export default function GymDashboard() {
         .eq("memberships.gym_id", selectedGymId)
         .gte("checked_in_at", todayStart);
 
-      // Fetch today's class count
       const dayOfWeek = today.getDay();
       const { count: classesToday } = await supabase
         .from("class_schedules")
@@ -95,23 +102,29 @@ export default function GymDashboard() {
         pendingPayments
       });
 
-      // Recent activity (last 10 checkins)
       const { data: recentCheckins } = await supabase
         .from("membership_checkins")
-        .select(`
-          id,
-          checked_in_at,
-          memberships!inner(
-            gym_id,
-            membership_number,
-            profiles:user_id(display_name)
-          )
-        `)
+        .select(`id, checked_in_at, memberships!inner(gym_id, membership_number, user_id)`)
         .eq("memberships.gym_id", selectedGymId)
         .order("checked_in_at", { ascending: false })
         .limit(10);
 
-      setRecentActivity(recentCheckins || []);
+      // Fetch profiles for recent checkins
+      if (recentCheckins && recentCheckins.length > 0) {
+        const userIds = recentCheckins.map((c: any) => c.memberships?.user_id).filter(Boolean);
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name")
+          .in("id", userIds);
+
+        const activityWithProfiles = recentCheckins.map((c: any) => ({
+          ...c,
+          profile: profiles?.find(p => p.id === c.memberships?.user_id)
+        }));
+        setRecentActivity(activityWithProfiles);
+      } else {
+        setRecentActivity([]);
+      }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -120,42 +133,12 @@ export default function GymDashboard() {
   };
 
   const statCards = [
-    {
-      label: "Total Members",
-      value: stats.totalMembers,
-      icon: Users,
-      color: "bg-primary/10 text-primary"
-    },
-    {
-      label: "Active Members",
-      value: stats.activeMembers,
-      icon: Activity,
-      color: "bg-green-500/10 text-green-600"
-    },
-    {
-      label: "New This Month",
-      value: stats.newMembersThisMonth,
-      icon: TrendingUp,
-      color: "bg-blue-500/10 text-blue-600"
-    },
-    {
-      label: "Today's Check-ins",
-      value: stats.todayCheckins,
-      icon: CalendarCheck,
-      color: "bg-orange-500/10 text-orange-600"
-    },
-    {
-      label: "Classes Today",
-      value: stats.classesToday,
-      icon: Clock,
-      color: "bg-purple-500/10 text-purple-600"
-    },
-    {
-      label: "Pending Payments",
-      value: stats.pendingPayments,
-      icon: CreditCard,
-      color: "bg-red-500/10 text-red-600"
-    }
+    { label: "Total Members", value: stats.totalMembers, icon: Users, color: "bg-primary/10 text-primary" },
+    { label: "Active Members", value: stats.activeMembers, icon: Activity, color: "bg-green-500/10 text-green-600" },
+    { label: "New This Month", value: stats.newMembersThisMonth, icon: TrendingUp, color: "bg-blue-500/10 text-blue-600" },
+    { label: "Today's Check-ins", value: stats.todayCheckins, icon: CalendarCheck, color: "bg-orange-500/10 text-orange-600" },
+    { label: "Classes Today", value: stats.classesToday, icon: Clock, color: "bg-purple-500/10 text-purple-600" },
+    { label: "Pending Payments", value: stats.pendingPayments, icon: CreditCard, color: "bg-red-500/10 text-red-600" }
   ];
 
   if (!selectedGymId) {
@@ -168,7 +151,6 @@ export default function GymDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
       <div>
         <h2 className="text-2xl font-semibold">
           Welcome back{selectedGym ? `, ${selectedGym.name}` : ""}
@@ -178,7 +160,6 @@ export default function GymDashboard() {
         </p>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {statCards.map((stat, index) => (
           <motion.div
@@ -199,9 +180,7 @@ export default function GymDashboard() {
         ))}
       </div>
 
-      {/* Recent Activity & Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Check-ins */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -221,21 +200,14 @@ export default function GymDashboard() {
             ) : recentActivity.length > 0 ? (
               <div className="space-y-2">
                 {recentActivity.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                  >
+                  <div key={activity.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-3">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
                         <Users className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium text-sm">
-                          {activity.memberships?.profiles?.display_name || "Member"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          #{activity.memberships?.membership_number}
-                        </p>
+                        <p className="font-medium text-sm">{activity.profile?.display_name || "Member"}</p>
+                        <p className="text-xs text-muted-foreground">#{activity.memberships?.membership_number}</p>
                       </div>
                     </div>
                     <span className="text-xs text-muted-foreground">
@@ -245,14 +217,11 @@ export default function GymDashboard() {
                 ))}
               </div>
             ) : (
-              <p className="text-center text-muted-foreground py-8">
-                No check-ins today
-              </p>
+              <p className="text-center text-muted-foreground py-8">No check-ins today</p>
             )}
           </div>
         </motion.div>
 
-        {/* Quick Actions */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -263,22 +232,34 @@ export default function GymDashboard() {
             <h3 className="font-semibold">Quick Actions</h3>
           </div>
           <div className="p-4 grid grid-cols-2 gap-3">
-            <button className="p-4 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors">
+            <button 
+              onClick={() => setShowInviteDialog(true)}
+              className="p-4 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors"
+            >
               <Users className="h-5 w-5 mb-2 text-primary" />
               <p className="font-medium text-sm">Add Member</p>
               <p className="text-xs text-muted-foreground">Onboard new member</p>
             </button>
-            <button className="p-4 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors">
+            <button 
+              onClick={() => setShowCheckinDialog(true)}
+              className="p-4 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors"
+            >
               <CalendarCheck className="h-5 w-5 mb-2 text-primary" />
               <p className="font-medium text-sm">Manual Check-in</p>
               <p className="text-xs text-muted-foreground">Check in a member</p>
             </button>
-            <button className="p-4 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors">
-              <Clock className="h-5 w-5 mb-2 text-primary" />
-              <p className="font-medium text-sm">Add Class</p>
-              <p className="text-xs text-muted-foreground">Schedule a class</p>
+            <button 
+              onClick={() => setShowClassCheckinDialog(true)}
+              className="p-4 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors"
+            >
+              <UserCheck className="h-5 w-5 mb-2 text-primary" />
+              <p className="font-medium text-sm">Class Check-in</p>
+              <p className="text-xs text-muted-foreground">Check in for class</p>
             </button>
-            <button className="p-4 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors">
+            <button 
+              onClick={() => setShowPaymentDialog(true)}
+              className="p-4 bg-muted/50 hover:bg-muted rounded-lg text-left transition-colors"
+            >
               <DollarSign className="h-5 w-5 mb-2 text-primary" />
               <p className="font-medium text-sm">Process Payment</p>
               <p className="text-xs text-muted-foreground">Record a payment</p>
@@ -286,6 +267,32 @@ export default function GymDashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* Dialogs */}
+      <InviteMemberDialog
+        open={showInviteDialog}
+        onOpenChange={setShowInviteDialog}
+        gymId={selectedGymId}
+        onSuccess={fetchDashboardData}
+      />
+      <ManualCheckinDialog
+        open={showCheckinDialog}
+        onOpenChange={setShowCheckinDialog}
+        gymId={selectedGymId}
+        onSuccess={fetchDashboardData}
+      />
+      <ClassCheckinDialog
+        open={showClassCheckinDialog}
+        onOpenChange={setShowClassCheckinDialog}
+        gymId={selectedGymId}
+        onSuccess={fetchDashboardData}
+      />
+      <ProcessPaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        gymId={selectedGymId}
+        onSuccess={fetchDashboardData}
+      />
     </div>
   );
 }
