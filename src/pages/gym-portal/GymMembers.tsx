@@ -28,6 +28,7 @@ import {
   Receipt
 } from "lucide-react";
 import { MemberPaymentsTab } from "@/components/gym-portal/MemberPaymentsTab";
+import { MemberActivityTab } from "@/components/gym-portal/MemberActivityTab";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { format } from "date-fns";
@@ -702,9 +703,10 @@ export default function GymMembers() {
 
           {selectedMember && (
             <Tabs defaultValue="profile" className="mt-4">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="profile">Profile</TabsTrigger>
                 <TabsTrigger value="contact">Contact</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
                 <TabsTrigger value="payments">Payments</TabsTrigger>
                 <TabsTrigger value="notes">Notes</TabsTrigger>
               </TabsList>
@@ -963,6 +965,11 @@ export default function GymMembers() {
                     </button>
                   </div>
                 )}
+              </TabsContent>
+
+              {/* Activity Tab */}
+              <TabsContent value="activity" className="mt-4">
+                <MemberActivityTab membershipId={selectedMember.id} />
               </TabsContent>
 
               {/* Payments Tab */}
