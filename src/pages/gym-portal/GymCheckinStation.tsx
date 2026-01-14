@@ -15,6 +15,14 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface GymContext {
   selectedGymId: string | null;
@@ -34,6 +42,8 @@ interface ActiveMember {
   id: string;
   membership_number: string;
   display_name: string;
+  first_name: string;
+  last_name: string;
   avatar_url: string | null;
   checked_in_at: Date;
 }
@@ -154,7 +164,7 @@ export default function GymCheckinStation() {
       setLast60MinCount(sixtyMinTotal || 0);
       setLast30MinCount(thirtyMinTotal || 0);
       
-      // Fetch active members (checked in within last 30 minutes)
+      // Fetch active members (checked in within last 60 minutes)
       const { data: recentCheckins } = await supabase
         .from("membership_checkins")
         .select(`
@@ -168,7 +178,7 @@ export default function GymCheckinStation() {
           )
         `)
         .in("membership_id", membershipIds)
-        .gte("checked_in_at", thirtyMinsAgo.toISOString())
+        .gte("checked_in_at", sixtyMinsAgo.toISOString())
         .order("checked_in_at", { ascending: false });
 
       if (recentCheckins && recentCheckins.length > 0) {
@@ -192,10 +202,17 @@ export default function GymCheckinStation() {
           if (!seenMembers.has(membership.id)) {
             seenMembers.add(membership.id);
             const profile = profileMap.get(membership.user_id);
+            const displayName = profile?.display_name || "Member";
+            // Parse display_name to get first and last name
+            const nameParts = displayName.split(" ");
+            const firstName = nameParts[0] || "";
+            const lastName = nameParts.slice(1).join(" ") || "";
             activeMembersList.push({
               id: membership.id,
               membership_number: membership.membership_number,
-              display_name: profile?.display_name || "Member",
+              display_name: displayName,
+              first_name: firstName,
+              last_name: lastName,
               avatar_url: profile?.avatar_url || null,
               checked_in_at: new Date(checkin.checked_in_at)
             });
@@ -523,33 +540,45 @@ export default function GymCheckinStation() {
             <h2 className="font-semibold">Who's in the Gym</h2>
           </div>
           <span className="text-sm text-muted-foreground">
-            Last 30 minutes • {activeMembers.length} {activeMembers.length === 1 ? "member" : "members"}
+            Last 60 minutes • {activeMembers.length} {activeMembers.length === 1 ? "member" : "members"}
           </span>
         </div>
         
         {activeMembers.length > 0 ? (
-          <ScrollArea className="h-[200px]">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-              {activeMembers.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex flex-col items-center p-3 bg-muted/50 rounded-lg"
-                >
-                  <Avatar className="h-12 w-12 mb-2">
-                    <AvatarImage src={member.avatar_url || undefined} />
-                    <AvatarFallback className="text-lg font-bold">
-                      {member.display_name[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm font-medium text-center truncate w-full">
-                    {member.display_name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(member.checked_in_at, "h:mm a")}
-                  </p>
-                </div>
-              ))}
-            </div>
+          <ScrollArea className="h-[300px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[60px]"></TableHead>
+                  <TableHead>First Name</TableHead>
+                  <TableHead>Last Name</TableHead>
+                  <TableHead>Check-in Time</TableHead>
+                  <TableHead>Membership ID</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {activeMembers.map((member) => (
+                  <TableRow
+                    key={member.id}
+                    className="cursor-pointer hover:bg-muted/80"
+                    onClick={() => navigate(`/gym-portal/members?membership=${member.id}`)}
+                  >
+                    <TableCell>
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={member.avatar_url || undefined} />
+                        <AvatarFallback className="text-sm font-bold">
+                          {member.first_name?.[0]?.toUpperCase() || member.display_name[0].toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+                    <TableCell className="font-medium">{member.first_name || "-"}</TableCell>
+                    <TableCell>{member.last_name || "-"}</TableCell>
+                    <TableCell>{format(member.checked_in_at, "h:mm a")}</TableCell>
+                    <TableCell className="text-muted-foreground">#{member.membership_number}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </ScrollArea>
         ) : (
           <div className="h-[200px] flex items-center justify-center">
