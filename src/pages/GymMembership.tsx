@@ -16,6 +16,7 @@ import {
   Filter,
   Check
 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { GymDetailSheet } from "@/components/gym/GymDetailSheet";
 import { MembershipDetailSheet } from "@/components/gym/MembershipDetailSheet";
 import { format } from "date-fns";
@@ -156,58 +157,7 @@ export default function GymMembership() {
     );
   };
 
-  // Generate QR code as SVG
-  const generateQRCode = (token: string) => {
-    const size = 200;
-    const cells = 21;
-    const cellSize = size / cells;
-    
-    const pattern: boolean[][] = [];
-    for (let i = 0; i < cells; i++) {
-      pattern[i] = [];
-      for (let j = 0; j < cells; j++) {
-        const hash = (token.charCodeAt((i * cells + j) % token.length) + i * j) % 3;
-        pattern[i][j] = hash === 0 || hash === 1;
-      }
-    }
-
-    const addFinderPattern = (startX: number, startY: number) => {
-      for (let i = 0; i < 7; i++) {
-        for (let j = 0; j < 7; j++) {
-          if (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
-            pattern[startY + i][startX + j] = true;
-          } else {
-            pattern[startY + i][startX + j] = false;
-          }
-        }
-      }
-    };
-
-    addFinderPattern(0, 0);
-    addFinderPattern(cells - 7, 0);
-    addFinderPattern(0, cells - 7);
-
-    return (
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <rect width={size} height={size} fill="white" />
-        {pattern.map((row, i) =>
-          row.map((cell, j) =>
-            cell ? (
-              <rect
-                key={`${i}-${j}`}
-                x={j * cellSize}
-                y={i * cellSize}
-                width={cellSize}
-                height={cellSize}
-                fill="black"
-              />
-            ) : null
-          )
-        )}
-      </svg>
-    );
-  };
-
+  // QR Code is now rendered using qrcode.react library directly in JSX
   const getActiveFacilities = (facilities: Record<string, boolean> | null | undefined) => {
     if (!facilities) return [];
     return Object.entries(facilities)
@@ -604,7 +554,13 @@ export default function GymMembership() {
                 
                 <div className="flex flex-col items-center">
                   <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
-                    {generateQRCode(showQR.token)}
+                    {/* Use membership_number for scanning - it's what the scanner looks up */}
+                    <QRCodeSVG 
+                      value={showQR.number || showQR.token} 
+                      size={200}
+                      level="M"
+                      includeMargin={false}
+                    />
                   </div>
                   
                   {showQR.number && (
