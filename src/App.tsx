@@ -37,6 +37,7 @@ import GymProfile from "./pages/gym-portal/GymProfile";
 import GymSettings from "./pages/gym-portal/GymSettings";
 import GymMembershipLevels from "./pages/gym-portal/GymMembershipLevels";
 import GymSpaces from "./pages/gym-portal/GymSpaces";
+import GymCheckinStation from "./pages/gym-portal/GymCheckinStation";
 import CoachPortalLayout from "./pages/coach-portal/CoachPortalLayout";
 import CoachDashboard from "./pages/coach-portal/CoachDashboard";
 import CoachProfile from "./pages/coach-portal/CoachProfile";
@@ -141,6 +142,8 @@ function AppRoutes() {
       </Route>
       <Route path="/gym-portal" element={<ProtectedRoute><GymPortalLayout /></ProtectedRoute>}>
         <Route index element={<GymDashboard />} />
+        <Route path="dashboard" element={<GymDashboard />} />
+        <Route path="checkin-station" element={<GymCheckinStation />} />
         <Route path="members" element={<GymMembers />} />
         <Route path="memberships" element={<GymMemberships />} />
         <Route path="classes" element={<GymClasses />} />
