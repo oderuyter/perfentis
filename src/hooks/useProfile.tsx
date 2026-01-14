@@ -14,6 +14,40 @@ export interface UserProfile {
   accent_color: string;
   created_at: string;
   updated_at: string;
+  // Contact fields
+  first_name: string | null;
+  last_name: string | null;
+  telephone: string | null;
+  instagram_handle: string | null;
+  tiktok_handle: string | null;
+  youtube_handle: string | null;
+  twitter_handle: string | null;
+  website_url: string | null;
+  // Home address
+  address_line1: string | null;
+  address_line2: string | null;
+  address_city: string | null;
+  address_postcode: string | null;
+  address_country: string | null;
+  // Work address
+  work_company: string | null;
+  work_address_line1: string | null;
+  work_address_line2: string | null;
+  work_address_city: string | null;
+  work_address_postcode: string | null;
+  work_address_country: string | null;
+  // Settings
+  training_goal: string | null;
+  units: string | null;
+  hr_zones_mode: string | null;
+  hr_zone1_max: number | null;
+  hr_zone2_max: number | null;
+  hr_zone3_max: number | null;
+  hr_zone4_max: number | null;
+  hr_zone5_max: number | null;
+  date_of_birth: string | null;
+  privacy_analytics: boolean | null;
+  privacy_insights: boolean | null;
 }
 
 export function useProfile() {
