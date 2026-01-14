@@ -568,7 +568,7 @@ export default function GymMembership() {
 
       </Tabs>
 
-      {/* QR Code Modal - z-[100] to appear above bottom navigation */}
+      {/* QR Code Modal - slides down from top */}
       <AnimatePresence>
         {showQR && (
           <>
@@ -576,35 +576,46 @@ export default function GymMembership() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-[100]"
+              className="fixed inset-0 bg-black/70 z-[100]"
               onClick={() => setShowQR(null)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 bg-card rounded-2xl p-6 z-[100] max-w-sm mx-auto"
+              initial={{ y: "-100%", opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: "-100%", opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="fixed inset-x-0 top-0 bg-card rounded-b-3xl p-6 pt-safe z-[100] shadow-2xl"
             >
-              <button
-                onClick={() => setShowQR(null)}
-                className="absolute top-4 right-4 p-2 hover:bg-muted rounded-full z-10"
-              >
-                <X className="h-5 w-5" />
-              </button>
-              
-              <div className="text-center">
-                <h3 className="text-lg font-semibold mb-2">Your QR Code</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Scan this at check-in
-                </p>
-                
-                <div className="bg-white p-6 rounded-xl inline-block mb-4 shadow-lg">
-                  {generateQRCode(showQR.token)}
+              <div className="max-w-sm mx-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-semibold">Your QR Code</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Scan this at check-in
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowQR(null)}
+                    className="p-2 hover:bg-muted rounded-full"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
                 </div>
                 
-                {showQR.number && (
-                  <p className="font-mono text-lg font-semibold">{showQR.number}</p>
-                )}
+                <div className="flex flex-col items-center">
+                  <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
+                    {generateQRCode(showQR.token)}
+                  </div>
+                  
+                  {showQR.number && (
+                    <p className="font-mono text-xl font-bold">{showQR.number}</p>
+                  )}
+                </div>
+                
+                {/* Pull indicator */}
+                <div className="flex justify-center mt-4">
+                  <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+                </div>
               </div>
             </motion.div>
           </>
