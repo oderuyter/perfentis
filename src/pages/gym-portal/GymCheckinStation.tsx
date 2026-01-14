@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { Scanner } from "@yudiel/react-qr-scanner";
 import { format, subMinutes, startOfDay } from "date-fns";
@@ -14,6 +14,7 @@ import {
   Loader2
 } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface GymContext {
   selectedGymId: string | null;
@@ -29,6 +30,62 @@ interface CheckedInMember {
   last_checkin: Date | null;
 }
 
+interface ActiveMember {
+  id: string;
+  membership_number: string;
+  display_name: string;
+  avatar_url: string | null;
+  checked_in_at: Date;
+}
+
+// Audio context for sounds
+const playSuccessSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Pleasant success sound - two ascending tones
+    oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+    oscillator.frequency.setValueAtTime(659.25, audioContext.currentTime + 0.1); // E5
+    oscillator.frequency.setValueAtTime(783.99, audioContext.currentTime + 0.2); // G5
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.4);
+  } catch (e) {
+    console.log("Audio not supported");
+  }
+};
+
+const playErrorSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Subtle error tone - single low beep
+    oscillator.frequency.setValueAtTime(220, audioContext.currentTime); // A3
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    console.log("Audio not supported");
+  }
+};
+
 export default function GymCheckinStation() {
   const { selectedGymId, selectedGym } = useOutletContext<GymContext>();
   const navigate = useNavigate();
@@ -37,12 +94,15 @@ export default function GymCheckinStation() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [checkedInMember, setCheckedInMember] = useState<CheckedInMember | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [clearTimer, setClearTimer] = useState<NodeJS.Timeout | null>(null);
+  const clearTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Stats
   const [todayCount, setTodayCount] = useState(0);
   const [last60MinCount, setLast60MinCount] = useState(0);
   const [last30MinCount, setLast30MinCount] = useState(0);
+  
+  // Who's in the gym
+  const [activeMembers, setActiveMembers] = useState<ActiveMember[]>([]);
 
   const fetchStats = useCallback(async () => {
     if (!selectedGymId) return;
@@ -63,6 +123,7 @@ export default function GymCheckinStation() {
         setTodayCount(0);
         setLast60MinCount(0);
         setLast30MinCount(0);
+        setActiveMembers([]);
         return;
       }
 
@@ -92,6 +153,59 @@ export default function GymCheckinStation() {
       setTodayCount(todayTotal || 0);
       setLast60MinCount(sixtyMinTotal || 0);
       setLast30MinCount(thirtyMinTotal || 0);
+      
+      // Fetch active members (checked in within last 30 minutes)
+      const { data: recentCheckins } = await supabase
+        .from("membership_checkins")
+        .select(`
+          id,
+          checked_in_at,
+          membership:memberships!inner(
+            id,
+            membership_number,
+            user_id,
+            gym_id
+          )
+        `)
+        .in("membership_id", membershipIds)
+        .gte("checked_in_at", thirtyMinsAgo.toISOString())
+        .order("checked_in_at", { ascending: false });
+
+      if (recentCheckins && recentCheckins.length > 0) {
+        // Get unique user IDs
+        const userIds = [...new Set(recentCheckins.map(c => (c.membership as any).user_id))];
+        
+        // Fetch profiles
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, avatar_url")
+          .in("user_id", userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        
+        // Build active members list (only most recent check-in per member)
+        const seenMembers = new Set<string>();
+        const activeMembersList: ActiveMember[] = [];
+        
+        for (const checkin of recentCheckins) {
+          const membership = checkin.membership as any;
+          if (!seenMembers.has(membership.id)) {
+            seenMembers.add(membership.id);
+            const profile = profileMap.get(membership.user_id);
+            activeMembersList.push({
+              id: membership.id,
+              membership_number: membership.membership_number,
+              display_name: profile?.display_name || "Member",
+              avatar_url: profile?.avatar_url || null,
+              checked_in_at: new Date(checkin.checked_in_at)
+            });
+          }
+        }
+        
+        setActiveMembers(activeMembersList);
+      } else {
+        setActiveMembers([]);
+      }
     } catch (error) {
       console.error("Error fetching stats:", error);
     }
@@ -108,18 +222,22 @@ export default function GymCheckinStation() {
 
   useEffect(() => {
     // Clear checked-in member after 20 seconds of inactivity
-    if (checkedInMember && !clearTimer) {
-      const timer = setTimeout(() => {
+    if (checkedInMember) {
+      if (clearTimerRef.current) {
+        clearTimeout(clearTimerRef.current);
+      }
+      clearTimerRef.current = setTimeout(() => {
         setCheckedInMember(null);
         setError(null);
       }, 20000);
-      setClearTimer(timer);
     }
     
     return () => {
-      if (clearTimer) clearTimeout(clearTimer);
+      if (clearTimerRef.current) {
+        clearTimeout(clearTimerRef.current);
+      }
     };
-  }, [checkedInMember, clearTimer]);
+  }, [checkedInMember]);
 
   const checkCameraPermission = async () => {
     try {
@@ -139,9 +257,9 @@ export default function GymCheckinStation() {
     setError(null);
     
     // Clear any existing timer
-    if (clearTimer) {
-      clearTimeout(clearTimer);
-      setClearTimer(null);
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
     }
     
     try {
@@ -156,6 +274,7 @@ export default function GymCheckinStation() {
         setError("Membership not found");
         setCheckedInMember(null);
         toast.error("Membership not found");
+        playErrorSound();
         return;
       }
 
@@ -163,6 +282,7 @@ export default function GymCheckinStation() {
         setError("This membership is for a different gym");
         setCheckedInMember(null);
         toast.error("This membership is for a different gym");
+        playErrorSound();
         return;
       }
 
@@ -170,6 +290,7 @@ export default function GymCheckinStation() {
         setError(`Membership is ${membership.status}`);
         setCheckedInMember(null);
         toast.error(`Membership is ${membership.status}`);
+        playErrorSound();
         return;
       }
 
@@ -210,6 +331,7 @@ export default function GymCheckinStation() {
       });
 
       toast.success(`${profile?.display_name || "Member"} checked in!`);
+      playSuccessSound();
       
       // Refresh stats
       fetchStats();
@@ -218,6 +340,7 @@ export default function GymCheckinStation() {
       console.error("Check-in error:", error);
       setError("Failed to process check-in");
       toast.error("Failed to process check-in");
+      playErrorSound();
     } finally {
       setIsProcessing(false);
     }
@@ -232,7 +355,7 @@ export default function GymCheckinStation() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -287,7 +410,7 @@ export default function GymCheckinStation() {
       </div>
 
       {/* Main Content - Camera and Result */}
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
         {/* Camera Section */}
         <div className="bg-card border border-border rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
@@ -390,6 +513,52 @@ export default function GymCheckinStation() {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Who's in the Gym */}
+      <div className="bg-card border border-border rounded-xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold">Who's in the Gym</h2>
+          </div>
+          <span className="text-sm text-muted-foreground">
+            Last 30 minutes • {activeMembers.length} {activeMembers.length === 1 ? "member" : "members"}
+          </span>
+        </div>
+        
+        {activeMembers.length > 0 ? (
+          <ScrollArea className="h-[200px]">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+              {activeMembers.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex flex-col items-center p-3 bg-muted/50 rounded-lg"
+                >
+                  <Avatar className="h-12 w-12 mb-2">
+                    <AvatarImage src={member.avatar_url || undefined} />
+                    <AvatarFallback className="text-lg font-bold">
+                      {member.display_name[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm font-medium text-center truncate w-full">
+                    {member.display_name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {format(member.checked_in_at, "h:mm a")}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        ) : (
+          <div className="h-[200px] flex items-center justify-center">
+            <div className="text-center">
+              <Users className="h-12 w-12 text-muted-foreground/50 mx-auto mb-2" />
+              <p className="text-muted-foreground">No members checked in recently</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

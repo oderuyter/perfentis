@@ -568,7 +568,7 @@ export default function GymMembership() {
 
       </Tabs>
 
-      {/* QR Code Modal */}
+      {/* QR Code Modal - z-[100] to appear above bottom navigation */}
       <AnimatePresence>
         {showQR && (
           <>
@@ -576,18 +576,18 @@ export default function GymMembership() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-50"
+              className="fixed inset-0 bg-black/50 z-[100]"
               onClick={() => setShowQR(null)}
             />
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 bg-card rounded-2xl p-6 z-50 max-w-sm mx-auto"
+              className="fixed inset-x-4 top-1/2 -translate-y-1/2 bg-card rounded-2xl p-6 z-[100] max-w-sm mx-auto"
             >
               <button
                 onClick={() => setShowQR(null)}
-                className="absolute top-4 right-4 p-2 hover:bg-muted rounded-full"
+                className="absolute top-4 right-4 p-2 hover:bg-muted rounded-full z-10"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -598,7 +598,7 @@ export default function GymMembership() {
                   Scan this at check-in
                 </p>
                 
-                <div className="bg-white p-4 rounded-xl inline-block mb-4">
+                <div className="bg-white p-6 rounded-xl inline-block mb-4 shadow-lg">
                   {generateQRCode(showQR.token)}
                 </div>
                 
