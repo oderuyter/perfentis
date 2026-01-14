@@ -26,7 +26,7 @@ interface MemberResult {
   id: string;
   membership_number: string;
   status: string;
-  profiles: { display_name: string } | null;
+  profiles: { display_name: string; avatar_url: string | null } | null;
 }
 
 export function ManualCheckinDialog({ 
@@ -94,7 +94,7 @@ export function ManualCheckinDialog({
       
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, display_name")
+        .select("id, display_name, avatar_url")
         .in("id", userIds);
 
       const results = (memberships || [])
@@ -155,7 +155,7 @@ export function ManualCheckinDialog({
       // Fetch profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("id, display_name")
+        .select("id, display_name, avatar_url")
         .eq("id", data.user_id)
         .single();
 
@@ -240,16 +240,34 @@ export function ManualCheckinDialog({
         </DialogHeader>
 
         {checkinSuccess && selectedMember ? (
-          <div className="py-8 text-center">
-            <div className="h-16 w-16 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+          <div className="py-6 text-center">
+            <div className="relative mx-auto mb-4">
+              <div className="h-20 w-20 mx-auto rounded-full overflow-hidden border-4 border-green-500 bg-muted">
+                {selectedMember.profiles?.avatar_url ? (
+                  <img 
+                    src={selectedMember.profiles.avatar_url} 
+                    alt={selectedMember.profiles?.display_name || "Member"} 
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-2xl font-bold text-muted-foreground">
+                    {(selectedMember.profiles?.display_name || "?")[0].toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="absolute -bottom-1 -right-1 h-8 w-8 bg-green-500 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-white" />
+              </div>
             </div>
-            <h3 className="text-lg font-semibold mb-2">Check-in Successful!</h3>
-            <p className="text-muted-foreground mb-1">
+            <h3 className="text-lg font-semibold mb-1">Check-in Successful!</h3>
+            <p className="text-foreground font-medium text-lg">
               {selectedMember.profiles?.display_name || "Member"}
             </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              ID: #{selectedMember.membership_number}
+            </p>
             <p className="text-sm text-muted-foreground">
-              #{selectedMember.membership_number} • {format(new Date(), "h:mm a")}
+              Checked in at {format(new Date(), "h:mm a")}
             </p>
             <button
               onClick={resetState}
