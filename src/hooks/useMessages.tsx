@@ -258,20 +258,37 @@ export async function createConversation({
   participantUserIds: string[];
   initialMessage?: string;
 }) {
-  // Check for existing open conversation
+  // Ensure we have an authenticated user (RLS requires it)
+  const {
+    data: { user: currentUser },
+    error: authError,
+  } = await supabase.auth.getUser();
+
+  if (authError) throw authError;
+  if (!currentUser) throw new Error("Not authenticated");
+
+  // Normalize participants: dedupe + ensure current user is included
+  const uniqueParticipantIds = Array.from(
+    new Set((participantUserIds || []).filter(Boolean))
+  );
+
+  if (!uniqueParticipantIds.includes(currentUser.id)) {
+    uniqueParticipantIds.unshift(currentUser.id);
+  }
+
+  // Check for existing open conversation (avoid .single() error on 0 rows)
   if (contextId) {
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("conversations")
       .select("id")
       .eq("context_type", contextType)
       .eq("context_id", contextId)
       .eq("status", "open")
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (existing) {
-      return existing.id;
-    }
+    if (existingError) throw existingError;
+    if (existing) return existing.id;
   }
 
   // Create new conversation
@@ -281,50 +298,60 @@ export async function createConversation({
       context_type: contextType,
       context_id: contextId || null,
       subject: subject || null,
-      status: 'open',
+      status: "open",
     })
-    .select()
+    .select("id")
     .single();
 
   if (convError) throw convError;
 
-  // Add participants
-  const participantInserts = participantUserIds.map((userId, index) => ({
-    conversation_id: conversation.id,
-    user_id: userId,
-    role: index === 0 ? 'user' : 'staff', // First is user, rest are staff
-  }));
-
-  const { error: partError } = await supabase
+  // Add participants (insert yourself first, then others)
+  const { error: selfPartError } = await supabase
     .from("conversation_participants")
-    .insert(participantInserts);
+    .insert({
+      conversation_id: conversation.id,
+      user_id: currentUser.id,
+      role: "user",
+    });
 
-  if (partError) throw partError;
+  if (selfPartError) throw selfPartError;
+
+  const otherIds = uniqueParticipantIds.filter((id) => id !== currentUser.id);
+  if (otherIds.length > 0) {
+    const { error: othersError } = await supabase
+      .from("conversation_participants")
+      .insert(
+        otherIds.map((userId) => ({
+          conversation_id: conversation.id,
+          user_id: userId,
+          role: "staff",
+        }))
+      );
+
+    if (othersError) throw othersError;
+  }
 
   // Send initial message if provided
-  if (initialMessage) {
-    const currentUser = (await supabase.auth.getUser()).data.user;
-    if (currentUser) {
-      await supabase
-        .from("messages")
-        .insert({
-          conversation_id: conversation.id,
-          sender_user_id: currentUser.id,
-          body_text: initialMessage,
-          is_system_message: false,
-        });
-    }
+  if (initialMessage && initialMessage.trim()) {
+    const { error: initialError } = await supabase.from("messages").insert({
+      conversation_id: conversation.id,
+      sender_user_id: currentUser.id,
+      body_text: initialMessage.trim(),
+      is_system_message: false,
+    });
+
+    if (initialError) throw initialError;
   }
 
   // Add system message
-  await supabase
-    .from("messages")
-    .insert({
-      conversation_id: conversation.id,
-      sender_user_id: null,
-      body_text: 'Conversation started',
-      is_system_message: true,
-    });
+  const { error: systemError } = await supabase.from("messages").insert({
+    conversation_id: conversation.id,
+    sender_user_id: null,
+    body_text: "Conversation started",
+    is_system_message: true,
+  });
+
+  if (systemError) throw systemError;
 
   return conversation.id;
 }
