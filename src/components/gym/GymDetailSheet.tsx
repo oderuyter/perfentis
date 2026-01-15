@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Building2, MapPin, Mail, Phone, Globe, Loader2, MessageSquare, CreditCard, ArrowLeft, CheckCircle, Dumbbell, Droplets, Car, Wifi, Users, Heart, Waves, Flame, Bike, PersonStanding, Trees, Swords, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { createConversation } from "@/hooks/useMessages";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -26,6 +28,7 @@ type GymDetail = {
   email: string | null;
   phone: string | null;
   website: string | null;
+  owner_id: string | null;
 };
 
 type MembershipLevel = {
@@ -79,6 +82,7 @@ const FACILITY_CONFIG: { key: string; label: string; icon: any; category: string
 
 export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [gym, setGym] = useState<GymDetail | null>(null);
   const [levels, setLevels] = useState<MembershipLevel[]>([]);
   const [facilities, setFacilities] = useState<GymFacilities | null>(null);
@@ -117,7 +121,7 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
     const [gymResult, levelsResult, facilitiesResult] = await Promise.all([
       supabase
         .from("gyms")
-        .select("id, name, address, description, logo_url, email, phone, website")
+        .select("id, name, address, description, logo_url, email, phone, website, owner_id")
         .eq("id", gymId)
         .single(),
       supabase
@@ -152,7 +156,7 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
   };
   
   const handleRequestInfo = async () => {
-    if (!user || !gymId) {
+    if (!user || !gymId || !gym) {
       toast.error("Please sign in to send a request");
       return;
     }
@@ -169,23 +173,37 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
     
     setSubmitting(true);
     
-    // Create a pending membership with notes for the info request
-    const { error } = await supabase
-      .from("memberships")
-      .insert({
-        gym_id: gymId,
-        user_id: user.id,
-        status: "inquiry",
+    try {
+      // Build message content
+      let fullMessage = message.trim();
+      if (requestCallback && phoneNumber.trim()) {
+        fullMessage += `\n\n📞 Callback requested: ${phoneNumber.trim()}`;
+      }
+      
+      // Get participants: current user + gym owner (if available)
+      const participants = [user.id];
+      if (gym.owner_id) {
+        participants.push(gym.owner_id);
+      }
+      
+      // Create conversation using the new messaging system
+      const conversationId = await createConversation({
+        contextType: 'gym',
+        contextId: gymId,
+        subject: `Information request about ${gym.name}`,
+        participantUserIds: participants,
+        initialMessage: fullMessage,
       });
-    
-    if (error) {
+      
+      toast.success("Message sent! Redirecting to inbox...");
+      onOpenChange(false);
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch (error) {
       console.error("Error sending request:", error);
       toast.error("Failed to send request. Please try again.");
-    } else {
-      setFlowStep("success");
+    } finally {
+      setSubmitting(false);
     }
-    
-    setSubmitting(false);
   };
   
   const handleSignup = async () => {

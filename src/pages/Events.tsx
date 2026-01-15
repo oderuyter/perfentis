@@ -26,6 +26,7 @@ interface Event {
   event_mode: string | null;
   event_type: string | null;
   rules: string | null;
+  organiser_id: string;
 }
 
 export default function Events() {
