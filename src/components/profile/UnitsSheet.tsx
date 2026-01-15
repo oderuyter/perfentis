@@ -66,7 +66,7 @@ export function UnitsSheet({ isOpen, onClose }: UnitsSheetProps) {
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-hidden rounded-t-2xl bg-background"
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-hidden rounded-t-2xl bg-background flex flex-col pb-bottom-nav"
           >
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-lg font-semibold">Units</h2>
@@ -75,7 +75,7 @@ export function UnitsSheet({ isOpen, onClose }: UnitsSheetProps) {
               </Button>
             </div>
             
-            <div className="p-4 pb-24 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               <p className="text-sm text-muted-foreground">
                 Choose how measurements are displayed throughout the app. This only affects display — your data is stored in its original format.
               </p>
