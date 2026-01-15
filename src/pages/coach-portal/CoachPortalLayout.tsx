@@ -17,7 +17,8 @@ import {
   ChevronDown,
   LogOut,
   Briefcase,
-  User
+  User,
+  Inbox
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,6 +32,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: "/coach-portal", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/coach-portal/inbox", icon: Inbox, label: "Inbox" },
   { to: "/coach-portal/profile", icon: User, label: "My Profile" },
   { to: "/coach-portal/services", icon: Briefcase, label: "Services" },
   { to: "/coach-portal/clients", icon: Users, label: "Clients" },

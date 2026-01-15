@@ -14,7 +14,8 @@ import {
   GraduationCap,
   Flag,
   ShieldCheck,
-  Music
+  Music,
+  Inbox
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const allDrawerItems: DrawerItem[] = [
   { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym", requiresGymAccess: true },
   { to: "/coach-portal", icon: GraduationCap, label: "Coach Portal", description: "Manage your coaching", requiresCoachAccess: true },
   { to: "/event-portal", icon: Flag, label: "Event Portal", description: "Manage your events", requiresEventAccess: true },
+  { to: "/inbox", icon: Inbox, label: "Inbox", description: "Messages & conversations" },
   { to: "/gym-membership", icon: CreditCard, label: "Gym Membership", description: "Manage your gym access" },
   { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
   { to: "/social", icon: MessageCircle, label: "Social", description: "Community feed" },

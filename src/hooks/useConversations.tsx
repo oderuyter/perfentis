@@ -113,11 +113,11 @@ export function useConversations(options: UseConversationsOptions = {}) {
       ]);
 
       const gymNames = new Map<string, string>();
-      gymsResult.data?.forEach(g => gymNames.set(g.id, g.name));
+      gymsResult.data?.forEach((g: { id: string; name: string }) => gymNames.set(g.id, g.name));
       const coachNames = new Map<string, string>();
-      coachesResult.data?.forEach(c => coachNames.set(c.id, c.display_name));
+      coachesResult.data?.forEach((c: { id: string; display_name: string }) => coachNames.set(c.id, c.display_name));
       const eventNames = new Map<string, string>();
-      eventsResult.data?.forEach(e => eventNames.set(e.id, e.title));
+      eventsResult.data?.forEach((e: { id: string; title: string }) => eventNames.set(e.id, e.title));
 
       // Transform data
       const transformed: Conversation[] = (data || []).map(conv => {
@@ -207,20 +207,21 @@ export function useConversations(options: UseConversationsOptions = {}) {
 }
 
 // Hook for portal-specific inbox (gyms, events with assignment support)
-export function usePortalConversations(contextType: ConversationContextType, contextId: string | null) {
+export function usePortalConversations(contextType: ConversationContextType, contextId?: string | null) {
   const { user } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchConversations = useCallback(async () => {
-    if (!user || !contextId) {
+    // For support context, contextId is not required
+    if (!user || (!contextId && contextType !== 'support')) {
       setConversations([]);
       setIsLoading(false);
       return;
     }
 
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("conversations")
         .select(`
           *,
@@ -228,10 +229,14 @@ export function usePortalConversations(contextType: ConversationContextType, con
           messages(id, body_text, created_at, sender_user_id, is_system_message)
         `)
         .eq("context_type", contextType)
-        .eq("context_id", contextId)
         .order("updated_at", { ascending: false });
 
-      if (error) throw error;
+      // Only filter by context_id if provided (not needed for support)
+      if (contextId) {
+        query = query.eq("context_id", contextId);
+      }
+
+      const { data, error } = await query;
 
       // Get user profiles for participants
       const participantIds = new Set<string>();
@@ -296,7 +301,7 @@ export function usePortalConversations(contextType: ConversationContextType, con
 
   // Realtime subscription
   useEffect(() => {
-    if (!user || !contextId) return;
+    if (!user || (!contextId && contextType !== 'support')) return;
 
     const channel = supabase
       .channel(`portal-conversations-${contextId}`)

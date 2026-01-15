@@ -46,7 +46,7 @@ import { toast } from "sonner";
 
 interface PortalInboxProps {
   contextType: ConversationContextType;
-  contextId: string | null;
+  contextId?: string | null;
   staffMembers?: Array<{ user_id: string; display_name: string }>;
   title?: string;
 }
@@ -128,7 +128,8 @@ export function PortalInbox({
     return format(date, 'MMM d, HH:mm');
   };
 
-  if (!contextId) {
+  // For support context, contextId is not required
+  if (!contextId && contextType !== 'support') {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Please select a {contextType} first</p>
