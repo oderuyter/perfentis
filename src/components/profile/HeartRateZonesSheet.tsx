@@ -138,7 +138,7 @@ export function HeartRateZonesSheet({ isOpen, onClose }: HeartRateZonesSheetProp
               </Button>
             </div>
             
-            <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-4 space-y-6">
+            <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-4 pb-24 space-y-6">
               {/* Base Values */}
               <section className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">

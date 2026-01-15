@@ -88,7 +88,7 @@ export function PrivacySheet({ isOpen, onClose }: PrivacySheetProps) {
               </Button>
             </div>
             
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-4 space-y-6">
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)] p-4 pb-24 space-y-6">
               {/* Privacy Toggles */}
               <section className="space-y-3">
                 <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">

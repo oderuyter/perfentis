@@ -72,7 +72,7 @@ export function IntegrationsSheet({ isOpen, onClose }: IntegrationsSheetProps) {
               </Button>
             </div>
             
-            <div className="p-4 space-y-4">
+            <div className="p-4 pb-24 space-y-4">
               <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
                 <Smartphone className="h-5 w-5 text-primary shrink-0" />
                 <div className="text-sm">
