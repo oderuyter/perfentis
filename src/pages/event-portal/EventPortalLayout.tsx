@@ -21,6 +21,7 @@ import {
   X,
   ArrowLeft,
   Inbox,
+  UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ interface Event {
 const navItems = [
   { to: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "inbox", icon: Inbox, label: "Inbox" },
+  { to: "crm", icon: UserPlus, label: "CRM" },
   { to: "events", icon: Calendar, label: "Events" },
   { to: "divisions", icon: Users, label: "Categories / Divisions" },
   { to: "registrations", icon: UserCheck, label: "Registration & Teams" },

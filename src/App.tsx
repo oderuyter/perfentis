@@ -40,6 +40,7 @@ import GymMembershipLevels from "./pages/gym-portal/GymMembershipLevels";
 import GymSpaces from "./pages/gym-portal/GymSpaces";
 import GymCheckinStation from "./pages/gym-portal/GymCheckinStation";
 import GymInbox from "./pages/gym-portal/GymInbox";
+import GymCRM from "./pages/gym-portal/GymCRM";
 import CoachPortalLayout from "./pages/coach-portal/CoachPortalLayout";
 import CoachDashboard from "./pages/coach-portal/CoachDashboard";
 import CoachProfile from "./pages/coach-portal/CoachProfile";
@@ -54,6 +55,7 @@ import CoachAffiliations from "./pages/coach-portal/CoachAffiliations";
 import CoachFinancials from "./pages/coach-portal/CoachFinancials";
 import CoachSettings from "./pages/coach-portal/CoachSettings";
 import CoachInbox from "./pages/coach-portal/CoachInbox";
+import CoachCRM from "./pages/coach-portal/CoachCRM";
 import EventPortalLayout from "./pages/event-portal/EventPortalLayout";
 import EventDashboard from "./pages/event-portal/EventDashboard";
 import EventsManagement from "./pages/event-portal/EventsManagement";
@@ -69,6 +71,7 @@ import EventBranding from "./pages/event-portal/EventBranding";
 import EventReports from "./pages/event-portal/EventReports";
 import EventSettings from "./pages/event-portal/EventSettings";
 import EventInbox from "./pages/event-portal/EventInbox";
+import EventCRM from "./pages/event-portal/EventCRM";
 import AcceptInvite from "./pages/AcceptInvite";
 import AdminPortalLayout from "./pages/admin-portal/AdminPortalLayout";
 import AdminDashboard from "./pages/admin-portal/AdminDashboard";
@@ -163,6 +166,7 @@ function AppRoutes() {
         <Route path="membership-levels" element={<GymMembershipLevels />} />
         <Route path="spaces" element={<GymSpaces />} />
         <Route path="inbox" element={<GymInbox />} />
+        <Route path="crm" element={<GymCRM />} />
       </Route>
       <Route path="/coach-portal" element={<ProtectedRoute><CoachPortalLayout /></ProtectedRoute>}>
         <Route index element={<CoachDashboard />} />
@@ -178,6 +182,7 @@ function AppRoutes() {
         <Route path="financials" element={<CoachFinancials />} />
         <Route path="settings" element={<CoachSettings />} />
         <Route path="inbox" element={<CoachInbox />} />
+        <Route path="crm" element={<CoachCRM />} />
       </Route>
       <Route path="/event-portal" element={<ProtectedRoute><EventPortalLayout /></ProtectedRoute>}>
         <Route index element={<EventDashboard />} />
@@ -194,6 +199,7 @@ function AppRoutes() {
         <Route path="reports" element={<EventReports />} />
         <Route path="settings" element={<EventSettings />} />
         <Route path="inbox" element={<EventInbox />} />
+        <Route path="crm" element={<EventCRM />} />
       </Route>
       <Route path="/admin-portal" element={<ProtectedRoute><AdminPortalLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
