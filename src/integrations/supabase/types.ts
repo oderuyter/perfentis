@@ -1103,6 +1103,330 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_lead_activities: {
+        Row: {
+          activity_type: string
+          actor_user_id: string | null
+          created_at: string
+          description: string
+          id: string
+          lead_id: string
+          metadata: Json | null
+        }
+        Insert: {
+          activity_type: string
+          actor_user_id?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          lead_id: string
+          metadata?: Json | null
+        }
+        Update: {
+          activity_type?: string
+          actor_user_id?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          lead_id?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_lead_notes: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          lead_id: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+          lead_id: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_lead_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_leads: {
+        Row: {
+          assigned_to_user_id: string | null
+          contact_instagram: string | null
+          contact_telephone: string | null
+          contact_tiktok: string | null
+          contact_twitter: string | null
+          contact_website: string | null
+          contact_youtube: string | null
+          context_id: string
+          context_type: string
+          conversation_id: string | null
+          converted_at: string | null
+          created_at: string
+          email: string | null
+          home_address_city: string | null
+          home_address_country: string | null
+          home_address_line1: string | null
+          home_address_line2: string | null
+          home_address_postcode: string | null
+          id: string
+          is_incomplete: boolean | null
+          is_registered_user: boolean | null
+          last_contacted_at: string | null
+          lead_name: string
+          metadata: Json | null
+          phone: string | null
+          source: string
+          stage_id: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+          user_id: string | null
+          work_address_city: string | null
+          work_address_country: string | null
+          work_address_line1: string | null
+          work_address_line2: string | null
+          work_address_postcode: string | null
+          work_company: string | null
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          contact_instagram?: string | null
+          contact_telephone?: string | null
+          contact_tiktok?: string | null
+          contact_twitter?: string | null
+          contact_website?: string | null
+          contact_youtube?: string | null
+          context_id: string
+          context_type: string
+          conversation_id?: string | null
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          home_address_city?: string | null
+          home_address_country?: string | null
+          home_address_line1?: string | null
+          home_address_line2?: string | null
+          home_address_postcode?: string | null
+          id?: string
+          is_incomplete?: boolean | null
+          is_registered_user?: boolean | null
+          last_contacted_at?: string | null
+          lead_name: string
+          metadata?: Json | null
+          phone?: string | null
+          source?: string
+          stage_id?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+          work_address_city?: string | null
+          work_address_country?: string | null
+          work_address_line1?: string | null
+          work_address_line2?: string | null
+          work_address_postcode?: string | null
+          work_company?: string | null
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          contact_instagram?: string | null
+          contact_telephone?: string | null
+          contact_tiktok?: string | null
+          contact_twitter?: string | null
+          contact_website?: string | null
+          contact_youtube?: string | null
+          context_id?: string
+          context_type?: string
+          conversation_id?: string | null
+          converted_at?: string | null
+          created_at?: string
+          email?: string | null
+          home_address_city?: string | null
+          home_address_country?: string | null
+          home_address_line1?: string | null
+          home_address_line2?: string | null
+          home_address_postcode?: string | null
+          id?: string
+          is_incomplete?: boolean | null
+          is_registered_user?: boolean | null
+          last_contacted_at?: string | null
+          lead_name?: string
+          metadata?: Json | null
+          phone?: string | null
+          source?: string
+          stage_id?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string | null
+          work_address_city?: string | null
+          work_address_country?: string | null
+          work_address_line1?: string | null
+          work_address_line2?: string | null
+          work_address_postcode?: string | null
+          work_company?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_leads_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_leads_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipeline_stages: {
+        Row: {
+          context_id: string
+          context_type: string
+          created_at: string
+          id: string
+          is_default: boolean | null
+          is_lost: boolean | null
+          is_won: boolean | null
+          stage_name: string
+          stage_order: number
+          updated_at: string
+        }
+        Insert: {
+          context_id: string
+          context_type: string
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          is_lost?: boolean | null
+          is_won?: boolean | null
+          stage_name: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Update: {
+          context_id?: string
+          context_type?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          is_lost?: boolean | null
+          is_won?: boolean | null
+          stage_name?: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_settings: {
+        Row: {
+          auto_create_leads_from_messages: boolean | null
+          context_id: string
+          context_type: string
+          created_at: string
+          default_assignee_user_id: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          auto_create_leads_from_messages?: boolean | null
+          context_id: string
+          context_type: string
+          created_at?: string
+          default_assignee_user_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          auto_create_leads_from_messages?: boolean | null
+          context_id?: string
+          context_type?: string
+          created_at?: string
+          default_assignee_user_id?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      crm_tasks: {
+        Row: {
+          assigned_to_user_id: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_at: string | null
+          id: string
+          lead_id: string
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          lead_id: string
+          status?: string
+          task_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_at?: string | null
+          id?: string
+          lead_id?: string
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_assets: {
         Row: {
           alt_text: string | null
@@ -4300,6 +4624,10 @@ export type Database = {
           _severity?: string
         }
         Returns: string
+      }
+      user_has_crm_access: {
+        Args: { p_context_id: string; p_context_type: string }
+        Returns: boolean
       }
     }
     Enums: {
