@@ -19,7 +19,8 @@ import {
   Layers,
   MapPin,
   ScanLine,
-  Inbox
+  Inbox,
+  UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
@@ -42,6 +43,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: "/gym-portal/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/gym-portal/inbox", icon: Inbox, label: "Inbox" },
+  { to: "/gym-portal/crm", icon: UserPlus, label: "CRM" },
   { to: "/gym-portal/checkin-station", icon: ScanLine, label: "Check-in Station" },
   { to: "/gym-portal/members", icon: Users, label: "Members" },
   { to: "/gym-portal/membership-levels", icon: Layers, label: "Membership Levels" },
