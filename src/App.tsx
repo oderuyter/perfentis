@@ -23,6 +23,7 @@ import Social from "./pages/Social";
 import Events from "./pages/Events";
 import Help from "./pages/Help";
 import Playlists from "./pages/Playlists";
+import Inbox from "./pages/Inbox";
 import GymPortalLayout from "./pages/gym-portal/GymPortalLayout";
 import GymDashboard from "./pages/gym-portal/GymDashboard";
 import GymMembers from "./pages/gym-portal/GymMembers";
@@ -38,6 +39,7 @@ import GymSettings from "./pages/gym-portal/GymSettings";
 import GymMembershipLevels from "./pages/gym-portal/GymMembershipLevels";
 import GymSpaces from "./pages/gym-portal/GymSpaces";
 import GymCheckinStation from "./pages/gym-portal/GymCheckinStation";
+import GymInbox from "./pages/gym-portal/GymInbox";
 import CoachPortalLayout from "./pages/coach-portal/CoachPortalLayout";
 import CoachDashboard from "./pages/coach-portal/CoachDashboard";
 import CoachProfile from "./pages/coach-portal/CoachProfile";
@@ -51,6 +53,7 @@ import CoachProgress from "./pages/coach-portal/CoachProgress";
 import CoachAffiliations from "./pages/coach-portal/CoachAffiliations";
 import CoachFinancials from "./pages/coach-portal/CoachFinancials";
 import CoachSettings from "./pages/coach-portal/CoachSettings";
+import CoachInbox from "./pages/coach-portal/CoachInbox";
 import EventPortalLayout from "./pages/event-portal/EventPortalLayout";
 import EventDashboard from "./pages/event-portal/EventDashboard";
 import EventsManagement from "./pages/event-portal/EventsManagement";
@@ -65,6 +68,7 @@ import EventCommunications from "./pages/event-portal/EventCommunications";
 import EventBranding from "./pages/event-portal/EventBranding";
 import EventReports from "./pages/event-portal/EventReports";
 import EventSettings from "./pages/event-portal/EventSettings";
+import EventInbox from "./pages/event-portal/EventInbox";
 import AcceptInvite from "./pages/AcceptInvite";
 import AdminPortalLayout from "./pages/admin-portal/AdminPortalLayout";
 import AdminDashboard from "./pages/admin-portal/AdminDashboard";
@@ -82,6 +86,7 @@ import AdminNotifications from "./pages/admin-portal/AdminNotifications";
 import AdminImports from "./pages/admin-portal/AdminImports";
 import AdminLogs from "./pages/admin-portal/AdminLogs";
 import AdminSettings from "./pages/admin-portal/AdminSettings";
+import AdminInbox from "./pages/admin-portal/AdminInbox";
 
 const queryClient = new QueryClient();
 
@@ -138,6 +143,7 @@ function AppRoutes() {
         <Route path="/social" element={<Social />} />
         <Route path="/events" element={<Events />} />
         <Route path="/playlists" element={<Playlists />} />
+        <Route path="/inbox" element={<Inbox />} />
         <Route path="/help" element={<Help />} />
       </Route>
       <Route path="/gym-portal" element={<ProtectedRoute><GymPortalLayout /></ProtectedRoute>}>
@@ -156,6 +162,7 @@ function AppRoutes() {
         <Route path="settings" element={<GymSettings />} />
         <Route path="membership-levels" element={<GymMembershipLevels />} />
         <Route path="spaces" element={<GymSpaces />} />
+        <Route path="inbox" element={<GymInbox />} />
       </Route>
       <Route path="/coach-portal" element={<ProtectedRoute><CoachPortalLayout /></ProtectedRoute>}>
         <Route index element={<CoachDashboard />} />
@@ -170,6 +177,7 @@ function AppRoutes() {
         <Route path="affiliations" element={<CoachAffiliations />} />
         <Route path="financials" element={<CoachFinancials />} />
         <Route path="settings" element={<CoachSettings />} />
+        <Route path="inbox" element={<CoachInbox />} />
       </Route>
       <Route path="/event-portal" element={<ProtectedRoute><EventPortalLayout /></ProtectedRoute>}>
         <Route index element={<EventDashboard />} />
@@ -185,6 +193,7 @@ function AppRoutes() {
         <Route path="branding" element={<EventBranding />} />
         <Route path="reports" element={<EventReports />} />
         <Route path="settings" element={<EventSettings />} />
+        <Route path="inbox" element={<EventInbox />} />
       </Route>
       <Route path="/admin-portal" element={<ProtectedRoute><AdminPortalLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
@@ -202,6 +211,7 @@ function AppRoutes() {
         <Route path="imports" element={<AdminImports />} />
         <Route path="logs" element={<AdminLogs />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="inbox" element={<AdminInbox />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />

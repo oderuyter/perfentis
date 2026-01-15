@@ -38,6 +38,7 @@ import {
   LogOut,
   User,
   Music,
+  Inbox,
 } from "lucide-react";
 
 interface NavItem {
@@ -48,6 +49,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: "/admin-portal", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/admin-portal/inbox", icon: Inbox, label: "Support Inbox" },
   { to: "/admin-portal/users", icon: Users, label: "Users & Roles" },
   { to: "/admin-portal/uac", icon: Shield, label: "UAC & Groups" },
   { to: "/admin-portal/gyms", icon: Building2, label: "Gyms" },

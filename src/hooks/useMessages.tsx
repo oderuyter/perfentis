@@ -233,7 +233,7 @@ async function notifyParticipants(conversationId: string, senderId: string, mess
         userId: participant.user_id,
         title,
         body,
-        type: 'social',
+        type: 'system',
         entityType: 'conversation',
         entityId: conversationId,
         actionUrl: `/inbox?conversation=${conversationId}`,
