@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { 
   X, 
@@ -9,13 +10,16 @@ import {
   Trophy, 
   ClipboardList,
   Lock,
-  ChevronRight
+  ChevronRight,
+  MessageSquare
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { createConversation } from "@/hooks/useMessages";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { EventRegistrationSheet } from "./EventRegistrationSheet";
 
 interface Event {
@@ -32,6 +36,7 @@ interface Event {
   event_mode: string | null;
   event_type: string | null;
   rules: string | null;
+  organiser_id: string;
 }
 
 interface Division {
@@ -69,11 +74,13 @@ export function EventDetailSheet({
   onRegistrationChange 
 }: EventDetailSheetProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"info" | "workouts" | "leaderboard">("info");
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
+  const [isMessaging, setIsMessaging] = useState(false);
 
   useEffect(() => {
     if (event && isOpen) {
@@ -111,6 +118,33 @@ export function EventDetailSheet({
 
   const eventDate = event?.start_date || event?.event_date;
   const isUpcoming = eventDate && new Date(eventDate) > new Date();
+
+  const handleMessageOrganiser = async () => {
+    if (!user || !event) {
+      toast.error("Please sign in to message the organiser");
+      return;
+    }
+
+    setIsMessaging(true);
+    try {
+      const conversationId = await createConversation({
+        contextType: 'event',
+        contextId: event.id,
+        subject: `Question about ${event.title}`,
+        participantUserIds: [user.id, event.organiser_id],
+        initialMessage: `Hi, I have a question about the event "${event.title}".`,
+      });
+
+      toast.success("Conversation started! Redirecting to inbox...");
+      onClose();
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      toast.error("Failed to start conversation. Please try again.");
+    } finally {
+      setIsMessaging(false);
+    }
+  };
 
   if (!event) return null;
 
@@ -306,7 +340,7 @@ export function EventDetailSheet({
             </div>
 
             {/* Registration CTA */}
-            <div className="flex-shrink-0 p-4 border-t border-border bg-card pb-safe">
+            <div className="flex-shrink-0 p-4 border-t border-border bg-card pb-safe space-y-2">
               {isRegistered ? (
                 <div className="bg-accent/10 rounded-xl p-3 text-center">
                   <p className="font-medium text-accent-foreground">You're registered!</p>
@@ -325,6 +359,19 @@ export function EventDetailSheet({
                 <div className="text-center text-sm text-muted-foreground">
                   Registration closed
                 </div>
+              )}
+              
+              {/* Message Organiser Button */}
+              {user && (
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  onClick={handleMessageOrganiser}
+                  disabled={isMessaging}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  {isMessaging ? "Starting conversation..." : "Message Organiser"}
+                </Button>
               )}
             </div>
           </motion.div>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { createConversation } from "@/hooks/useMessages";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -80,6 +82,7 @@ const mockCoaches: Coach[] = [
 
 export default function FindCoach() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [coaches, setCoaches] = useState<Coach[]>(mockCoaches);
   const [myRequests, setMyRequests] = useState<CoachRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -120,21 +123,36 @@ export default function FindCoach() {
   const handleRequestCoach = async () => {
     if (!user || !selectedCoach) return;
 
-    const { error } = await supabase.from("coach_requests").insert({
-      user_id: user.id,
-      coach_id: selectedCoach.id,
-      message: requestMessage,
-      status: "pending",
-    });
+    try {
+      // Also create the coach_request for tracking
+      const { error: requestError } = await supabase.from("coach_requests").insert({
+        user_id: user.id,
+        coach_id: selectedCoach.id,
+        message: requestMessage,
+        status: "pending",
+      });
 
-    if (error) {
-      toast.error("Failed to send request");
-    } else {
-      toast.success("Request sent!");
+      if (requestError) {
+        console.error("Coach request error:", requestError);
+      }
+
+      // Create conversation using the new messaging system
+      const conversationId = await createConversation({
+        contextType: 'coach',
+        contextId: selectedCoach.id,
+        subject: `Coaching request from ${user.email}`,
+        participantUserIds: [user.id, selectedCoach.user_id],
+        initialMessage: requestMessage || `Hi ${selectedCoach.display_name}, I'm interested in your coaching services.`,
+      });
+
+      toast.success("Request sent! Redirecting to inbox...");
       setShowRequestForm(false);
       setSelectedCoach(null);
       setRequestMessage("");
-      fetchData();
+      navigate(`/inbox?conversation=${conversationId}`);
+    } catch (error) {
+      console.error("Error sending request:", error);
+      toast.error("Failed to send request");
     }
   };
 
