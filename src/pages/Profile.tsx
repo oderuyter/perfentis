@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { 
   User, 
@@ -14,12 +14,16 @@ import {
   Sun,
   Monitor,
   Check,
-  LogOut
+  LogOut,
+  Camera,
+  Loader2
 } from "lucide-react";
 import { useTheme, accentColors } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { PersonalDetailsSheet } from "@/components/profile/PersonalDetailsSheet";
 import { TrainingGoalsSheet } from "@/components/profile/TrainingGoalsSheet";
 import { UnitsSheet } from "@/components/profile/UnitsSheet";
@@ -131,6 +135,8 @@ export default function Profile() {
   const { mode, accent, setMode, setAccent } = useTheme();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
+  const { uploadAvatar, isUploading } = useAvatarUpload();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Sheet states
   const [personalDetailsOpen, setPersonalDetailsOpen] = useState(false);
@@ -153,10 +159,26 @@ export default function Profile() {
     await signOut();
   };
 
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await uploadAvatar(file);
+    }
+    // Reset the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const ThemeIcon = themeModeIcons[mode];
 
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
   const email = user?.email || "";
+  const initials = displayName.slice(0, 2).toUpperCase();
   const trainingGoalValue = profile?.training_goal 
     ? trainingGoalLabels[profile.training_goal] || profile.training_goal 
     : "Not set";
@@ -164,6 +186,15 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
+      {/* Hidden file input for avatar upload */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+      
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       
@@ -184,19 +215,43 @@ export default function Profile() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         className="card-glass-accent p-5 mt-4"
-        onClick={() => setPersonalDetailsOpen(true)}
-        role="button"
-        tabIndex={0}
       >
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-xl bg-primary/15 flex items-center justify-center">
-            <User className="h-7 w-7 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
+          <button 
+            onClick={handleAvatarClick}
+            disabled={isUploading}
+            className="relative group"
+          >
+            <Avatar className="h-14 w-14 rounded-xl border-2 border-primary/20">
+              <AvatarImage src={profile?.avatar_url || undefined} alt={displayName} />
+              <AvatarFallback className="rounded-xl bg-primary/15 text-primary font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className={cn(
+              "absolute inset-0 rounded-xl flex items-center justify-center transition-opacity",
+              isUploading 
+                ? "bg-black/50 opacity-100" 
+                : "bg-black/40 opacity-0 group-hover:opacity-100"
+            )}>
+              {isUploading ? (
+                <Loader2 className="h-5 w-5 text-white animate-spin" />
+              ) : (
+                <Camera className="h-5 w-5 text-white" />
+              )}
+            </div>
+          </button>
+          <div 
+            className="flex-1 min-w-0 cursor-pointer" 
+            onClick={() => setPersonalDetailsOpen(true)}
+          >
             <h2 className="font-bold text-lg truncate text-foreground">{displayName}</h2>
             <p className="text-sm text-muted-foreground truncate">{email}</p>
           </div>
-          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          <ChevronRight 
+            className="h-5 w-5 text-muted-foreground cursor-pointer" 
+            onClick={() => setPersonalDetailsOpen(true)}
+          />
         </div>
       </motion.div>
 

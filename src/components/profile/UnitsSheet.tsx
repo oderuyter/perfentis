@@ -75,7 +75,7 @@ export function UnitsSheet({ isOpen, onClose }: UnitsSheetProps) {
               </Button>
             </div>
             
-            <div className="p-4 space-y-4">
+            <div className="p-4 pb-24 space-y-4">
               <p className="text-sm text-muted-foreground">
                 Choose how measurements are displayed throughout the app. This only affects display — your data is stored in its original format.
               </p>

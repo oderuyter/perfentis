@@ -15,6 +15,12 @@
   - Generous spacing (16-24px padding)
   - Soft rounded shapes (16-20px radius)
   - Subtle glow effects on accents
+  
+  IMPORTANT - Bottom Padding for Drawers/Sheets:
+  - All bottom-sliding drawers/sheets MUST include pb-24 on their scrollable content
+  - This ensures content is not obscured by the mobile navigation bar
+  - Apply to the scrollable container, not the outer sheet wrapper
+  - Example: <div className="overflow-y-auto p-4 pb-24">...</div>
 */
 
 @layer base {

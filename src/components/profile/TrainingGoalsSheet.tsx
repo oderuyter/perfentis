@@ -71,7 +71,7 @@ export function TrainingGoalsSheet({ isOpen, onClose }: TrainingGoalsSheetProps)
               </Button>
             </div>
             
-            <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-4">
+            <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-4 pb-24">
               <p className="text-sm text-muted-foreground mb-4">
                 Select your primary training goal. This helps personalize your experience.
               </p>
