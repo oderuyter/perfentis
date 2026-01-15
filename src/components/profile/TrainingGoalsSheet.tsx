@@ -62,7 +62,7 @@ export function TrainingGoalsSheet({ isOpen, onClose }: TrainingGoalsSheetProps)
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-hidden rounded-t-2xl bg-background"
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[90vh] overflow-hidden rounded-t-2xl bg-background flex flex-col pb-bottom-nav"
           >
             <div className="flex items-center justify-between p-4 border-b">
               <h2 className="text-lg font-semibold">Training Goal</h2>
@@ -71,7 +71,7 @@ export function TrainingGoalsSheet({ isOpen, onClose }: TrainingGoalsSheetProps)
               </Button>
             </div>
             
-            <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-4 pb-24">
+            <div className="flex-1 overflow-y-auto p-4">
               <p className="text-sm text-muted-foreground mb-4">
                 Select your primary training goal. This helps personalize your experience.
               </p>
