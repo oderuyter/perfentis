@@ -3982,36 +3982,48 @@ export type Database = {
       }
       user_notifications: {
         Row: {
+          action_url: string | null
           body: string
           created_at: string
+          entity_id: string | null
+          entity_type: string | null
           id: string
           is_read: boolean
           metadata: Json | null
           notification_id: string | null
           read_at: string | null
           title: string
+          type: string | null
           user_id: string
         }
         Insert: {
+          action_url?: string | null
           body: string
           created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           is_read?: boolean
           metadata?: Json | null
           notification_id?: string | null
           read_at?: string | null
           title: string
+          type?: string | null
           user_id: string
         }
         Update: {
+          action_url?: string | null
           body?: string
           created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           is_read?: boolean
           metadata?: Json | null
           notification_id?: string | null
           read_at?: string | null
           title?: string
+          type?: string | null
           user_id?: string
         }
         Relationships: [

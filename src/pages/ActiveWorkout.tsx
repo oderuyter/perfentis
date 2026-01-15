@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useWorkoutState, loadSavedWorkout, clearSavedWorkout } from "@/hooks/useWorkoutState";
 import { useWorkoutHistory } from "@/hooks/useWorkoutHistory";
 import { usePersonalRecords, type PersonalRecord } from "@/hooks/usePersonalRecords";
+import { useAuth } from "@/hooks/useAuth";
 import { SetEditor } from "@/components/workout/SetEditor";
 import { ExerciseHistorySheet } from "@/components/workout/ExerciseHistorySheet";
 import { SwapExerciseSheet } from "@/components/workout/SwapExerciseSheet";
@@ -17,6 +18,7 @@ import { RestTimerEdit } from "@/components/workout/RestTimerEdit";
 import { ExerciseNav } from "@/components/workout/ExerciseNav";
 import { AdvancedMetrics } from "@/components/workout/AdvancedMetrics";
 import { toast } from "sonner";
+import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -27,6 +29,7 @@ function formatTime(seconds: number): string {
 export default function ActiveWorkout() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   const workout = workouts.find(w => w.id === id);
   const savedState = loadSavedWorkout();
@@ -87,17 +90,29 @@ export default function ActiveWorkout() {
       // Save to database
       const sessionId = await saveWorkoutSession(state);
       if (sessionId) {
+        // Send workout completion notification
+        if (user?.id) {
+          await notifyWorkoutCompleted(user.id, state.workoutName, sessionId);
+        }
+        
         // Check for PRs
         const prs = await checkAndSavePRs(state, sessionId);
         if (prs.length > 0) {
           setNewPRs(prs);
           toast.success(`${prs.length} new PR${prs.length > 1 ? 's' : ''}!`);
+          
+          // Send PR notifications
+          if (user?.id) {
+            for (const pr of prs) {
+              await notifyPRSet(user.id, pr.exercise_name, `${pr.value}kg`, pr.exercise_id);
+            }
+          }
         }
       }
     }
     clearSavedWorkout();
     navigate("/");
-  }, [navigate, state, saveWorkoutSession, checkAndSavePRs]);
+  }, [navigate, state, saveWorkoutSession, checkAndSavePRs, user]);
 
   if (!workout || !state) {
     return (

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { 
   User, 
@@ -19,6 +20,23 @@ import { useTheme, accentColors } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { cn } from "@/lib/utils";
+import { PersonalDetailsSheet } from "@/components/profile/PersonalDetailsSheet";
+import { TrainingGoalsSheet } from "@/components/profile/TrainingGoalsSheet";
+import { UnitsSheet } from "@/components/profile/UnitsSheet";
+import { IntegrationsSheet } from "@/components/profile/IntegrationsSheet";
+import { HeartRateZonesSheet } from "@/components/profile/HeartRateZonesSheet";
+import { NotificationsSheet } from "@/components/profile/NotificationsSheet";
+import { PrivacySheet } from "@/components/profile/PrivacySheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface SettingRowProps {
   icon: React.ElementType;
@@ -98,10 +116,31 @@ const themeModeIcons: Record<ThemeMode, React.ElementType> = {
   dark: Moon,
 };
 
+const trainingGoalLabels: Record<string, string> = {
+  build_muscle: "Build Muscle",
+  lose_weight: "Lose Weight",
+  gain_strength: "Gain Strength",
+  improve_endurance: "Improve Endurance",
+  general_fitness: "General Fitness",
+  sport_performance: "Sport Performance",
+  flexibility: "Flexibility",
+  rehabilitation: "Rehabilitation",
+};
+
 export default function Profile() {
   const { mode, accent, setMode, setAccent } = useTheme();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
+
+  // Sheet states
+  const [personalDetailsOpen, setPersonalDetailsOpen] = useState(false);
+  const [trainingGoalsOpen, setTrainingGoalsOpen] = useState(false);
+  const [unitsOpen, setUnitsOpen] = useState(false);
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [hrZonesOpen, setHrZonesOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
 
   const cycleTheme = () => {
     const modes: ThemeMode[] = ["system", "light", "dark"];
@@ -111,15 +150,17 @@ export default function Profile() {
   };
 
   const handleSignOut = async () => {
-    if (confirm("Sign out of your account?")) {
-      await signOut();
-    }
+    await signOut();
   };
 
   const ThemeIcon = themeModeIcons[mode];
 
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
   const email = user?.email || "";
+  const trainingGoalValue = profile?.training_goal 
+    ? trainingGoalLabels[profile.training_goal] || profile.training_goal 
+    : "Not set";
+  const unitsValue = profile?.units === "imperial" ? "Imperial" : "Metric";
 
   return (
     <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
@@ -143,6 +184,9 @@ export default function Profile() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
         className="card-glass-accent p-5 mt-4"
+        onClick={() => setPersonalDetailsOpen(true)}
+        role="button"
+        tabIndex={0}
       >
         <div className="flex items-center gap-4">
           <div className="h-14 w-14 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -152,6 +196,7 @@ export default function Profile() {
             <h2 className="font-bold text-lg truncate text-foreground">{displayName}</h2>
             <p className="text-sm text-muted-foreground truncate">{email}</p>
           </div>
+          <ChevronRight className="h-5 w-5 text-muted-foreground" />
         </div>
       </motion.div>
 
@@ -164,15 +209,37 @@ export default function Profile() {
       >
         <SectionHeader title="Profile" />
         <div className="card-glass p-4 space-y-0.5">
-          <SettingRow icon={User} label="Personal Details" />
-          <SettingRow icon={Target} label="Training Goals" value="Build Muscle" />
-          <SettingRow icon={Ruler} label="Units" value="Metric" />
+          <SettingRow 
+            icon={User} 
+            label="Personal Details" 
+            onClick={() => setPersonalDetailsOpen(true)} 
+          />
+          <SettingRow 
+            icon={Target} 
+            label="Training Goals" 
+            value={trainingGoalValue}
+            onClick={() => setTrainingGoalsOpen(true)} 
+          />
+          <SettingRow 
+            icon={Ruler} 
+            label="Units" 
+            value={unitsValue}
+            onClick={() => setUnitsOpen(true)} 
+          />
         </div>
 
         <SectionHeader title="Health & Devices" />
         <div className="card-glass p-4 space-y-0.5">
-          <SettingRow icon={Smartphone} label="Integrations" />
-          <SettingRow icon={Heart} label="Heart Rate Zones" />
+          <SettingRow 
+            icon={Smartphone} 
+            label="Integrations" 
+            onClick={() => setIntegrationsOpen(true)} 
+          />
+          <SettingRow 
+            icon={Heart} 
+            label="Heart Rate Zones" 
+            onClick={() => setHrZonesOpen(true)} 
+          />
         </div>
 
         <SectionHeader title="Appearance" />
@@ -213,8 +280,16 @@ export default function Profile() {
 
         <SectionHeader title="Preferences" />
         <div className="card-glass p-4 space-y-0.5">
-          <SettingRow icon={Bell} label="Notifications" />
-          <SettingRow icon={Shield} label="Privacy & Data" />
+          <SettingRow 
+            icon={Bell} 
+            label="Notifications" 
+            onClick={() => setNotificationsOpen(true)} 
+          />
+          <SettingRow 
+            icon={Shield} 
+            label="Privacy & Data" 
+            onClick={() => setPrivacyOpen(true)} 
+          />
         </div>
 
         <SectionHeader title="Account" />
@@ -222,13 +297,59 @@ export default function Profile() {
           <SettingRow 
             icon={LogOut} 
             label="Sign Out" 
-            onClick={handleSignOut}
+            onClick={() => setSignOutDialogOpen(true)}
             danger
           >
             <span></span>
           </SettingRow>
         </div>
       </motion.div>
+
+      {/* Sheets */}
+      <PersonalDetailsSheet 
+        isOpen={personalDetailsOpen} 
+        onClose={() => setPersonalDetailsOpen(false)} 
+      />
+      <TrainingGoalsSheet 
+        isOpen={trainingGoalsOpen} 
+        onClose={() => setTrainingGoalsOpen(false)} 
+      />
+      <UnitsSheet 
+        isOpen={unitsOpen} 
+        onClose={() => setUnitsOpen(false)} 
+      />
+      <IntegrationsSheet 
+        isOpen={integrationsOpen} 
+        onClose={() => setIntegrationsOpen(false)} 
+      />
+      <HeartRateZonesSheet 
+        isOpen={hrZonesOpen} 
+        onClose={() => setHrZonesOpen(false)} 
+      />
+      <NotificationsSheet 
+        isOpen={notificationsOpen} 
+        onClose={() => setNotificationsOpen(false)} 
+      />
+      <PrivacySheet 
+        isOpen={privacyOpen} 
+        onClose={() => setPrivacyOpen(false)} 
+      />
+
+      {/* Sign Out Confirmation Dialog */}
+      <AlertDialog open={signOutDialogOpen} onOpenChange={setSignOutDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Sign out?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You will be signed out of your account and returned to the login screen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSignOut}>Sign Out</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
