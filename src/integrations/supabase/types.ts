@@ -4718,6 +4718,15 @@ export type Database = {
       }
     }
     Functions: {
+      create_conversation_rpc: {
+        Args: {
+          p_context_id: string
+          p_context_type: string
+          p_initial_message?: string
+          p_subject?: string
+        }
+        Returns: string
+      }
       create_notification: {
         Args: {
           _action_url?: string

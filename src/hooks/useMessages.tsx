@@ -244,9 +244,8 @@ async function notifyParticipants(conversationId: string, senderId: string, mess
   }
 }
 
-// Helper to create a new conversation
-// Note: Staff/owner participants are automatically added by a database trigger
-// based on context_type and context_id. We only need to add the current user.
+// Helper to create a new conversation using backend RPC
+// This bypasses RLS issues by using a security definer function
 export async function createConversation({
   contextType,
   contextId,
@@ -257,88 +256,29 @@ export async function createConversation({
   contextId?: string;
   subject?: string;
   initialMessage?: string;
-}) {
-  // Ensure we have an authenticated user (RLS requires it)
-  const {
-    data: { user: currentUser },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError) throw authError;
-  if (!currentUser) throw new Error("Not authenticated");
-
-  // Check for existing open conversation with this context (avoid duplicates)
-  if (contextId) {
-    // For user-initiated conversations, check if user already has an open one
-    const { data: existingParticipation } = await supabase
-      .from("conversation_participants")
-      .select("conversation_id, conversations!inner(id, status, context_type, context_id)")
-      .eq("user_id", currentUser.id);
-
-    const existingConv = existingParticipation?.find(
-      (p: any) => 
-        p.conversations?.context_type === contextType &&
-        p.conversations?.context_id === contextId &&
-        p.conversations?.status === "open"
-    );
-
-    if (existingConv) {
-      return existingConv.conversation_id;
-    }
-  }
-
-  // Create new conversation
-  // The database trigger `add_default_conversation_participants` will automatically
-  // add gym owner/staff, coach user, or event organiser/staff based on context
-  const { data: conversation, error: convError } = await supabase
-    .from("conversations")
-    .insert({
-      context_type: contextType,
-      context_id: contextId || null,
-      subject: subject || null,
-      status: "open",
-    })
-    .select("id")
-    .single();
-
-  if (convError) throw convError;
-
-  // Add current user as a participant (only inserting ourselves - RLS allows this)
-  const { error: selfPartError } = await supabase
-    .from("conversation_participants")
-    .insert({
-      conversation_id: conversation.id,
-      user_id: currentUser.id,
-      role: "user",
-    });
-
-  if (selfPartError) {
-    console.error("Error adding self as participant:", selfPartError);
-    // Don't throw - the trigger may have already added us or we might still proceed
-  }
-
-  // Send initial message if provided
-  if (initialMessage && initialMessage.trim()) {
-    const { error: initialError } = await supabase.from("messages").insert({
-      conversation_id: conversation.id,
-      sender_user_id: currentUser.id,
-      body_text: initialMessage.trim(),
-      is_system_message: false,
-    });
-
-    if (initialError) {
-      console.error("Error sending initial message:", initialError);
-      throw initialError;
-    }
-  }
-
-  // Add system message to mark conversation start
-  await supabase.from("messages").insert({
-    conversation_id: conversation.id,
-    sender_user_id: null,
-    body_text: "Conversation started",
-    is_system_message: true,
+}): Promise<string> {
+  // Call the backend RPC function which handles:
+  // - Authentication validation
+  // - Deduplication of existing open conversations
+  // - Creating the conversation
+  // - Adding the current user as participant
+  // - Triggering auto-add of staff/owner participants
+  // - Inserting initial and system messages
+  const { data, error } = await supabase.rpc('create_conversation_rpc', {
+    p_context_type: contextType,
+    p_context_id: contextId || null,
+    p_subject: subject || null,
+    p_initial_message: initialMessage || null,
   });
 
-  return conversation.id;
+  if (error) {
+    console.error("create_conversation_rpc error:", error);
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error("No conversation ID returned from RPC");
+  }
+
+  return data as string;
 }
