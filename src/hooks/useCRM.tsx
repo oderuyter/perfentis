@@ -1083,3 +1083,234 @@ export function useCRMTaskTemplates(contextType: CRMContextType, contextId: stri
     refetch: fetchTemplates,
   };
 }
+
+// Custom field interfaces
+export interface CRMCustomField {
+  id: string;
+  context_type: CRMContextType;
+  context_id: string;
+  field_name: string;
+  field_type: 'text' | 'number' | 'dropdown' | 'date' | 'checkbox';
+  field_options: Array<{ label: string; value: string }>;
+  display_order: number;
+  show_on_card: boolean;
+  show_on_overview: boolean;
+  is_required: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CRMCustomFieldValue {
+  id: string;
+  field_id: string;
+  lead_id: string;
+  value_text: string | null;
+  value_number: number | null;
+  value_date: string | null;
+  value_boolean: boolean | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Hook for custom fields
+export function useCRMCustomFields(contextType: CRMContextType, contextId: string | null) {
+  const [fields, setFields] = useState<CRMCustomField[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchFields = useCallback(async () => {
+    if (!contextId) {
+      setFields([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("crm_custom_fields")
+        .select("*")
+        .eq("context_type", contextType)
+        .eq("context_id", contextId)
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+      setFields((data || []) as CRMCustomField[]);
+    } catch (error) {
+      console.error("Error fetching custom fields:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [contextType, contextId]);
+
+  useEffect(() => {
+    fetchFields();
+  }, [fetchFields]);
+
+  const createField = async (fieldData: {
+    field_name: string;
+    field_type: CRMCustomField['field_type'];
+    field_options?: Array<{ label: string; value: string }>;
+    show_on_card?: boolean;
+    show_on_overview?: boolean;
+    is_required?: boolean;
+  }) => {
+    if (!contextId) return;
+
+    const maxOrder = Math.max(...fields.map(f => f.display_order), -1);
+
+    const { error } = await supabase
+      .from("crm_custom_fields")
+      .insert({
+        context_type: contextType,
+        context_id: contextId,
+        field_name: fieldData.field_name,
+        field_type: fieldData.field_type,
+        field_options: fieldData.field_options || [],
+        display_order: maxOrder + 1,
+        show_on_card: fieldData.show_on_card ?? false,
+        show_on_overview: fieldData.show_on_overview ?? true,
+        is_required: fieldData.is_required ?? false,
+      });
+
+    if (error) throw error;
+    await fetchFields();
+  };
+
+  const updateField = async (fieldId: string, updates: Partial<CRMCustomField>) => {
+    const { error } = await supabase
+      .from("crm_custom_fields")
+      .update(updates)
+      .eq("id", fieldId);
+
+    if (error) throw error;
+    await fetchFields();
+  };
+
+  const disableField = async (fieldId: string) => {
+    await updateField(fieldId, { is_active: false });
+  };
+
+  const reorderFields = async (fieldIds: string[]) => {
+    const updates = fieldIds.map((id, index) =>
+      supabase
+        .from("crm_custom_fields")
+        .update({ display_order: index })
+        .eq("id", id)
+    );
+
+    await Promise.all(updates);
+    await fetchFields();
+  };
+
+  return {
+    fields,
+    activeFields: fields.filter(f => f.is_active),
+    isLoading,
+    createField,
+    updateField,
+    disableField,
+    reorderFields,
+    refetch: fetchFields,
+  };
+}
+
+// Hook for custom field values for a lead
+export function useCRMCustomFieldValues(leadId: string | null, contextType: CRMContextType, contextId: string | null) {
+  const [values, setValues] = useState<CRMCustomFieldValue[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchValues = useCallback(async () => {
+    if (!leadId) {
+      setValues([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("crm_custom_field_values")
+        .select("*")
+        .eq("lead_id", leadId);
+
+      if (error) throw error;
+      setValues((data || []) as CRMCustomFieldValue[]);
+    } catch (error) {
+      console.error("Error fetching custom field values:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [leadId]);
+
+  useEffect(() => {
+    fetchValues();
+  }, [fetchValues]);
+
+  const setValue = async (fieldId: string, field: CRMCustomField, value: string | number | boolean | null) => {
+    if (!leadId) return;
+
+    // Prepare the value object based on field type
+    const valueData: Partial<CRMCustomFieldValue> = {
+      value_text: null,
+      value_number: null,
+      value_date: null,
+      value_boolean: null,
+    };
+
+    switch (field.field_type) {
+      case 'text':
+      case 'dropdown':
+        valueData.value_text = value as string;
+        break;
+      case 'number':
+        valueData.value_number = value as number;
+        break;
+      case 'date':
+        valueData.value_date = value as string;
+        break;
+      case 'checkbox':
+        valueData.value_boolean = value as boolean;
+        break;
+    }
+
+    // Upsert the value
+    const { error } = await supabase
+      .from("crm_custom_field_values")
+      .upsert({
+        field_id: fieldId,
+        lead_id: leadId,
+        ...valueData,
+      }, {
+        onConflict: 'field_id,lead_id',
+      });
+
+    if (error) throw error;
+    await fetchValues();
+  };
+
+  const getValueForField = (fieldId: string, fieldType: CRMCustomField['field_type']) => {
+    const valueRecord = values.find(v => v.field_id === fieldId);
+    if (!valueRecord) return null;
+
+    switch (fieldType) {
+      case 'text':
+      case 'dropdown':
+        return valueRecord.value_text;
+      case 'number':
+        return valueRecord.value_number;
+      case 'date':
+        return valueRecord.value_date;
+      case 'checkbox':
+        return valueRecord.value_boolean;
+      default:
+        return null;
+    }
+  };
+
+  return {
+    values,
+    isLoading,
+    setValue,
+    getValueForField,
+    refetch: fetchValues,
+  };
+}

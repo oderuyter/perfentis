@@ -1103,6 +1103,105 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_custom_field_values: {
+        Row: {
+          created_at: string
+          field_id: string
+          id: string
+          lead_id: string
+          updated_at: string
+          value_boolean: boolean | null
+          value_date: string | null
+          value_number: number | null
+          value_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_id: string
+          id?: string
+          lead_id: string
+          updated_at?: string
+          value_boolean?: boolean | null
+          value_date?: string | null
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_id?: string
+          id?: string
+          lead_id?: string
+          updated_at?: string
+          value_boolean?: boolean | null
+          value_date?: string | null
+          value_number?: number | null
+          value_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_custom_field_values_field_id_fkey"
+            columns: ["field_id"]
+            isOneToOne: false
+            referencedRelation: "crm_custom_fields"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_custom_field_values_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "crm_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_custom_fields: {
+        Row: {
+          context_id: string
+          context_type: string
+          created_at: string
+          display_order: number
+          field_name: string
+          field_options: Json | null
+          field_type: string
+          id: string
+          is_active: boolean
+          is_required: boolean
+          show_on_card: boolean
+          show_on_overview: boolean
+          updated_at: string
+        }
+        Insert: {
+          context_id: string
+          context_type: string
+          created_at?: string
+          display_order?: number
+          field_name: string
+          field_options?: Json | null
+          field_type: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          show_on_card?: boolean
+          show_on_overview?: boolean
+          updated_at?: string
+        }
+        Update: {
+          context_id?: string
+          context_type?: string
+          created_at?: string
+          display_order?: number
+          field_name?: string
+          field_options?: Json | null
+          field_type?: string
+          id?: string
+          is_active?: boolean
+          is_required?: boolean
+          show_on_card?: boolean
+          show_on_overview?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_lead_activities: {
         Row: {
           activity_type: string
