@@ -3015,12 +3015,19 @@ export type Database = {
       gyms: {
         Row: {
           address: string | null
+          address_city: string | null
+          address_country: string | null
+          address_line1: string | null
+          address_line2: string | null
+          address_postcode: string | null
+          contact_email: string | null
           created_at: string
           description: string | null
           email: string | null
           id: string
           logo_url: string | null
           name: string
+          owner_email: string | null
           owner_id: string | null
           phone: string | null
           status: string
@@ -3030,12 +3037,19 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          address_city?: string | null
+          address_country?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_postcode?: string | null
+          contact_email?: string | null
           created_at?: string
           description?: string | null
           email?: string | null
           id?: string
           logo_url?: string | null
           name: string
+          owner_email?: string | null
           owner_id?: string | null
           phone?: string | null
           status?: string
@@ -3045,12 +3059,19 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          address_city?: string | null
+          address_country?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_postcode?: string | null
+          contact_email?: string | null
           created_at?: string
           description?: string | null
           email?: string | null
           id?: string
           logo_url?: string | null
           name?: string
+          owner_email?: string | null
           owner_id?: string | null
           phone?: string | null
           status?: string

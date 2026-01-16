@@ -413,6 +413,9 @@ export function useCRMLeads(contextType: CRMContextType, contextId: string | nul
   const updateLead = async (leadId: string, updates: Partial<CRMLead>) => {
     if (!user) return;
 
+    // Get current lead state for logging
+    const lead = leads.find(l => l.id === leadId);
+
     const { error } = await supabase
       .from("crm_leads")
       .update(updates)
@@ -420,24 +423,49 @@ export function useCRMLeads(contextType: CRMContextType, contextId: string | nul
 
     if (error) throw error;
 
-    // Log stage change
-    if (updates.stage_id) {
+    // Log stage change with stage name
+    if (updates.stage_id && updates.stage_id !== lead?.stage_id) {
+      // Get stage name
+      const { data: stageData } = await supabase
+        .from("crm_pipeline_stages")
+        .select("stage_name")
+        .eq("id", updates.stage_id)
+        .single();
+      
+      const oldStageName = lead?.stage?.stage_name || 'Unknown';
+      const newStageName = stageData?.stage_name || 'Unknown';
+
       await supabase.from("crm_lead_activities").insert({
         lead_id: leadId,
         activity_type: "stage_changed",
-        description: "Stage updated",
+        description: `Stage changed from "${oldStageName}" to "${newStageName}"`,
         actor_user_id: user.id,
-        metadata: { new_stage_id: updates.stage_id },
+        metadata: { 
+          old_stage_id: lead?.stage_id, 
+          new_stage_id: updates.stage_id,
+          old_stage_name: oldStageName,
+          new_stage_name: newStageName,
+        },
       });
     }
 
     // Log assignment change
-    if (updates.assigned_to_user_id !== undefined) {
+    if (updates.assigned_to_user_id !== undefined && updates.assigned_to_user_id !== lead?.assigned_to_user_id) {
+      let assigneeName = 'Unassigned';
+      if (updates.assigned_to_user_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("user_id", updates.assigned_to_user_id)
+          .single();
+        assigneeName = profile?.display_name || 'Staff member';
+      }
+
       await supabase.from("crm_lead_activities").insert({
         lead_id: leadId,
         activity_type: "assigned",
         description: updates.assigned_to_user_id 
-          ? "Lead assigned to staff member" 
+          ? `Lead assigned to ${assigneeName}` 
           : "Lead unassigned",
         actor_user_id: user.id,
         metadata: { assignee_id: updates.assigned_to_user_id },
@@ -454,6 +482,27 @@ export function useCRMLeads(contextType: CRMContextType, contextId: string | nul
           entityId: leadId,
         });
       }
+    }
+
+    // Log status change
+    if (updates.status && updates.status !== lead?.status) {
+      await supabase.from("crm_lead_activities").insert({
+        lead_id: leadId,
+        activity_type: "status_changed",
+        description: `Status changed from "${lead?.status}" to "${updates.status}"`,
+        actor_user_id: user.id,
+        metadata: { old_status: lead?.status, new_status: updates.status },
+      });
+    }
+
+    // Log last_contacted_at changes (message sent)
+    if (updates.last_contacted_at && updates.last_contacted_at !== lead?.last_contacted_at) {
+      await supabase.from("crm_lead_activities").insert({
+        lead_id: leadId,
+        activity_type: "message_sent",
+        description: "Message sent to lead",
+        actor_user_id: user.id,
+      });
     }
 
     await fetchLeads();
