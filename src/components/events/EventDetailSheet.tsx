@@ -131,7 +131,6 @@ export function EventDetailSheet({
         contextType: 'event',
         contextId: event.id,
         subject: `Question about ${event.title}`,
-        participantUserIds: [user.id, event.organiser_id],
         initialMessage: `Hi, I have a question about the event "${event.title}".`,
       });
 
