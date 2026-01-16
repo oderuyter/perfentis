@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { 
   User, 
@@ -8,7 +8,9 @@ import {
   Badge,
   Mail,
   Phone,
-  GripVertical
+  GripVertical,
+  CheckSquare,
+  ListTodo
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,7 +22,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CRMLead, PipelineStage, useCRMLeads } from "@/hooks/useCRM";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { CRMLead, PipelineStage, CRMTask } from "@/hooks/useCRM";
+import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 
 interface CRMPipelineProps {
@@ -42,6 +51,31 @@ export function CRMPipeline({
 }: CRMPipelineProps) {
   const [draggingLead, setDraggingLead] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
+  const [leadTaskCounts, setLeadTaskCounts] = useState<Record<string, number>>({});
+
+  // Fetch task counts for all leads
+  useEffect(() => {
+    const fetchTaskCounts = async () => {
+      if (leads.length === 0) return;
+      
+      const leadIds = leads.map(l => l.id);
+      const { data, error } = await supabase
+        .from("crm_tasks")
+        .select("lead_id")
+        .in("lead_id", leadIds)
+        .eq("status", "open");
+
+      if (!error && data) {
+        const counts: Record<string, number> = {};
+        data.forEach(task => {
+          counts[task.lead_id] = (counts[task.lead_id] || 0) + 1;
+        });
+        setLeadTaskCounts(counts);
+      }
+    };
+
+    fetchTaskCounts();
+  }, [leads]);
 
   const getLeadsForStage = (stageId: string) => {
     return leads.filter(lead => lead.stage_id === stageId);
@@ -127,6 +161,7 @@ export function CRMPipeline({
                     onDragStart={(e) => handleDragStart(e, lead.id)}
                     onDragEnd={handleDragEnd}
                     isDragging={draggingLead === lead.id}
+                    openTaskCount={leadTaskCounts[lead.id] || 0}
                   />
                 ))}
                 {stageLeads.length === 0 && (
@@ -161,6 +196,7 @@ export function CRMPipeline({
                   onDragStart={(e) => handleDragStart(e, lead.id)}
                   onDragEnd={handleDragEnd}
                   isDragging={draggingLead === lead.id}
+                  openTaskCount={leadTaskCounts[lead.id] || 0}
                 />
               ))}
             </div>
@@ -177,74 +213,92 @@ interface LeadCardProps {
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
   isDragging: boolean;
+  openTaskCount: number;
 }
 
-function LeadCard({ lead, onClick, onDragStart, onDragEnd, isDragging }: LeadCardProps) {
+function LeadCard({ lead, onClick, onDragStart, onDragEnd, isDragging, openTaskCount }: LeadCardProps) {
   return (
-    <div
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
-      onClick={onClick}
-      className={cn(
-        "p-3 bg-card rounded-lg border shadow-sm cursor-pointer hover:shadow-md transition-all",
-        isDragging && "opacity-50 rotate-2"
-      )}
-    >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2 min-w-0">
-          <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0 cursor-grab" />
-          <span className="font-medium text-sm truncate">{lead.lead_name}</span>
+    <TooltipProvider>
+      <div
+        draggable
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onClick={onClick}
+        className={cn(
+          "p-3 bg-card rounded-lg border shadow-sm cursor-pointer hover:shadow-md transition-all",
+          isDragging && "opacity-50 rotate-2"
+        )}
+      >
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0 cursor-grab" />
+            <span className="font-medium text-sm truncate">{lead.lead_name}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            {openTaskCount > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-0.5 text-orange-500">
+                    <ListTodo className="h-3.5 w-3.5" />
+                    <span className="text-xs font-medium">{openTaskCount}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{openTaskCount} open task{openTaskCount !== 1 ? 's' : ''}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {lead.unread_count && lead.unread_count > 0 && (
+              <UIBadge variant="destructive" className="text-xs px-1.5">
+                {lead.unread_count}
+              </UIBadge>
+            )}
+          </div>
         </div>
-        {lead.unread_count && lead.unread_count > 0 && (
-          <UIBadge variant="destructive" className="text-xs px-1.5">
-            {lead.unread_count}
-          </UIBadge>
-        )}
-      </div>
 
-      <div className="space-y-1 text-xs text-muted-foreground">
-        {lead.email && (
-          <div className="flex items-center gap-1.5 truncate">
-            <Mail className="h-3 w-3" />
-            <span className="truncate">{lead.email}</span>
-          </div>
-        )}
-        {lead.phone && (
-          <div className="flex items-center gap-1.5">
-            <Phone className="h-3 w-3" />
-            <span>{lead.phone}</span>
-          </div>
-        )}
-      </div>
+        <div className="space-y-1 text-xs text-muted-foreground">
+          {lead.email && (
+            <div className="flex items-center gap-1.5 truncate">
+              <Mail className="h-3 w-3" />
+              <span className="truncate">{lead.email}</span>
+            </div>
+          )}
+          {lead.phone && (
+            <div className="flex items-center gap-1.5">
+              <Phone className="h-3 w-3" />
+              <span>{lead.phone}</span>
+            </div>
+          )}
+        </div>
 
-      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
-        <div className="flex items-center gap-2">
-          <UIBadge variant="outline" className="text-xs capitalize">
-            {lead.source}
-          </UIBadge>
-          {lead.is_registered_user && (
-            <span title="Registered user">
-              <User className="h-3 w-3 text-primary" />
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
+          <div className="flex items-center gap-2">
+            <UIBadge variant="outline" className="text-xs capitalize">
+              {lead.source}
+            </UIBadge>
+            {lead.is_registered_user && (
+              <span title="Registered user">
+                <User className="h-3 w-3 text-primary" />
+              </span>
+            )}
+            {lead.is_incomplete && (
+              <UIBadge variant="destructive" className="text-xs">Incomplete</UIBadge>
+            )}
+          </div>
+          {lead.last_contacted_at && (
+            <span className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(lead.last_contacted_at), { addSuffix: true })}
             </span>
           )}
-          {lead.is_incomplete && (
-            <UIBadge variant="destructive" className="text-xs">Incomplete</UIBadge>
-          )}
         </div>
-        {lead.last_contacted_at && (
-          <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(lead.last_contacted_at), { addSuffix: true })}
-          </span>
+
+        {lead.assignee && (
+          <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+            <User className="h-3 w-3" />
+            <span>{lead.assignee.display_name || 'Assigned'}</span>
+          </div>
         )}
       </div>
-
-      {lead.assignee && (
-        <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
-          <User className="h-3 w-3" />
-          <span>{lead.assignee.display_name || 'Assigned'}</span>
-        </div>
-      )}
-    </div>
+    </TooltipProvider>
   );
 }
