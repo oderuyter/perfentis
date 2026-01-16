@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Save, Plus, Trash2, GripVertical, Settings } from "lucide-react";
+import { Save, Plus, Trash2, GripVertical, Settings, FileText, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,21 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   useCRMSettings, 
   usePipelineStages, 
+  useCRMTaskTemplates,
   CRMContextType, 
-  PipelineStage 
+  PipelineStage,
+  CRMTaskTemplate
 } from "@/hooks/useCRM";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -31,6 +41,7 @@ interface CRMSettingsProps {
 export function CRMSettings({ contextType, contextId, staffMembers = [] }: CRMSettingsProps) {
   const { settings, updateSettings, isLoading: settingsLoading } = useCRMSettings(contextType, contextId);
   const { stages, createStage, updateStage, deleteStage, isLoading: stagesLoading } = usePipelineStages(contextType, contextId);
+  const { templates, createTemplate, updateTemplate, deleteTemplate, isLoading: templatesLoading } = useCRMTaskTemplates(contextType, contextId);
   
   const [newStageName, setNewStageName] = useState("");
   const [isAddingStage, setIsAddingStage] = useState(false);
@@ -100,7 +111,16 @@ export function CRMSettings({ contextType, contextId, staffMembers = [] }: CRMSe
     }
   };
 
-  if (settingsLoading || stagesLoading) {
+  const handleDeleteTemplate = async (templateId: string) => {
+    try {
+      await deleteTemplate(templateId);
+      toast.success("Template deleted");
+    } catch (error) {
+      toast.error("Failed to delete template");
+    }
+  };
+
+  if (settingsLoading || stagesLoading || templatesLoading) {
     return (
       <div className="space-y-6">
         <Card>
@@ -262,6 +282,336 @@ export function CRMSettings({ contextType, contextId, staffMembers = [] }: CRMSe
           </div>
         </CardContent>
       </Card>
+
+      {/* Task Templates */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Task Templates
+          </CardTitle>
+          <CardDescription>
+            Create reusable task templates that can be applied to leads. Each template contains a set of tasks that will be created when applied.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Templates list */}
+          <div className="space-y-2">
+            {templates.map((template) => (
+              <div
+                key={template.id}
+                className="flex items-center gap-3 p-3 border rounded-lg bg-card"
+              >
+                <FileText className="h-4 w-4 text-muted-foreground" />
+                <div className="flex-1">
+                  <span className="font-medium">{template.name}</span>
+                  <p className="text-sm text-muted-foreground">
+                    {template.tasks.length} task{template.tasks.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <EditTemplateDialog 
+                  template={template} 
+                  onUpdate={updateTemplate} 
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => handleDeleteTemplate(template.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+
+            {templates.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No task templates yet. Create one to speed up your workflow.
+              </p>
+            )}
+          </div>
+
+          {/* Add new template */}
+          <CreateTemplateDialog onCreate={createTemplate} />
+        </CardContent>
+      </Card>
     </div>
+  );
+}
+
+// Create Template Dialog
+function CreateTemplateDialog({ 
+  onCreate 
+}: { 
+  onCreate: (name: string, tasks: CRMTaskTemplate['tasks']) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [tasks, setTasks] = useState<CRMTaskTemplate['tasks']>([]);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const addTask = () => {
+    setTasks([...tasks, { title: "", task_type: "follow-up" }]);
+  };
+
+  const updateTask = (index: number, updates: Partial<CRMTaskTemplate['tasks'][0]>) => {
+    setTasks(tasks.map((t, i) => i === index ? { ...t, ...updates } : t));
+  };
+
+  const removeTask = (index: number) => {
+    setTasks(tasks.filter((_, i) => i !== index));
+  };
+
+  const handleCreate = async () => {
+    if (!name.trim() || tasks.length === 0) return;
+    
+    const validTasks = tasks.filter(t => t.title.trim());
+    if (validTasks.length === 0) {
+      toast.error("Add at least one task with a title");
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      await onCreate(name.trim(), validTasks);
+      setOpen(false);
+      setName("");
+      setTasks([]);
+      toast.success("Template created");
+    } catch (error) {
+      toast.error("Failed to create template");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-1" />
+          Create Template
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create Task Template</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Template Name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., New Member Onboarding"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tasks</Label>
+            <div className="space-y-2">
+              {tasks.map((task, index) => (
+                <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={task.title}
+                      onChange={(e) => updateTask(index, { title: e.target.value })}
+                      placeholder="Task title"
+                    />
+                    <div className="flex gap-2">
+                      <Select 
+                        value={task.task_type} 
+                        onValueChange={(v) => updateTask(index, { task_type: v as any })}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="follow-up">Follow-up</SelectItem>
+                          <SelectItem value="call">Call</SelectItem>
+                          <SelectItem value="message">Message</SelectItem>
+                          <SelectItem value="meeting">Meeting</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        value={task.due_days_offset || ""}
+                        onChange={(e) => updateTask(index, { 
+                          due_days_offset: e.target.value ? parseInt(e.target.value) : undefined 
+                        })}
+                        placeholder="Days offset"
+                        className="w-[120px]"
+                      />
+                    </div>
+                    <Input
+                      value={task.description || ""}
+                      onChange={(e) => updateTask(index, { description: e.target.value })}
+                      placeholder="Description (optional)"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeTask(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" size="sm" onClick={addTask}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Task
+            </Button>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={handleCreate} disabled={isCreating || !name.trim() || tasks.length === 0}>
+            Create Template
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Edit Template Dialog
+function EditTemplateDialog({ 
+  template,
+  onUpdate 
+}: { 
+  template: CRMTaskTemplate;
+  onUpdate: (templateId: string, updates: { name?: string; tasks?: CRMTaskTemplate['tasks'] }) => Promise<void>;
+}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(template.name);
+  const [tasks, setTasks] = useState<CRMTaskTemplate['tasks']>(template.tasks);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const addTask = () => {
+    setTasks([...tasks, { title: "", task_type: "follow-up" }]);
+  };
+
+  const updateTask = (index: number, updates: Partial<CRMTaskTemplate['tasks'][0]>) => {
+    setTasks(tasks.map((t, i) => i === index ? { ...t, ...updates } : t));
+  };
+
+  const removeTask = (index: number) => {
+    setTasks(tasks.filter((_, i) => i !== index));
+  };
+
+  const handleSave = async () => {
+    if (!name.trim() || tasks.length === 0) return;
+    
+    const validTasks = tasks.filter(t => t.title.trim());
+    if (validTasks.length === 0) {
+      toast.error("Add at least one task with a title");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onUpdate(template.id, { name: name.trim(), tasks: validTasks });
+      setOpen(false);
+      toast.success("Template updated");
+    } catch (error) {
+      toast.error("Failed to update template");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="sm">
+          Edit
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Task Template</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label>Template Name</Label>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., New Member Onboarding"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tasks</Label>
+            <div className="space-y-2">
+              {tasks.map((task, index) => (
+                <div key={index} className="flex gap-2 items-start p-3 border rounded-lg">
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      value={task.title}
+                      onChange={(e) => updateTask(index, { title: e.target.value })}
+                      placeholder="Task title"
+                    />
+                    <div className="flex gap-2">
+                      <Select 
+                        value={task.task_type} 
+                        onValueChange={(v) => updateTask(index, { task_type: v as any })}
+                      >
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="follow-up">Follow-up</SelectItem>
+                          <SelectItem value="call">Call</SelectItem>
+                          <SelectItem value="message">Message</SelectItem>
+                          <SelectItem value="meeting">Meeting</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        type="number"
+                        value={task.due_days_offset || ""}
+                        onChange={(e) => updateTask(index, { 
+                          due_days_offset: e.target.value ? parseInt(e.target.value) : undefined 
+                        })}
+                        placeholder="Days offset"
+                        className="w-[120px]"
+                      />
+                    </div>
+                    <Input
+                      value={task.description || ""}
+                      onChange={(e) => updateTask(index, { description: e.target.value })}
+                      placeholder="Description (optional)"
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeTask(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" size="sm" onClick={addTask}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add Task
+            </Button>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button onClick={handleSave} disabled={isSaving || !name.trim() || tasks.length === 0}>
+            Save Changes
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

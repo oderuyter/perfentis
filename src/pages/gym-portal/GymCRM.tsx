@@ -146,6 +146,8 @@ export default function GymCRM() {
         onUpdate={handleUpdateLead}
         onMoveToStage={handleMoveToStage}
         onConvert={handleConvert}
+        contextType="gym"
+        contextId={selectedGymId}
       />
     </div>
   );

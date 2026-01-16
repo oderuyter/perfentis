@@ -104,6 +104,21 @@ export interface CRMSettings {
   default_assignee_user_id: string | null;
 }
 
+export interface CRMTaskTemplate {
+  id: string;
+  context_type: CRMContextType;
+  context_id: string;
+  name: string;
+  tasks: Array<{
+    title: string;
+    task_type: CRMTask['task_type'];
+    description?: string;
+    due_days_offset?: number; // days from template application
+  }>;
+  created_at: string;
+  updated_at: string;
+}
+
 // Hook for pipeline stages
 export function usePipelineStages(contextType: CRMContextType, contextId: string | null) {
   const [stages, setStages] = useState<PipelineStage[]>([]);
@@ -697,6 +712,9 @@ export function useCRMLeadDetail(leadId: string | null) {
   const completeTask = async (taskId: string) => {
     if (!user) return;
 
+    // Get task title for activity log
+    const task = tasks.find(t => t.id === taskId);
+
     const { error } = await supabase
       .from("crm_tasks")
       .update({ 
@@ -710,9 +728,66 @@ export function useCRMLeadDetail(leadId: string | null) {
     await supabase.from("crm_lead_activities").insert({
       lead_id: leadId,
       activity_type: "task_completed",
-      description: "Task completed",
+      description: `Task "${task?.title || 'Unknown'}" completed`,
       actor_user_id: user.id,
       metadata: { task_id: taskId },
+    });
+
+    await fetchTasks();
+    await fetchActivities();
+  };
+
+  const deleteTask = async (taskId: string) => {
+    if (!user) return;
+
+    // Get task title for activity log
+    const task = tasks.find(t => t.id === taskId);
+
+    const { error } = await supabase
+      .from("crm_tasks")
+      .delete()
+      .eq("id", taskId);
+
+    if (error) throw error;
+
+    await supabase.from("crm_lead_activities").insert({
+      lead_id: leadId,
+      activity_type: "task_deleted",
+      description: `Task "${task?.title || 'Unknown'}" deleted`,
+      actor_user_id: user.id,
+      metadata: { task_id: taskId },
+    });
+
+    await fetchTasks();
+    await fetchActivities();
+  };
+
+  const applyTaskTemplate = async (template: CRMTaskTemplate) => {
+    if (!leadId || !user) return;
+
+    const now = new Date();
+    const tasksToCreate = template.tasks.map(t => ({
+      lead_id: leadId,
+      title: t.title,
+      task_type: t.task_type,
+      description: t.description || null,
+      due_at: t.due_days_offset 
+        ? new Date(now.getTime() + t.due_days_offset * 24 * 60 * 60 * 1000).toISOString()
+        : null,
+    }));
+
+    const { error } = await supabase
+      .from("crm_tasks")
+      .insert(tasksToCreate);
+
+    if (error) throw error;
+
+    await supabase.from("crm_lead_activities").insert({
+      lead_id: leadId,
+      activity_type: "template_applied",
+      description: `Task template "${template.name}" applied (${template.tasks.length} tasks)`,
+      actor_user_id: user.id,
+      metadata: { template_id: template.id, template_name: template.name },
     });
 
     await fetchTasks();
@@ -728,6 +803,8 @@ export function useCRMLeadDetail(leadId: string | null) {
     addNote,
     createTask,
     completeTask,
+    deleteTask,
+    applyTaskTemplate,
     refetchLead: fetchLead,
     refetchNotes: fetchNotes,
     refetchTasks: fetchTasks,
@@ -877,4 +954,83 @@ export function useCRMStats(contextType: CRMContextType, contextId: string | nul
   }, [fetchStats]);
 
   return { stats, isLoading, refetch: fetchStats };
+}
+
+// Hook for task templates
+export function useCRMTaskTemplates(contextType: CRMContextType, contextId: string | null) {
+  const [templates, setTemplates] = useState<CRMTaskTemplate[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchTemplates = useCallback(async () => {
+    if (!contextId) {
+      setTemplates([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from("crm_task_templates")
+        .select("*")
+        .eq("context_type", contextType)
+        .eq("context_id", contextId)
+        .order("name", { ascending: true });
+
+      if (error) throw error;
+      setTemplates((data || []) as CRMTaskTemplate[]);
+    } catch (error) {
+      console.error("Error fetching task templates:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [contextType, contextId]);
+
+  useEffect(() => {
+    fetchTemplates();
+  }, [fetchTemplates]);
+
+  const createTemplate = async (name: string, tasks: CRMTaskTemplate['tasks']) => {
+    if (!contextId) return;
+
+    const { error } = await supabase
+      .from("crm_task_templates")
+      .insert({
+        context_type: contextType,
+        context_id: contextId,
+        name,
+        tasks,
+      });
+
+    if (error) throw error;
+    await fetchTemplates();
+  };
+
+  const updateTemplate = async (templateId: string, updates: { name?: string; tasks?: CRMTaskTemplate['tasks'] }) => {
+    const { error } = await supabase
+      .from("crm_task_templates")
+      .update(updates)
+      .eq("id", templateId);
+
+    if (error) throw error;
+    await fetchTemplates();
+  };
+
+  const deleteTemplate = async (templateId: string) => {
+    const { error } = await supabase
+      .from("crm_task_templates")
+      .delete()
+      .eq("id", templateId);
+
+    if (error) throw error;
+    await fetchTemplates();
+  };
+
+  return {
+    templates,
+    isLoading,
+    createTemplate,
+    updateTemplate,
+    deleteTemplate,
+    refetch: fetchTemplates,
+  };
 }

@@ -1377,6 +1377,36 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_task_templates: {
+        Row: {
+          context_id: string
+          context_type: string
+          created_at: string
+          id: string
+          name: string
+          tasks: Json
+          updated_at: string
+        }
+        Insert: {
+          context_id: string
+          context_type: string
+          created_at?: string
+          id?: string
+          name: string
+          tasks?: Json
+          updated_at?: string
+        }
+        Update: {
+          context_id?: string
+          context_type?: string
+          created_at?: string
+          id?: string
+          name?: string
+          tasks?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       crm_tasks: {
         Row: {
           assigned_to_user_id: string | null
