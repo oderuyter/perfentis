@@ -59,7 +59,7 @@ import {
   useCRMLeadDetail,
   useCRMTaskTemplates
 } from "@/hooks/useCRM";
-import { useMessages } from "@/hooks/useMessages";
+import { createConversation, useMessages } from "@/hooks/useMessages";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -98,6 +98,7 @@ export function CRMLeadDetail({
   const [isAddingTask, setIsAddingTask] = useState(false);
 
   const {
+    lead: leadRecord,
     notes,
     tasks,
     activities,
@@ -106,10 +107,13 @@ export function CRMLeadDetail({
     completeTask,
     deleteTask,
     applyTaskTemplate,
+    refetchLead,
     refetchNotes,
     refetchTasks,
     refetchActivities,
   } = useCRMLeadDetail(lead?.id || null);
+
+  const effectiveConversationId = leadRecord?.conversation_id || lead?.conversation_id || null;
 
   const { templates } = useCRMTaskTemplates(contextType, contextId || null);
 
@@ -117,34 +121,61 @@ export function CRMLeadDetail({
     messages,
     sendMessage,
     isSending,
-  } = useMessages(lead?.conversation_id || null);
+  } = useMessages(effectiveConversationId);
 
   const handleAddNote = async () => {
     if (!newNote.trim() || !lead) return;
-    
+
     setIsAddingNote(true);
     try {
       await addNote(newNote.trim());
       setNewNote("");
       toast.success("Note added");
-    } catch (error) {
-      toast.error("Failed to add note");
+      await refetchLead();
+    } catch (error: any) {
+      console.error("Failed to add note", error);
+      toast.error(error?.message || "Failed to add note");
     } finally {
       setIsAddingNote(false);
     }
   };
 
   const handleSendMessage = async () => {
-    if (!messageInput.trim() || !lead?.conversation_id) return;
-    
+    if (!messageInput.trim() || !effectiveConversationId || !lead) return;
+
     try {
       await sendMessage(messageInput.trim());
       setMessageInput("");
-      
+
       // Update last_contacted_at
       await onUpdate(lead.id, { last_contacted_at: new Date().toISOString() });
-    } catch (error) {
-      toast.error("Failed to send message");
+      await refetchLead();
+    } catch (error: any) {
+      console.error("Failed to send message", error);
+      toast.error(error?.message || "Failed to send message");
+    }
+  };
+
+  const handleCreateConversation = async () => {
+    if (!lead) return;
+    if (!contextId) {
+      toast.error("No CRM context selected");
+      return;
+    }
+
+    try {
+      const conversationId = await createConversation({
+        contextType,
+        contextId,
+        subject: `Lead: ${lead.lead_name}`,
+      });
+
+      await onUpdate(lead.id, { conversation_id: conversationId });
+      await refetchLead();
+      toast.success("Conversation created");
+    } catch (error: any) {
+      console.error("Failed to create conversation", error);
+      toast.error(error?.message || "Failed to create conversation");
     }
   };
 
@@ -152,8 +183,9 @@ export function CRMLeadDetail({
     try {
       await completeTask(taskId);
       toast.success("Task completed");
-    } catch (error) {
-      toast.error("Failed to complete task");
+    } catch (error: any) {
+      console.error("Failed to complete task", error);
+      toast.error(error?.message || "Failed to complete task");
     }
   };
 
@@ -161,8 +193,9 @@ export function CRMLeadDetail({
     try {
       await deleteTask(taskId);
       toast.success("Task deleted");
-    } catch (error) {
-      toast.error("Failed to delete task");
+    } catch (error: any) {
+      console.error("Failed to delete task", error);
+      toast.error(error?.message || "Failed to delete task");
     }
   };
 
@@ -170,8 +203,9 @@ export function CRMLeadDetail({
     try {
       await applyTaskTemplate(template);
       toast.success(`Template "${template.name}" applied`);
-    } catch (error) {
-      toast.error("Failed to apply template");
+    } catch (error: any) {
+      console.error("Failed to apply template", error);
+      toast.error(error?.message || "Failed to apply template");
     }
   };
 
@@ -414,7 +448,7 @@ export function CRMLeadDetail({
 
             {/* Messages Tab */}
             <TabsContent value="messages" className="h-full m-0 flex flex-col overflow-hidden">
-              {lead.conversation_id ? (
+              {effectiveConversationId ? (
                 <>
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
@@ -431,8 +465,8 @@ export function CRMLeadDetail({
                             <div
                               className={cn(
                                 "max-w-[80%] rounded-lg px-3 py-2",
-                                isMe 
-                                  ? "bg-primary text-primary-foreground" 
+                                isMe
+                                  ? "bg-primary text-primary-foreground"
                                   : "bg-muted",
                                 message.is_system_message && "bg-muted/50 italic text-center w-full text-sm text-muted-foreground"
                               )}
@@ -472,9 +506,15 @@ export function CRMLeadDetail({
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center p-4">
-                  <div className="text-center text-muted-foreground">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>No conversation linked to this lead</p>
+                  <div className="text-center text-muted-foreground space-y-3">
+                    <MessageSquare className="h-12 w-12 mx-auto opacity-50" />
+                    <div>
+                      <p>No conversation linked to this lead</p>
+                      <p className="text-xs">Create one to message from CRM</p>
+                    </div>
+                    <Button size="sm" onClick={handleCreateConversation} disabled={!contextId}>
+                      Start conversation
+                    </Button>
                   </div>
                 </div>
               )}
@@ -646,7 +686,7 @@ export function CRMLeadDetail({
                     <div>
                       <p>{activity.description}</p>
                       <p className="text-xs text-muted-foreground">
-                        {activity.actor?.display_name || 'System'} • {" "}
+                        {activity.actor?.display_name || 'System'} • {format(new Date(activity.created_at), "PPp")} • {" "}
                         {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true })}
                       </p>
                     </div>
@@ -695,14 +735,14 @@ function CreateTaskDialog({
     if (!title.trim()) return;
     
     setIsCreating(true);
-    try {
-      await onCreate({
-        title: title.trim(),
-        task_type: taskType,
-        description: description.trim() || undefined,
-        due_at: dueDate || undefined,
-        assigned_to_user_id: assignee || undefined,
-      });
+      try {
+        await onCreate({
+          title: title.trim(),
+          task_type: taskType,
+          description: description.trim() || undefined,
+          due_at: dueDate ? new Date(dueDate).toISOString() : undefined,
+          assigned_to_user_id: assignee || undefined,
+        });
       setOpen(false);
       setTitle("");
       setDescription("");
