@@ -146,6 +146,8 @@ export default function EventCRM() {
         onUpdate={handleUpdateLead}
         onMoveToStage={handleMoveToStage}
         onConvert={handleConvert}
+        contextType="event"
+        contextId={selectedEventId}
       />
     </div>
   );

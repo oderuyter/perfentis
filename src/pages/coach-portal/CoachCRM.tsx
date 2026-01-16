@@ -147,6 +147,8 @@ export default function CoachCRM() {
         onUpdate={handleUpdateLead}
         onMoveToStage={handleMoveToStage}
         onConvert={handleConvert}
+        contextType="coach"
+        contextId={coachId}
       />
     </div>
   );
