@@ -28,7 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CRMLead, PipelineStage, CRMTask } from "@/hooks/useCRM";
+import { CRMLead, PipelineStage, CRMTask, CRMCustomField, useCRMCustomFields } from "@/hooks/useCRM";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from "date-fns";
 
@@ -39,6 +39,12 @@ interface CRMPipelineProps {
   leads: CRMLead[];
   onLeadClick: (lead: CRMLead) => void;
   onMoveToStage: (leadId: string, stageId: string) => Promise<void>;
+}
+
+interface CustomFieldValueMap {
+  [leadId: string]: {
+    [fieldId: string]: string | number | boolean | null;
+  };
 }
 
 export function CRMPipeline({
@@ -52,6 +58,11 @@ export function CRMPipeline({
   const [draggingLead, setDraggingLead] = useState<string | null>(null);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [leadTaskCounts, setLeadTaskCounts] = useState<Record<string, number>>({});
+  const [customFieldValues, setCustomFieldValues] = useState<CustomFieldValueMap>({});
+
+  // Get custom fields that should show on card
+  const { activeFields } = useCRMCustomFields(contextType, contextId);
+  const cardFields = activeFields.filter(f => f.show_on_card);
 
   // Fetch task counts for all leads
   useEffect(() => {
@@ -76,6 +87,53 @@ export function CRMPipeline({
 
     fetchTaskCounts();
   }, [leads]);
+
+  // Fetch custom field values for all leads if there are card fields
+  useEffect(() => {
+    const fetchCustomFieldValues = async () => {
+      if (leads.length === 0 || cardFields.length === 0) {
+        setCustomFieldValues({});
+        return;
+      }
+
+      const leadIds = leads.map(l => l.id);
+      const { data, error } = await supabase
+        .from("crm_custom_field_values")
+        .select("*")
+        .in("lead_id", leadIds);
+
+      if (!error && data) {
+        const valueMap: CustomFieldValueMap = {};
+        data.forEach(val => {
+          if (!valueMap[val.lead_id]) {
+            valueMap[val.lead_id] = {};
+          }
+          // Determine which value to use based on field type
+          const field = cardFields.find(f => f.id === val.field_id);
+          if (field) {
+            switch (field.field_type) {
+              case 'text':
+              case 'dropdown':
+                valueMap[val.lead_id][val.field_id] = val.value_text;
+                break;
+              case 'number':
+                valueMap[val.lead_id][val.field_id] = val.value_number;
+                break;
+              case 'date':
+                valueMap[val.lead_id][val.field_id] = val.value_date;
+                break;
+              case 'checkbox':
+                valueMap[val.lead_id][val.field_id] = val.value_boolean;
+                break;
+            }
+          }
+        });
+        setCustomFieldValues(valueMap);
+      }
+    };
+
+    fetchCustomFieldValues();
+  }, [leads, cardFields]);
 
   const getLeadsForStage = (stageId: string) => {
     return leads.filter(lead => lead.stage_id === stageId);
@@ -162,6 +220,8 @@ export function CRMPipeline({
                     onDragEnd={handleDragEnd}
                     isDragging={draggingLead === lead.id}
                     openTaskCount={leadTaskCounts[lead.id] || 0}
+                    customFields={cardFields}
+                    customFieldValues={customFieldValues[lead.id] || {}}
                   />
                 ))}
                 {stageLeads.length === 0 && (
@@ -197,6 +257,8 @@ export function CRMPipeline({
                   onDragEnd={handleDragEnd}
                   isDragging={draggingLead === lead.id}
                   openTaskCount={leadTaskCounts[lead.id] || 0}
+                  customFields={cardFields}
+                  customFieldValues={customFieldValues[lead.id] || {}}
                 />
               ))}
             </div>
@@ -214,9 +276,34 @@ interface LeadCardProps {
   onDragEnd: () => void;
   isDragging: boolean;
   openTaskCount: number;
+  customFields: CRMCustomField[];
+  customFieldValues: { [fieldId: string]: string | number | boolean | null };
 }
 
-function LeadCard({ lead, onClick, onDragStart, onDragEnd, isDragging, openTaskCount }: LeadCardProps) {
+function LeadCard({ 
+  lead, 
+  onClick, 
+  onDragStart, 
+  onDragEnd, 
+  isDragging, 
+  openTaskCount,
+  customFields,
+  customFieldValues,
+}: LeadCardProps) {
+  const formatFieldValue = (field: CRMCustomField, value: string | number | boolean | null) => {
+    if (value === null || value === undefined) return null;
+    
+    switch (field.field_type) {
+      case 'checkbox':
+        return value ? 'Yes' : 'No';
+      case 'dropdown':
+        const option = field.field_options.find(o => o.value === value);
+        return option?.label || value;
+      default:
+        return String(value);
+    }
+  };
+
   return (
     <TooltipProvider>
       <div
@@ -270,6 +357,24 @@ function LeadCard({ lead, onClick, onDragStart, onDragEnd, isDragging, openTaskC
             </div>
           )}
         </div>
+
+        {/* Custom Fields */}
+        {customFields.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
+            {customFields.map((field) => {
+              const value = customFieldValues[field.id];
+              const displayValue = formatFieldValue(field, value);
+              if (!displayValue) return null;
+              
+              return (
+                <div key={field.id} className="flex items-center gap-1.5 text-xs">
+                  <span className="text-muted-foreground">{field.field_name}:</span>
+                  <span className="truncate">{displayValue}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/50">
           <div className="flex items-center gap-2">

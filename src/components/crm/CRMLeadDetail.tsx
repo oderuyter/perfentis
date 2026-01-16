@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { 
   X, 
   Mail, 
@@ -18,7 +18,8 @@ import {
   MapPin,
   Building2,
   Trash2,
-  FileText
+  FileText,
+  Loader2
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,6 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -56,8 +58,11 @@ import {
   CRMTask, 
   CRMActivity,
   CRMTaskTemplate,
+  CRMCustomField,
   useCRMLeadDetail,
-  useCRMTaskTemplates
+  useCRMTaskTemplates,
+  useCRMCustomFields,
+  useCRMCustomFieldValues
 } from "@/hooks/useCRM";
 import { createConversation, useMessages } from "@/hooks/useMessages";
 import { formatDistanceToNow, format } from "date-fns";
@@ -76,6 +81,67 @@ interface CRMLeadDetailProps {
   staffMembers?: Array<{ user_id: string; display_name: string | null }>;
   contextType?: 'gym' | 'coach' | 'event';
   contextId?: string;
+}
+
+// Inline editable field component
+function EditableField({
+  value,
+  onSave,
+  placeholder,
+  type = "text",
+  className,
+}: {
+  value: string | null;
+  onSave: (value: string) => Promise<void>;
+  placeholder?: string;
+  type?: "text" | "email" | "tel" | "url";
+  className?: string;
+}) {
+  const [localValue, setLocalValue] = useState(value || "");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
+
+  useEffect(() => {
+    setLocalValue(value || "");
+    setIsDirty(false);
+  }, [value]);
+
+  const handleBlur = async () => {
+    if (!isDirty) return;
+    
+    setIsSaving(true);
+    try {
+      await onSave(localValue);
+      setIsDirty(false);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to save");
+      setLocalValue(value || "");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className={cn("relative", className)}>
+      <Input
+        type={type}
+        value={localValue}
+        onChange={(e) => {
+          setLocalValue(e.target.value);
+          setIsDirty(true);
+        }}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        className={cn(
+          "h-8 text-sm",
+          isSaving && "pr-8"
+        )}
+      />
+      {isSaving && (
+        <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+      )}
+    </div>
+  );
 }
 
 export function CRMLeadDetail({
@@ -116,12 +182,26 @@ export function CRMLeadDetail({
   const effectiveConversationId = leadRecord?.conversation_id || lead?.conversation_id || null;
 
   const { templates } = useCRMTaskTemplates(contextType, contextId || null);
+  
+  // Custom fields
+  const { activeFields } = useCRMCustomFields(contextType, contextId || null);
+  const { values: customFieldValues, setValue: setCustomFieldValue, getValueForField } = useCRMCustomFieldValues(
+    lead?.id || null,
+    contextType,
+    contextId || null
+  );
 
   const {
     messages,
     sendMessage,
     isSending,
   } = useMessages(effectiveConversationId);
+
+  // Helper to update a lead field with inline auto-save
+  const handleFieldUpdate = useCallback(async (field: keyof CRMLead, value: string) => {
+    if (!lead) return;
+    await onUpdate(lead.id, { [field]: value || null });
+  }, [lead, onUpdate]);
 
   const handleAddNote = async () => {
     if (!newNote.trim() || !lead) return;
@@ -209,7 +289,18 @@ export function CRMLeadDetail({
     }
   };
 
+  const handleCustomFieldChange = async (field: CRMCustomField, value: string | number | boolean | null) => {
+    try {
+      await setCustomFieldValue(field.id, field, value);
+    } catch (error: any) {
+      console.error("Failed to save custom field", error);
+      toast.error(error?.message || "Failed to save field");
+    }
+  };
+
   if (!lead) return null;
+
+  const overviewFields = activeFields.filter(f => f.show_on_overview);
 
   return (
     <Sheet open={open} onOpenChange={() => onClose()}>
@@ -217,29 +308,42 @@ export function CRMLeadDetail({
         {/* Header */}
         <SheetHeader className="p-4 border-b">
           <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <SheetTitle className="flex items-center gap-2">
-                {lead.lead_name}
+            <div className="space-y-1 flex-1">
+              <div className="flex items-center gap-2">
+                <EditableField
+                  value={lead.lead_name}
+                  onSave={(val) => handleFieldUpdate('lead_name', val)}
+                  placeholder="Lead name"
+                  className="flex-1 max-w-xs"
+                />
                 {lead.is_registered_user && (
                   <Badge variant="secondary" className="text-xs">
                     <User className="h-3 w-3 mr-1" />
                     Registered
                   </Badge>
                 )}
-              </SheetTitle>
+              </div>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                {lead.email && (
-                  <a href={`mailto:${lead.email}`} className="flex items-center gap-1 hover:text-primary">
-                    <Mail className="h-3 w-3" />
-                    {lead.email}
-                  </a>
-                )}
-                {lead.phone && (
-                  <a href={`tel:${lead.phone}`} className="flex items-center gap-1 hover:text-primary">
-                    <Phone className="h-3 w-3" />
-                    {lead.phone}
-                  </a>
-                )}
+                <div className="flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  <EditableField
+                    value={lead.email}
+                    onSave={(val) => handleFieldUpdate('email', val)}
+                    placeholder="Email"
+                    type="email"
+                    className="w-48"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <Phone className="h-3 w-3" />
+                  <EditableField
+                    value={lead.phone}
+                    onSave={(val) => handleFieldUpdate('phone', val)}
+                    placeholder="Phone"
+                    type="tel"
+                    className="w-32"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -343,64 +447,157 @@ export function CRMLeadDetail({
                 <div>
                   <h3 className="font-medium mb-3">Contact Information</h3>
                   <div className="grid gap-3 text-sm">
-                    {lead.contact_telephone && (
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <span>{lead.contact_telephone}</span>
-                      </div>
-                    )}
-                    {lead.contact_website && (
-                      <div className="flex items-center gap-2">
-                        <Globe className="h-4 w-4 text-muted-foreground" />
-                        <a href={lead.contact_website} target="_blank" rel="noopener" className="text-primary hover:underline">
-                          {lead.contact_website}
-                        </a>
-                      </div>
-                    )}
-                    {lead.contact_instagram && (
-                      <div className="flex items-center gap-2">
-                        <Instagram className="h-4 w-4 text-muted-foreground" />
-                        <span>@{lead.contact_instagram}</span>
-                      </div>
-                    )}
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Phone className="h-3 w-3" /> Telephone
+                      </span>
+                      <EditableField
+                        value={lead.contact_telephone}
+                        onSave={(val) => handleFieldUpdate('contact_telephone', val)}
+                        placeholder="Add telephone"
+                        type="tel"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Globe className="h-3 w-3" /> Website
+                      </span>
+                      <EditableField
+                        value={lead.contact_website}
+                        onSave={(val) => handleFieldUpdate('contact_website', val)}
+                        placeholder="Add website"
+                        type="url"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Instagram className="h-3 w-3" /> Instagram
+                      </span>
+                      <EditableField
+                        value={lead.contact_instagram}
+                        onSave={(val) => handleFieldUpdate('contact_instagram', val)}
+                        placeholder="@username"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                      <span className="text-muted-foreground">TikTok</span>
+                      <EditableField
+                        value={lead.contact_tiktok}
+                        onSave={(val) => handleFieldUpdate('contact_tiktok', val)}
+                        placeholder="@username"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                      <span className="text-muted-foreground">YouTube</span>
+                      <EditableField
+                        value={lead.contact_youtube}
+                        onSave={(val) => handleFieldUpdate('contact_youtube', val)}
+                        placeholder="Channel URL"
+                      />
+                    </div>
+                    <div className="grid grid-cols-[120px_1fr] items-center gap-2">
+                      <span className="text-muted-foreground">Twitter/X</span>
+                      <EditableField
+                        value={lead.contact_twitter}
+                        onSave={(val) => handleFieldUpdate('contact_twitter', val)}
+                        placeholder="@username"
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Addresses */}
-                {(lead.home_address_line1 || lead.work_address_line1) && (
+                {/* Home Address */}
+                <div>
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" /> Home Address
+                  </h3>
+                  <div className="grid gap-2 text-sm">
+                    <EditableField
+                      value={lead.home_address_line1}
+                      onSave={(val) => handleFieldUpdate('home_address_line1', val)}
+                      placeholder="Address line 1"
+                    />
+                    <EditableField
+                      value={lead.home_address_line2}
+                      onSave={(val) => handleFieldUpdate('home_address_line2', val)}
+                      placeholder="Address line 2"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <EditableField
+                        value={lead.home_address_city}
+                        onSave={(val) => handleFieldUpdate('home_address_city', val)}
+                        placeholder="City"
+                      />
+                      <EditableField
+                        value={lead.home_address_postcode}
+                        onSave={(val) => handleFieldUpdate('home_address_postcode', val)}
+                        placeholder="Postcode"
+                      />
+                    </div>
+                    <EditableField
+                      value={lead.home_address_country}
+                      onSave={(val) => handleFieldUpdate('home_address_country', val)}
+                      placeholder="Country"
+                    />
+                  </div>
+                </div>
+
+                {/* Work Address */}
+                <div>
+                  <h3 className="font-medium mb-3 flex items-center gap-2">
+                    <Building2 className="h-4 w-4" /> Work
+                  </h3>
+                  <div className="grid gap-2 text-sm">
+                    <EditableField
+                      value={lead.work_company}
+                      onSave={(val) => handleFieldUpdate('work_company', val)}
+                      placeholder="Company name"
+                    />
+                    <EditableField
+                      value={lead.work_address_line1}
+                      onSave={(val) => handleFieldUpdate('work_address_line1', val)}
+                      placeholder="Address line 1"
+                    />
+                    <EditableField
+                      value={lead.work_address_line2}
+                      onSave={(val) => handleFieldUpdate('work_address_line2', val)}
+                      placeholder="Address line 2"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <EditableField
+                        value={lead.work_address_city}
+                        onSave={(val) => handleFieldUpdate('work_address_city', val)}
+                        placeholder="City"
+                      />
+                      <EditableField
+                        value={lead.work_address_postcode}
+                        onSave={(val) => handleFieldUpdate('work_address_postcode', val)}
+                        placeholder="Postcode"
+                      />
+                    </div>
+                    <EditableField
+                      value={lead.work_address_country}
+                      onSave={(val) => handleFieldUpdate('work_address_country', val)}
+                      placeholder="Country"
+                    />
+                  </div>
+                </div>
+
+                {/* Custom Fields */}
+                {overviewFields.length > 0 && (
                   <div>
-                    <h3 className="font-medium mb-3">Addresses</h3>
-                    <div className="grid gap-4 text-sm">
-                      {lead.home_address_line1 && (
-                        <div>
-                          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                            <MapPin className="h-4 w-4" />
-                            <span className="font-medium">Home</span>
-                          </div>
-                          <p>{lead.home_address_line1}</p>
-                          {lead.home_address_line2 && <p>{lead.home_address_line2}</p>}
-                          <p>
-                            {[lead.home_address_city, lead.home_address_postcode, lead.home_address_country]
-                              .filter(Boolean).join(", ")}
-                          </p>
+                    <h3 className="font-medium mb-3">Custom Fields</h3>
+                    <div className="grid gap-3 text-sm">
+                      {overviewFields.map((field) => (
+                        <div key={field.id} className="grid grid-cols-[140px_1fr] items-center gap-2">
+                          <span className="text-muted-foreground">{field.field_name}</span>
+                          <CustomFieldInput
+                            field={field}
+                            value={getValueForField(field.id, field.field_type)}
+                            onChange={(val) => handleCustomFieldChange(field, val)}
+                          />
                         </div>
-                      )}
-                      {lead.work_address_line1 && (
-                        <div>
-                          <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                            <Building2 className="h-4 w-4" />
-                            <span className="font-medium">
-                              Work {lead.work_company && `- ${lead.work_company}`}
-                            </span>
-                          </div>
-                          <p>{lead.work_address_line1}</p>
-                          {lead.work_address_line2 && <p>{lead.work_address_line2}</p>}
-                          <p>
-                            {[lead.work_address_city, lead.work_address_postcode, lead.work_address_country]
-                              .filter(Boolean).join(", ")}
-                          </p>
-                        </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
@@ -705,6 +902,131 @@ export function CRMLeadDetail({
       </SheetContent>
     </Sheet>
   );
+}
+
+// Custom field input component
+function CustomFieldInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: CRMCustomField;
+  value: string | number | boolean | null;
+  onChange: (value: string | number | boolean | null) => void;
+}) {
+  const [localValue, setLocalValue] = useState(value);
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleBlur = async () => {
+    if (localValue === value) return;
+    setIsSaving(true);
+    try {
+      await onChange(localValue);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  switch (field.field_type) {
+    case 'text':
+      return (
+        <div className="relative">
+          <Input
+            value={(localValue as string) || ''}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleBlur}
+            placeholder={`Enter ${field.field_name.toLowerCase()}`}
+            className={cn("h-8 text-sm", isSaving && "pr-8")}
+          />
+          {isSaving && (
+            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+      );
+    case 'number':
+      return (
+        <div className="relative">
+          <Input
+            type="number"
+            value={(localValue as number) ?? ''}
+            onChange={(e) => setLocalValue(e.target.value ? Number(e.target.value) : null)}
+            onBlur={handleBlur}
+            placeholder={`Enter ${field.field_name.toLowerCase()}`}
+            className={cn("h-8 text-sm", isSaving && "pr-8")}
+          />
+          {isSaving && (
+            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+      );
+    case 'dropdown':
+      return (
+        <Select
+          value={(localValue as string) || ''}
+          onValueChange={async (val) => {
+            setLocalValue(val);
+            setIsSaving(true);
+            try {
+              await onChange(val);
+            } finally {
+              setIsSaving(false);
+            }
+          }}
+        >
+          <SelectTrigger className="h-8 text-sm">
+            <SelectValue placeholder={`Select ${field.field_name.toLowerCase()}`} />
+          </SelectTrigger>
+          <SelectContent>
+            {field.field_options.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      );
+    case 'date':
+      return (
+        <div className="relative">
+          <Input
+            type="date"
+            value={(localValue as string) || ''}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onBlur={handleBlur}
+            className={cn("h-8 text-sm", isSaving && "pr-8")}
+          />
+          {isSaving && (
+            <Loader2 className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+      );
+    case 'checkbox':
+      return (
+        <div className="flex items-center">
+          <Checkbox
+            checked={(localValue as boolean) || false}
+            onCheckedChange={async (checked) => {
+              setLocalValue(!!checked);
+              setIsSaving(true);
+              try {
+                await onChange(!!checked);
+              } finally {
+                setIsSaving(false);
+              }
+            }}
+          />
+          {isSaving && (
+            <Loader2 className="ml-2 h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+      );
+    default:
+      return null;
+  }
 }
 
 // Create Task Dialog
