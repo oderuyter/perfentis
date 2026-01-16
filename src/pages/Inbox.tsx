@@ -329,36 +329,32 @@ export default function Inbox() {
               </ScrollArea>
 
               {/* Message Input */}
-              {selectedConversation?.status === 'open' && (
-                <div className="p-4 border-t border-border bg-card pb-safe">
-                  <div className="flex gap-2">
-                    <Input
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Type a message..."
-                      maxLength={2000}
-                      disabled={isSending}
-                      className="flex-1"
-                    />
-                    <Button
-                      onClick={handleSend}
-                      disabled={!messageText.trim() || isSending}
-                      size="icon"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+              {/* Always show message input - users can reply to any conversation */}
+              <div className="p-4 border-t border-border bg-card pb-safe">
+                <div className="flex gap-2">
+                  <Input
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type a message..."
+                    maxLength={2000}
+                    disabled={isSending}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleSend}
+                    disabled={!messageText.trim() || isSending}
+                    size="icon"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
                 </div>
-              )}
-
-              {selectedConversation?.status === 'closed' && (
-                <div className="p-4 border-t border-border bg-muted/50 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    This conversation has been closed
+                {selectedConversation?.status === 'closed' && (
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    This conversation was closed. Your reply will reopen it.
                   </p>
-                </div>
-              )}
+                )}
+              </div>
             </motion.div>
           ) : (
             <div className="hidden md:flex flex-1 items-center justify-center bg-muted/20">

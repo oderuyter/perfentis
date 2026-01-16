@@ -125,6 +125,20 @@ export function useMessages(conversationId: string | null) {
 
     setIsSending(true);
     try {
+      // First, check if conversation is closed and reopen it
+      const { data: convData } = await supabase
+        .from("conversations")
+        .select("status")
+        .eq("id", conversationId)
+        .single();
+      
+      if (convData?.status === 'closed') {
+        await supabase
+          .from("conversations")
+          .update({ status: 'open', updated_at: new Date().toISOString() })
+          .eq("id", conversationId);
+      }
+
       const { error } = await supabase
         .from("messages")
         .insert({
@@ -218,13 +232,19 @@ async function notifyParticipants(conversationId: string, senderId: string, mess
     for (const participant of participants) {
       let title = 'New Message';
       let body = messagePreview.substring(0, 100);
+      let notificationType: 'gym' | 'coach' | 'event' | 'system' = 'system';
 
       if (conversation.context_type === 'gym') {
-        title = `Message from ${contextName}`;
+        title = `Message from ${senderName}`;
+        body = `${contextName}: ${messagePreview.substring(0, 80)}`;
+        notificationType = 'gym';
       } else if (conversation.context_type === 'coach') {
         title = `Message from ${senderName}`;
+        notificationType = 'coach';
       } else if (conversation.context_type === 'event') {
-        title = `Message from ${contextName}`;
+        title = `Message from ${senderName}`;
+        body = `${contextName}: ${messagePreview.substring(0, 80)}`;
+        notificationType = 'event';
       } else if (conversation.context_type === 'support') {
         title = 'Support Reply';
       }
@@ -233,7 +253,7 @@ async function notifyParticipants(conversationId: string, senderId: string, mess
         userId: participant.user_id,
         title,
         body,
-        type: 'system',
+        type: notificationType,
         entityType: 'conversation',
         entityId: conversationId,
         actionUrl: `/inbox?conversation=${conversationId}`,
