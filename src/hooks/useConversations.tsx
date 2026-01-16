@@ -242,16 +242,26 @@ export function usePortalConversations(contextType: ConversationContextType, con
       const participantIds = new Set<string>();
       data?.forEach(conv => {
         conv.conversation_participants?.forEach((p: { user_id: string }) => {
-          participantIds.add(p.user_id);
+          if (p.user_id) {
+            participantIds.add(p.user_id);
+          }
         });
       });
 
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name, avatar_url")
-        .in("user_id", Array.from(participantIds));
+      let profileMap = new Map<string, { user_id: string; display_name: string | null; avatar_url: string | null }>();
+      
+      if (participantIds.size > 0) {
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, avatar_url")
+          .in("user_id", Array.from(participantIds));
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        if (profilesError) {
+          console.error("Error fetching profiles:", profilesError);
+        } else {
+          profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        }
+      }
 
       // Transform data
       const transformed: Conversation[] = (data || []).map(conv => {

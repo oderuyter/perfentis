@@ -205,12 +205,19 @@ export function PortalInbox({
                             <Avatar className="h-8 w-8">
                               <AvatarImage src={userParticipant?.avatar_url || undefined} />
                               <AvatarFallback>
-                                {userParticipant?.display_name?.[0]?.toUpperCase() || '?'}
+                                {(userParticipant?.display_name || conv.context_name || 'U')[0]?.toUpperCase()}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="font-medium text-sm truncate max-w-[120px]">
-                              {userParticipant?.display_name || 'Unknown User'}
-                            </span>
+                            <div className="flex flex-col min-w-0">
+                              <span className="font-medium text-sm truncate max-w-[120px]">
+                                {userParticipant?.display_name || conv.context_name || 'Unknown User'}
+                              </span>
+                              {userParticipant?.display_name && conv.subject && (
+                                <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                                  {conv.subject}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
