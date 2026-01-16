@@ -136,12 +136,12 @@ export default function FindCoach() {
         console.error("Coach request error:", requestError);
       }
 
-      // Create conversation using the new messaging system
+      // Create conversation using the messaging system
+      // Coach is automatically added as participant by database trigger
       const conversationId = await createConversation({
         contextType: 'coach',
         contextId: selectedCoach.id,
         subject: `Coaching request from ${user.email}`,
-        participantUserIds: [user.id, selectedCoach.user_id],
         initialMessage: requestMessage || `Hi ${selectedCoach.display_name}, I'm interested in your coaching services.`,
       });
 

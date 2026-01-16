@@ -180,18 +180,12 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
         fullMessage += `\n\n📞 Callback requested: ${phoneNumber.trim()}`;
       }
       
-      // Get participants: current user + gym owner (if available)
-      const participants = [user.id];
-      if (gym.owner_id) {
-        participants.push(gym.owner_id);
-      }
-      
-      // Create conversation using the new messaging system
+      // Create conversation using the messaging system
+      // Staff/owner participants are automatically added by database trigger
       const conversationId = await createConversation({
         contextType: 'gym',
         contextId: gymId,
         subject: `Information request about ${gym.name}`,
-        participantUserIds: participants,
         initialMessage: fullMessage,
       });
       
