@@ -4578,7 +4578,144 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_profiles_secure: {
+        Row: {
+          accent_color: string | null
+          address_city: string | null
+          address_country: string | null
+          address_line1: string | null
+          address_line2: string | null
+          address_postcode: string | null
+          avatar_url: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          display_name: string | null
+          first_name: string | null
+          hr_zone1_max: number | null
+          hr_zone2_max: number | null
+          hr_zone3_max: number | null
+          hr_zone4_max: number | null
+          hr_zone5_max: number | null
+          hr_zones_mode: string | null
+          id: string | null
+          instagram_handle: string | null
+          last_active_at: string | null
+          last_name: string | null
+          max_hr: number | null
+          phone: string | null
+          privacy_analytics: boolean | null
+          privacy_insights: boolean | null
+          resting_hr: number | null
+          status: string | null
+          telephone: string | null
+          theme_mode: string | null
+          tiktok_handle: string | null
+          training_goal: string | null
+          twitter_handle: string | null
+          units: string | null
+          updated_at: string | null
+          user_id: string | null
+          website_url: string | null
+          work_address_city: string | null
+          work_address_country: string | null
+          work_address_line1: string | null
+          work_address_line2: string | null
+          work_address_postcode: string | null
+          work_company: string | null
+          youtube_handle: string | null
+        }
+        Insert: {
+          accent_color?: string | null
+          address_city?: string | null
+          address_country?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_postcode?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          hr_zone1_max?: number | null
+          hr_zone2_max?: number | null
+          hr_zone3_max?: number | null
+          hr_zone4_max?: number | null
+          hr_zone5_max?: number | null
+          hr_zones_mode?: string | null
+          id?: string | null
+          instagram_handle?: string | null
+          last_active_at?: string | null
+          last_name?: string | null
+          max_hr?: number | null
+          phone?: string | null
+          privacy_analytics?: boolean | null
+          privacy_insights?: boolean | null
+          resting_hr?: number | null
+          status?: string | null
+          telephone?: string | null
+          theme_mode?: string | null
+          tiktok_handle?: string | null
+          training_goal?: string | null
+          twitter_handle?: string | null
+          units?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          website_url?: string | null
+          work_address_city?: string | null
+          work_address_country?: string | null
+          work_address_line1?: string | null
+          work_address_line2?: string | null
+          work_address_postcode?: string | null
+          work_company?: string | null
+          youtube_handle?: string | null
+        }
+        Update: {
+          accent_color?: string | null
+          address_city?: string | null
+          address_country?: string | null
+          address_line1?: string | null
+          address_line2?: string | null
+          address_postcode?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          display_name?: string | null
+          first_name?: string | null
+          hr_zone1_max?: number | null
+          hr_zone2_max?: number | null
+          hr_zone3_max?: number | null
+          hr_zone4_max?: number | null
+          hr_zone5_max?: number | null
+          hr_zones_mode?: string | null
+          id?: string | null
+          instagram_handle?: string | null
+          last_active_at?: string | null
+          last_name?: string | null
+          max_hr?: number | null
+          phone?: string | null
+          privacy_analytics?: boolean | null
+          privacy_insights?: boolean | null
+          resting_hr?: number | null
+          status?: string | null
+          telephone?: string | null
+          theme_mode?: string | null
+          tiktok_handle?: string | null
+          training_goal?: string | null
+          twitter_handle?: string | null
+          units?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          website_url?: string | null
+          work_address_city?: string | null
+          work_address_country?: string | null
+          work_address_line1?: string | null
+          work_address_line2?: string | null
+          work_address_postcode?: string | null
+          work_company?: string | null
+          youtube_handle?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       create_notification: {
