@@ -192,9 +192,14 @@ export function GymDetailSheet({ gymId, open, onOpenChange }: GymDetailSheetProp
       toast.success("Message sent! Redirecting to inbox...");
       onOpenChange(false);
       navigate(`/inbox?conversation=${conversationId}`);
-    } catch (error) {
-      console.error("Error sending request:", error);
-      toast.error("Failed to send request. Please try again.");
+    } catch (error: any) {
+      console.error("Error sending request:", {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+      });
+      toast.error(`Failed to send request: ${error?.message || 'Unknown error'}`);
     } finally {
       setSubmitting(false);
     }

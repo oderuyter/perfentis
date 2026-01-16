@@ -137,9 +137,14 @@ export function EventDetailSheet({
       toast.success("Conversation started! Redirecting to inbox...");
       onClose();
       navigate(`/inbox?conversation=${conversationId}`);
-    } catch (error) {
-      console.error("Error creating conversation:", error);
-      toast.error("Failed to start conversation. Please try again.");
+    } catch (error: any) {
+      console.error("Error creating conversation:", {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+      });
+      toast.error(`Failed to start conversation: ${error?.message || 'Unknown error'}`);
     } finally {
       setIsMessaging(false);
     }
