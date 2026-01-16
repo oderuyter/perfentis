@@ -16,7 +16,9 @@ import {
   Globe,
   Instagram,
   MapPin,
-  Building2
+  Building2,
+  Trash2,
+  FileText
 } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -41,13 +43,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   CRMLead, 
   PipelineStage, 
   CRMNote, 
   CRMTask, 
   CRMActivity,
-  useCRMLeadDetail 
+  CRMTaskTemplate,
+  useCRMLeadDetail,
+  useCRMTaskTemplates
 } from "@/hooks/useCRM";
 import { useMessages } from "@/hooks/useMessages";
 import { formatDistanceToNow, format } from "date-fns";
@@ -64,6 +74,8 @@ interface CRMLeadDetailProps {
   onMoveToStage: (leadId: string, stageId: string) => Promise<void>;
   onConvert: (leadId: string, status: 'won' | 'lost') => Promise<void>;
   staffMembers?: Array<{ user_id: string; display_name: string | null }>;
+  contextType?: 'gym' | 'coach' | 'event';
+  contextId?: string;
 }
 
 export function CRMLeadDetail({
@@ -75,6 +87,8 @@ export function CRMLeadDetail({
   onMoveToStage,
   onConvert,
   staffMembers = [],
+  contextType = 'gym',
+  contextId,
 }: CRMLeadDetailProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
@@ -90,10 +104,14 @@ export function CRMLeadDetail({
     addNote,
     createTask,
     completeTask,
+    deleteTask,
+    applyTaskTemplate,
     refetchNotes,
     refetchTasks,
     refetchActivities,
   } = useCRMLeadDetail(lead?.id || null);
+
+  const { templates } = useCRMTaskTemplates(contextType, contextId || null);
 
   const {
     messages,
@@ -136,6 +154,24 @@ export function CRMLeadDetail({
       toast.success("Task completed");
     } catch (error) {
       toast.error("Failed to complete task");
+    }
+  };
+
+  const handleDeleteTask = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+      toast.success("Task deleted");
+    } catch (error) {
+      toast.error("Failed to delete task");
+    }
+  };
+
+  const handleApplyTemplate = async (template: CRMTaskTemplate) => {
+    try {
+      await applyTaskTemplate(template);
+      toast.success(`Template "${template.name}" applied`);
+    } catch (error) {
+      toast.error("Failed to apply template");
     }
   };
 
@@ -447,20 +483,42 @@ export function CRMLeadDetail({
             {/* Tasks Tab */}
             <TabsContent value="tasks" className="h-full m-0 p-4 overflow-y-auto">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center gap-2">
                   <h3 className="font-medium">Tasks & Follow-ups</h3>
-                  <CreateTaskDialog 
-                    leadId={lead.id} 
-                    onCreate={createTask}
-                    staffMembers={staffMembers}
-                  />
+                  <div className="flex gap-2">
+                    {templates.length > 0 && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline">
+                            <FileText className="h-4 w-4 mr-1" />
+                            Templates
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {templates.map((template) => (
+                            <DropdownMenuItem
+                              key={template.id}
+                              onClick={() => handleApplyTemplate(template)}
+                            >
+                              {template.name} ({template.tasks.length} tasks)
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                    <CreateTaskDialog 
+                      leadId={lead.id} 
+                      onCreate={createTask}
+                      staffMembers={staffMembers}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
                   {tasks.filter(t => t.status === 'open').map((task) => (
                     <div
                       key={task.id}
-                      className="flex items-start gap-3 p-3 border rounded-lg"
+                      className="flex items-start gap-3 p-3 border rounded-lg group"
                     >
                       <Button
                         variant="ghost"
@@ -487,6 +545,14 @@ export function CRMLeadDetail({
                           )}
                         </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDeleteTask(task.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   ))}
 
