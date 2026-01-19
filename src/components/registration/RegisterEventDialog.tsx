@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -20,27 +20,42 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { toast } from "sonner";
-import { Loader2, Flag } from "lucide-react";
+import { Loader2, Flag, MapPin, Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface RegisterEventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const EVENT_TYPES = [
-  { value: "competition", label: "Competition" },
-  { value: "throwdown", label: "Throwdown" },
-  { value: "challenge", label: "Challenge" },
-  { value: "qualifier", label: "Qualifier" },
-  { value: "charity", label: "Charity Event" },
-  { value: "workshop", label: "Workshop" },
-  { value: "seminar", label: "Seminar" },
-  { value: "other", label: "Other" },
-];
+interface Gym {
+  id: string;
+  name: string;
+  address: string | null;
+}
+
+interface EventCategory {
+  id: string;
+  name: string;
+  description: string | null;
+}
 
 const EVENT_MODES = [
-  { value: "in-person", label: "In-Person" },
+  { value: "in_person", label: "In-Person" },
   { value: "online", label: "Online" },
   { value: "hybrid", label: "Hybrid" },
 ];
@@ -48,16 +63,57 @@ const EVENT_MODES = [
 export function RegisterEventDialog({ open, onOpenChange }: RegisterEventDialogProps) {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [gyms, setGyms] = useState<Gym[]>([]);
+  const [categories, setCategories] = useState<EventCategory[]>([]);
+  const [gymSearchOpen, setGymSearchOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    eventType: "",
+    categoryId: "",
     eventMode: "",
     startDate: "",
     endDate: "",
     location: "",
+    gymId: "",
     reason: "",
   });
+
+  useEffect(() => {
+    if (open) {
+      fetchGyms();
+      fetchCategories();
+    }
+  }, [open]);
+
+  const fetchGyms = async () => {
+    const { data } = await supabase
+      .from("gyms")
+      .select("id, name, address")
+      .eq("status", "active")
+      .order("name");
+    setGyms(data || []);
+  };
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from("event_categories")
+      .select("id, name, description")
+      .eq("is_active", true)
+      .order("display_order");
+    setCategories(data || []);
+  };
+
+  const handleGymSelect = (gymId: string) => {
+    const selectedGym = gyms.find(g => g.id === gymId);
+    if (selectedGym) {
+      setFormData(prev => ({
+        ...prev,
+        gymId: gymId,
+        location: selectedGym.address || selectedGym.name,
+      }));
+    }
+    setGymSearchOpen(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,7 +140,7 @@ export function RegisterEventDialog({ open, onOpenChange }: RegisterEventDialogP
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         reason: formData.reason.trim(),
-        event_type: formData.eventType || null,
+        event_type: formData.categoryId || null, // Using category as event_type for now
         event_mode: formData.eventMode || null,
         event_start_date: formData.startDate || null,
         event_end_date: formData.endDate || null,
@@ -99,11 +155,12 @@ export function RegisterEventDialog({ open, onOpenChange }: RegisterEventDialogP
       setFormData({
         name: "",
         description: "",
-        eventType: "",
+        categoryId: "",
         eventMode: "",
         startDate: "",
         endDate: "",
         location: "",
+        gymId: "",
         reason: "",
       });
     } catch (error: any) {
@@ -154,18 +211,18 @@ export function RegisterEventDialog({ open, onOpenChange }: RegisterEventDialogP
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Event Type</Label>
+              <Label>Event Category</Label>
               <Select
-                value={formData.eventType}
-                onValueChange={(value) => setFormData({ ...formData, eventType: value })}
+                value={formData.categoryId}
+                onValueChange={(value) => setFormData({ ...formData, categoryId: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type..." />
+                  <SelectValue placeholder="Select category..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {EVENT_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -213,12 +270,63 @@ export function RegisterEventDialog({ open, onOpenChange }: RegisterEventDialogP
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location">Location</Label>
+            <Label>Venue / Location</Label>
+            <Popover open={gymSearchOpen} onOpenChange={setGymSearchOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={gymSearchOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {formData.gymId ? (
+                    <span className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      {gyms.find(g => g.id === formData.gymId)?.name}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">Search gyms or enter manually...</span>
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search gyms..." />
+                  <CommandList>
+                    <CommandEmpty>No gyms found.</CommandEmpty>
+                    <CommandGroup>
+                      {gyms.map((gym) => (
+                        <CommandItem
+                          key={gym.id}
+                          value={gym.name}
+                          onSelect={() => handleGymSelect(gym.id)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              formData.gymId === gym.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <div>
+                            <p className="font-medium">{gym.name}</p>
+                            {gym.address && (
+                              <p className="text-xs text-muted-foreground">{gym.address}</p>
+                            )}
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
             <Input
               id="location"
               value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              placeholder="Venue address or 'Online'"
+              onChange={(e) => setFormData({ ...formData, location: e.target.value, gymId: "" })}
+              placeholder="Or enter address manually"
+              className="mt-2"
             />
           </div>
 

@@ -1594,6 +1594,33 @@ export type Database = {
           },
         ]
       }
+      event_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
       event_divisions: {
         Row: {
           age_group: string | null
@@ -2398,6 +2425,7 @@ export type Database = {
       }
       events: {
         Row: {
+          category_id: string | null
           contact_email: string | null
           created_at: string
           description: string | null
@@ -2405,6 +2433,7 @@ export type Database = {
           event_date: string | null
           event_mode: string | null
           event_type: string | null
+          gym_id: string | null
           hero_image_url: string | null
           id: string
           image_url: string | null
@@ -2418,6 +2447,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           contact_email?: string | null
           created_at?: string
           description?: string | null
@@ -2425,6 +2455,7 @@ export type Database = {
           event_date?: string | null
           event_mode?: string | null
           event_type?: string | null
+          gym_id?: string | null
           hero_image_url?: string | null
           id?: string
           image_url?: string | null
@@ -2438,6 +2469,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           contact_email?: string | null
           created_at?: string
           description?: string | null
@@ -2445,6 +2477,7 @@ export type Database = {
           event_date?: string | null
           event_mode?: string | null
           event_type?: string | null
+          gym_id?: string | null
           hero_image_url?: string | null
           id?: string
           image_url?: string | null
@@ -2457,7 +2490,22 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "events_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "event_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       exercise_logs: {
         Row: {
