@@ -5,9 +5,10 @@ import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { usePortalThemeStandalone } from "@/hooks/usePortalTheme";
+import { PortalThemeToggle } from "@/components/portal/PortalThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,7 +35,7 @@ import {
   Search,
   Menu,
   X,
-  ChevronRight,
+  ChevronLeft,
   LogOut,
   User,
   Music,
@@ -73,6 +74,7 @@ export default function AdminPortalLayout() {
   const { isAdmin, isLoading: rolesLoading } = useRoles();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
+  const { theme, setTheme } = usePortalThemeStandalone("admin");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,6 +139,23 @@ export default function AdminPortalLayout() {
           )}
         </div>
 
+        {/* Admin Identity */}
+        {sidebarOpen && (
+          <div className="p-3 border-b border-border">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <Shield className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 text-left min-w-0">
+                <p className="font-medium text-sm truncate">
+                  {profile?.display_name || user?.email?.split("@")[0]}
+                </p>
+                <p className="text-xs text-muted-foreground">Administrator</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-2">
           {navItems.map((item) => (
@@ -147,8 +166,10 @@ export default function AdminPortalLayout() {
                 "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors mb-1",
                 isActive(item.to)
                   ? "bg-primary text-primary-foreground"
-                  : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                  : "hover:bg-muted text-muted-foreground hover:text-foreground",
+                !sidebarOpen && "justify-center"
               )}
+              title={!sidebarOpen ? item.label : undefined}
             >
               <item.icon className="h-5 w-5 shrink-0" />
               {sidebarOpen && (
@@ -158,13 +179,18 @@ export default function AdminPortalLayout() {
           ))}
         </nav>
 
-        {/* Back to App */}
-        <div className="p-2 border-t border-border">
+        {/* Theme Toggle & Back to App */}
+        <div className="p-2 border-t border-border space-y-1">
+          <PortalThemeToggle theme={theme} setTheme={setTheme} collapsed={!sidebarOpen} />
           <button
             onClick={() => navigate("/")}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors",
+              !sidebarOpen && "justify-center"
+            )}
+            title={!sidebarOpen ? "Back to App" : undefined}
           >
-            <ChevronRight className="h-5 w-5 shrink-0 rotate-180" />
+            <ChevronLeft className="h-5 w-5 shrink-0" />
             {sidebarOpen && (
               <span className="text-sm font-medium">Back to App</span>
             )}
@@ -199,6 +225,22 @@ export default function AdminPortalLayout() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
+
+              {/* Admin Identity (Mobile) */}
+              <div className="p-3 border-b border-border">
+                <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Shield className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 text-left min-w-0">
+                    <p className="font-medium text-sm truncate">
+                      {profile?.display_name || user?.email?.split("@")[0]}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Administrator</p>
+                  </div>
+                </div>
+              </div>
+
               <nav className="flex-1 overflow-y-auto p-2">
                 {navItems.map((item) => (
                   <button
@@ -219,12 +261,13 @@ export default function AdminPortalLayout() {
                   </button>
                 ))}
               </nav>
-              <div className="p-2 border-t border-border">
+              <div className="p-2 border-t border-border space-y-1">
+                <PortalThemeToggle theme={theme} setTheme={setTheme} />
                 <button
                   onClick={() => navigate("/")}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <ChevronRight className="h-5 w-5 shrink-0 rotate-180" />
+                  <ChevronLeft className="h-5 w-5 shrink-0" />
                   <span className="text-sm font-medium">Back to App</span>
                 </button>
               </div>
@@ -277,7 +320,7 @@ export default function AdminPortalLayout() {
                 </span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-48 bg-popover">
               <DropdownMenuLabel>Admin Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/profile")}>

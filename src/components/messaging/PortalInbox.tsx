@@ -6,14 +6,12 @@ import {
   ArrowLeft,
   Send,
   MessageCircle,
-  User,
   CheckCircle,
   XCircle,
-  UserPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { usePortalConversations, ConversationContextType, Conversation } from "@/hooks/useConversations";
+import { usePortalConversations, ConversationContextType } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,26 +19,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { toast } from "sonner";
 
@@ -174,101 +158,61 @@ export function PortalInbox({
               <p className="text-muted-foreground">No conversations</p>
             </div>
           ) : (
-            <div className="overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead className="hidden md:table-cell">Subject</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden lg:table-cell">Assigned</TableHead>
-                    <TableHead className="hidden md:table-cell">Updated</TableHead>
-                    <TableHead className="w-10"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredConversations.map(conv => {
-                    const userParticipant = conv.participants?.find(p => p.role === 'user');
-                    const assignedStaff = staffMembers.find(s => s.user_id === conv.assigned_user_id);
+            <div className="divide-y divide-border">
+              {filteredConversations.map(conv => {
+                const userParticipant = conv.participants?.find(p => p.role === 'user');
+                const isUnread = conv.status === 'open' && !conv.assigned_user_id;
 
-                    return (
-                      <TableRow 
-                        key={conv.id}
-                        className={cn(
-                          "cursor-pointer",
-                          selectedConversationId === conv.id && "bg-accent"
-                        )}
-                        onClick={() => setSelectedConversationId(conv.id)}
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-8 w-8">
-                              <AvatarImage src={userParticipant?.avatar_url || undefined} />
-                              <AvatarFallback>
-                                {(userParticipant?.display_name || conv.context_name || 'U')[0]?.toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-medium text-sm truncate max-w-[120px]">
-                                {userParticipant?.display_name || conv.context_name || 'Unknown User'}
-                              </span>
-                              {userParticipant?.display_name && conv.subject && (
-                                <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                                  {conv.subject}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <span className="text-sm text-muted-foreground truncate max-w-[150px] block">
-                            {conv.subject || conv.last_message || '—'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={conv.status === 'open' ? 'default' : 'secondary'}>
-                            {conv.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button variant="ghost" size="sm" className="h-8">
-                                {assignedStaff ? (
-                                  <span className="text-sm">{assignedStaff.display_name}</span>
-                                ) : (
-                                  <span className="text-muted-foreground text-sm">Unassigned</span>
-                                )}
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent>
-                              <DropdownMenuItem onClick={() => handleAssign(conv.id, 'unassign')}>
-                                Unassign
-                              </DropdownMenuItem>
-                              {staffMembers.map(staff => (
-                                <DropdownMenuItem 
-                                  key={staff.user_id}
-                                  onClick={() => handleAssign(conv.id, staff.user_id)}
-                                >
-                                  {staff.display_name}
-                                </DropdownMenuItem>
-                              ))}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <span className="text-sm text-muted-foreground">
-                            {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true })}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                return (
+                  <button
+                    key={conv.id}
+                    onClick={() => setSelectedConversationId(conv.id)}
+                    className={cn(
+                      "w-full flex items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50",
+                      selectedConversationId === conv.id && "bg-accent"
+                    )}
+                  >
+                    {/* Unread indicator */}
+                    <div className={cn(
+                      "w-2 h-2 rounded-full shrink-0",
+                      isUnread ? "bg-primary" : "bg-transparent"
+                    )} />
+                    
+                    {/* Avatar */}
+                    <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarImage src={userParticipant?.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {(userParticipant?.display_name || conv.context_name || 'U')[0]?.toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    {/* Name and time */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className={cn(
+                          "text-sm truncate",
+                          isUnread ? "font-semibold" : "font-medium"
+                        )}>
+                          {userParticipant?.display_name || conv.context_name || 'Unknown'}
+                        </span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {formatDistanceToNow(new Date(conv.updated_at), { addSuffix: false })}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <Badge 
+                          variant={conv.status === 'open' ? 'default' : 'secondary'}
+                          className="text-[10px] px-1.5 py-0 h-4"
+                        >
+                          {conv.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
