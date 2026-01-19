@@ -1,9 +1,14 @@
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Settings, CreditCard, Bell, Shield, Trash2 } from "lucide-react";
+import { Settings, CreditCard, Bell, Shield, Trash2, QrCode, Download } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
+import { useOfflineCheckinQueue } from "@/hooks/useOfflineCheckinQueue";
 
 interface ContextType {
   selectedEventId: string | null;
@@ -11,6 +16,79 @@ interface ContextType {
 
 export default function EventSettings() {
   const { selectedEventId } = useOutletContext<ContextType>();
+  const { user } = useAuth();
+  const [enableCheckin, setEnableCheckin] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const { downloadEventForOffline, cachedEvent } = useOfflineCheckinQueue(selectedEventId);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedEventId) return;
+    
+    const fetchSettings = async () => {
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("events")
+          .select("enable_checkin")
+          .eq("id", selectedEventId)
+          .single();
+
+        if (error) throw error;
+        setEnableCheckin(data?.enable_checkin || false);
+      } catch (error) {
+        console.error("Error fetching event settings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [selectedEventId]);
+
+  const handleCheckinToggle = async (enabled: boolean) => {
+    if (!selectedEventId || !user) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from("events")
+        .update({ enable_checkin: enabled })
+        .eq("id", selectedEventId);
+
+      if (error) throw error;
+      setEnableCheckin(enabled);
+      toast.success(enabled ? "Check-in enabled" : "Check-in disabled");
+
+      // Log to audit
+      await supabase.from("audit_logs").insert({
+        action: enabled ? "checkin_enabled" : "checkin_disabled",
+        category: "events",
+        message: `Check-in ${enabled ? "enabled" : "disabled"} for event`,
+        entity_type: "event",
+        entity_id: selectedEventId,
+        actor_id: user.id,
+      });
+    } catch (error) {
+      console.error("Error updating check-in setting:", error);
+      toast.error("Failed to update setting");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDownloadOffline = async () => {
+    setIsDownloading(true);
+    const success = await downloadEventForOffline();
+    setIsDownloading(false);
+    
+    if (success) {
+      toast.success("Event downloaded for offline use");
+    } else {
+      toast.error("Failed to download event");
+    }
+  };
 
   if (!selectedEventId) {
     return (
@@ -32,6 +110,55 @@ export default function EventSettings() {
           Configure event settings and preferences
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <QrCode className="h-5 w-5" />
+            Check-In
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Enable Competitor Check-In</Label>
+              <p className="text-sm text-muted-foreground">
+                Generate QR passes for registered competitors
+              </p>
+            </div>
+            <Switch 
+              checked={enableCheckin} 
+              onCheckedChange={handleCheckinToggle}
+              disabled={isLoading || isSaving}
+            />
+          </div>
+          
+          {enableCheckin && (
+            <div className="flex items-center justify-between pt-2 border-t">
+              <div>
+                <Label>Offline Check-In</Label>
+                <p className="text-sm text-muted-foreground">
+                  Download event data for offline check-in
+                  {cachedEvent && (
+                    <span className="block text-xs mt-1">
+                      Last downloaded: {new Date(cachedEvent.downloadedAt).toLocaleString()}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleDownloadOffline}
+                disabled={isDownloading}
+              >
+                <Download className="h-4 w-4 mr-2" />
+                {isDownloading ? "Downloading..." : "Download"}
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

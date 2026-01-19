@@ -4,15 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useEventCheckin, Registration } from "@/hooks/useEventCheckin";
+import { useOfflineCheckinQueue } from "@/hooks/useOfflineCheckinQueue";
 import { 
   CheckCircle2, 
   XCircle, 
   Wifi, 
   WifiOff, 
   ChevronLeft,
-  User,
-  Users,
-  RefreshCw
+  RefreshCw,
+  CloudOff,
+  Upload
 } from "lucide-react";
 import { toast } from "sonner";
 import { Scanner } from "@yudiel/react-qr-scanner";
@@ -27,47 +28,88 @@ export default function EventCheckinStation() {
   const navigate = useNavigate();
   const { selectedEventId, selectedEvent } = useOutletContext<EventContext>();
   const { registrations, validateToken, checkIn, refetch } = useEventCheckin(selectedEventId);
+  const { 
+    isOnline, 
+    pendingCount, 
+    isSyncing, 
+    cachedEvent,
+    queueCheckin, 
+    syncQueue,
+    validateTokenOffline 
+  } = useOfflineCheckinQueue(selectedEventId);
   
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [lastScanned, setLastScanned] = useState<Registration | null>(null);
   const [scanStatus, setScanStatus] = useState<"idle" | "success" | "error" | "already">("idle");
   const [tokenInput, setTokenInput] = useState("");
 
-  const checkedInCount = registrations.filter(r => r.isCheckedIn).length;
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
-    return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
-    };
-  }, []);
+  const checkedInCount = isOnline 
+    ? registrations.filter(r => r.isCheckedIn).length 
+    : cachedEvent?.registrations.filter(r => r.isCheckedIn).length || 0;
 
   const processToken = useCallback(async (token: string) => {
-    const reg = await validateToken(token);
-    if (!reg) {
-      setScanStatus("error");
-      setLastScanned(null);
-      toast.error("Invalid QR code");
-      return;
-    }
-
-    setLastScanned(reg);
-
-    if (reg.isCheckedIn) {
-      setScanStatus("already");
-      toast.info(`${reg.userName} already checked in`);
-    } else {
-      const result = await checkIn(reg.id, "qr", "station");
-      if (result.success) {
-        setScanStatus("success");
-        toast.success(`${reg.userName} checked in!`);
-      } else {
+    // Try online first
+    if (isOnline) {
+      const reg = await validateToken(token);
+      if (!reg) {
         setScanStatus("error");
-        toast.error(result.message);
+        setLastScanned(null);
+        toast.error("Invalid QR code");
+        return;
+      }
+
+      setLastScanned(reg);
+
+      if (reg.isCheckedIn) {
+        setScanStatus("already");
+        toast.info(`${reg.userName} already checked in`);
+      } else {
+        const result = await checkIn(reg.id, "qr", "station");
+        if (result.success) {
+          setScanStatus("success");
+          toast.success(`${reg.userName} checked in!`);
+        } else {
+          setScanStatus("error");
+          toast.error(result.message);
+        }
+      }
+    } else {
+      // Offline mode
+      const cached = validateTokenOffline(token);
+      if (!cached) {
+        setScanStatus("error");
+        setLastScanned(null);
+        toast.error("Invalid QR code (offline)");
+        return;
+      }
+
+      setLastScanned({
+        id: cached.id,
+        userId: cached.userId,
+        userName: cached.userName,
+        userEmail: cached.userEmail,
+        divisionId: null,
+        divisionName: cached.divisionName,
+        teamId: null,
+        teamName: cached.teamName,
+        status: "confirmed",
+        isCheckedIn: cached.isCheckedIn,
+        checkedInAt: cached.checkedInAt,
+        activeForEvent: cached.isCheckedIn,
+        passToken: cached.passToken,
+      });
+
+      if (cached.isCheckedIn) {
+        setScanStatus("already");
+        toast.info(`${cached.userName} already checked in`);
+      } else {
+        const result = await queueCheckin(cached.id, "qr", "station");
+        if (result.success) {
+          setScanStatus("success");
+          toast.success(`${cached.userName} queued for check-in (offline)`);
+        } else {
+          setScanStatus("error");
+          toast.error(result.message);
+        }
       }
     }
 
@@ -76,7 +118,7 @@ export default function EventCheckinStation() {
       setScanStatus("idle");
       setLastScanned(null);
     }, 3000);
-  }, [validateToken, checkIn]);
+  }, [isOnline, validateToken, checkIn, validateTokenOffline, queueCheckin]);
 
   const handleScan = useCallback((detectedCodes: any[]) => {
     if (detectedCodes.length > 0 && scanStatus === "idle") {
@@ -89,6 +131,14 @@ export default function EventCheckinStation() {
       processToken(tokenInput.trim());
       setTokenInput("");
     }
+  };
+
+  const handleManualSync = async () => {
+    const { synced, failed } = await syncQueue();
+    if (synced > 0) toast.success(`Synced ${synced} check-ins`);
+    if (failed > 0) toast.error(`${failed} check-ins failed to sync`);
+    if (synced === 0 && failed === 0) toast.info("Nothing to sync");
+    refetch();
   };
 
   if (!selectedEventId) {
@@ -114,15 +164,38 @@ export default function EventCheckinStation() {
         </div>
 
         <div className="flex items-center gap-4">
-          <Badge variant={isOnline ? "default" : "destructive"} className="gap-1">
+          {/* Offline indicator */}
+          <Badge variant={isOnline ? "default" : "secondary"} className="gap-1">
             {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
             {isOnline ? "Online" : "Offline"}
           </Badge>
+
+          {/* Pending sync count */}
+          {pendingCount > 0 && (
+            <Badge variant="outline" className="gap-1">
+              <CloudOff className="h-3 w-3" />
+              {pendingCount} pending
+            </Badge>
+          )}
+
           <div className="text-center">
             <p className="text-xl font-bold">{checkedInCount}</p>
             <p className="text-xs text-muted-foreground">Checked In</p>
           </div>
-          <Button variant="outline" size="icon" onClick={refetch}>
+
+          {isOnline && pendingCount > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleManualSync}
+              disabled={isSyncing}
+            >
+              <Upload className="h-4 w-4 mr-1" />
+              Sync
+            </Button>
+          )}
+
+          <Button variant="outline" size="icon" onClick={refetch} disabled={!isOnline}>
             <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
@@ -164,7 +237,7 @@ export default function EventCheckinStation() {
               {lastScanned.teamName && ` • ${lastScanned.teamName}`}
             </p>
             <p className="mt-2 font-medium">
-              {scanStatus === "success" && "Checked In Successfully!"}
+              {scanStatus === "success" && (isOnline ? "Checked In Successfully!" : "Queued (Offline)")}
               {scanStatus === "error" && "Check-In Failed"}
               {scanStatus === "already" && "Already Checked In"}
             </p>
@@ -186,6 +259,13 @@ export default function EventCheckinStation() {
             </Button>
           </div>
         </div>
+
+        {/* Offline notice */}
+        {!isOnline && (
+          <p className="mt-4 text-sm text-muted-foreground text-center">
+            Working offline. Check-ins will sync when connection is restored.
+          </p>
+        )}
       </div>
     </div>
   );
