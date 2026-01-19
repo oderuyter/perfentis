@@ -39,6 +39,7 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  DollarSign,
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -201,6 +202,26 @@ export default function EventRegistrations() {
     } catch (error) {
       console.error("Error checking in:", error);
       toast.error("Failed to check in");
+    }
+  };
+
+  // Temporary: Mark payment as complete manually
+  const markPaymentComplete = async (regId: string) => {
+    try {
+      const { error } = await supabase
+        .from("event_registrations")
+        .update({
+          payment_status: "paid",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", regId);
+
+      if (error) throw error;
+      toast.success("Payment marked as complete");
+      fetchData();
+    } catch (error) {
+      console.error("Error marking payment:", error);
+      toast.error("Failed to update payment status");
     }
   };
 
@@ -395,6 +416,14 @@ export default function EventRegistrations() {
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 Confirm
                               </DropdownMenuItem>
+                              {reg.payment_status !== "paid" && (
+                                <DropdownMenuItem
+                                  onClick={() => markPaymentComplete(reg.id)}
+                                >
+                                  <DollarSign className="h-4 w-4 mr-2" />
+                                  Mark Paid
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() => updateRegistrationStatus(reg.id, "cancelled")}
                                 className="text-destructive"
