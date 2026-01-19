@@ -46,7 +46,13 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
             <div className="flex items-center gap-2">
               {/* Notification Bell */}
               <button
-                onClick={() => setNotificationsOpen(true)}
+                onClick={() => {
+                  if (unreadCount > 0) {
+                    setNotificationsOpen(true);
+                  } else {
+                    navigate("/notifications");
+                  }
+                }}
                 className="relative p-2 rounded-full hover:bg-white/10 transition-colors"
                 aria-label="Notifications"
               >

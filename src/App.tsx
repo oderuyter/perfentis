@@ -24,6 +24,7 @@ import Events from "./pages/Events";
 import Help from "./pages/Help";
 import Playlists from "./pages/Playlists";
 import Inbox from "./pages/Inbox";
+import Notifications from "./pages/Notifications";
 import GymPortalLayout from "./pages/gym-portal/GymPortalLayout";
 import GymDashboard from "./pages/gym-portal/GymDashboard";
 import GymMembers from "./pages/gym-portal/GymMembers";
@@ -62,6 +63,7 @@ import EventsManagement from "./pages/event-portal/EventsManagement";
 import EventDivisions from "./pages/event-portal/EventDivisions";
 import EventRegistrations from "./pages/event-portal/EventRegistrations";
 import EventWorkouts from "./pages/event-portal/EventWorkouts";
+import EventClassesWorkouts from "./pages/event-portal/EventClassesWorkouts";
 import EventSchedule from "./pages/event-portal/EventSchedule";
 import EventScoring from "./pages/event-portal/EventScoring";
 import EventLeaderboards from "./pages/event-portal/EventLeaderboards";
@@ -148,6 +150,7 @@ function AppRoutes() {
         <Route path="/events" element={<Events />} />
         <Route path="/playlists" element={<Playlists />} />
         <Route path="/inbox" element={<Inbox />} />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/help" element={<Help />} />
       </Route>
       <Route path="/gym-portal" element={<ProtectedRoute><GymPortalLayout /></ProtectedRoute>}>
@@ -191,6 +194,7 @@ function AppRoutes() {
         <Route path="divisions" element={<EventDivisions />} />
         <Route path="registrations" element={<EventRegistrations />} />
         <Route path="workouts" element={<EventWorkouts />} />
+        <Route path="classes" element={<EventClassesWorkouts />} />
         <Route path="schedule" element={<EventSchedule />} />
         <Route path="scoring" element={<EventScoring />} />
         <Route path="leaderboards" element={<EventLeaderboards />} />

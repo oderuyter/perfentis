@@ -1621,6 +1621,128 @@ export type Database = {
         }
         Relationships: []
       }
+      event_class_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number | null
+          event_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          event_id: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          event_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_class_categories_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_class_workouts: {
+        Row: {
+          class_id: string
+          created_at: string
+          display_order: number | null
+          id: string
+          workout_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          workout_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_class_workouts_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "event_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_class_workouts_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "event_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_classes: {
+        Row: {
+          capacity: number | null
+          category_id: string | null
+          created_at: string
+          description: string | null
+          display_order: number | null
+          event_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          capacity?: number | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          event_id: string
+          id?: string
+          name: string
+        }
+        Update: {
+          capacity?: number | null
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number | null
+          event_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_classes_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "event_class_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_classes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_divisions: {
         Row: {
           age_group: string | null
@@ -2012,6 +2134,70 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "event_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_schedule_blocks: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          display_order: number | null
+          end_time: string
+          event_id: string
+          id: string
+          location: string | null
+          notes: string | null
+          start_time: string
+          title: string
+          workout_id: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          display_order?: number | null
+          end_time: string
+          event_id: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_time: string
+          title: string
+          workout_id?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          display_order?: number | null
+          end_time?: string
+          event_id?: string
+          id?: string
+          location?: string | null
+          notes?: string | null
+          start_time?: string
+          title?: string
+          workout_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_schedule_blocks_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "event_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_schedule_blocks_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_schedule_blocks_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "event_workouts"
             referencedColumns: ["id"]
           },
         ]

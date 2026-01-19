@@ -205,6 +205,17 @@ export default function AdminRegistrations() {
         if (coachError) throw coachError;
         createdEntityId = coachData.id;
 
+        // Send notification to the coach about approval
+        await createNotification({
+          userId: request.user_id,
+          title: "Coach Application Approved",
+          body: "Congratulations! Your coach application has been approved. You can now access the Coach Portal to set up your profile and services.",
+          type: "coach",
+          entityType: "coach",
+          entityId: coachData.id,
+          actionUrl: "/coach-portal",
+        });
+
         // Coach role is auto-assigned by the ensure_coach_role trigger
       } else if (request.request_type === "event") {
         const { data: eventData, error: eventError } = await supabase
@@ -295,6 +306,47 @@ export default function AdminRegistrations() {
         .eq("id", selectedRequest.id);
 
       if (error) throw error;
+
+      // Send notification to user about rejection
+      let notificationTitle = "";
+      let notificationBody = "";
+      
+      switch (selectedRequest.request_type) {
+        case "coach":
+          notificationTitle = "Coach Application Rejected";
+          notificationBody = rejectionReason.trim()
+            ? `Your coach application has been rejected. Reason: ${rejectionReason.trim()}`
+            : "Your coach application has been rejected. Please contact support for more information.";
+          break;
+        case "gym":
+          notificationTitle = "Gym Registration Rejected";
+          notificationBody = rejectionReason.trim()
+            ? `Your gym registration for "${selectedRequest.name}" has been rejected. Reason: ${rejectionReason.trim()}`
+            : `Your gym registration for "${selectedRequest.name}" has been rejected. Please contact support for more information.`;
+          break;
+        case "event":
+          notificationTitle = "Event Registration Rejected";
+          notificationBody = rejectionReason.trim()
+            ? `Your event "${selectedRequest.name}" has been rejected. Reason: ${rejectionReason.trim()}`
+            : `Your event "${selectedRequest.name}" has been rejected. Please contact support for more information.`;
+          break;
+        default:
+          notificationTitle = "Registration Rejected";
+          notificationBody = rejectionReason.trim()
+            ? `Your registration has been rejected. Reason: ${rejectionReason.trim()}`
+            : "Your registration has been rejected. Please contact support for more information.";
+      }
+
+      await createNotification({
+        userId: selectedRequest.user_id,
+        title: notificationTitle,
+        body: notificationBody,
+        type: selectedRequest.request_type === "coach" ? "coach" : 
+              selectedRequest.request_type === "gym" ? "gym" : 
+              selectedRequest.request_type === "event" ? "event" : "system",
+        entityType: "registration_request",
+        entityId: selectedRequest.id,
+      });
 
       await logAuditEvent({
         action: "registration_rejected",
