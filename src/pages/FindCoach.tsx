@@ -11,7 +11,8 @@ import {
   X,
   Send,
   Globe,
-  User
+  User,
+  Plus
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,6 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { RegisterCoachDialog } from "@/components/registration/RegisterCoachDialog";
 
 interface Coach {
   id: string;
@@ -92,7 +94,7 @@ export default function FindCoach() {
   const [showRequestForm, setShowRequestForm] = useState(false);
   const [requestMessage, setRequestMessage] = useState("");
   const [activeView, setActiveView] = useState<"directory" | "my-coach">("directory");
-
+  const [showRegisterCoachDialog, setShowRegisterCoachDialog] = useState(false);
   useEffect(() => {
     if (user) {
       fetchData();
@@ -210,6 +212,15 @@ export default function FindCoach() {
         >
           Connect with expert coaches
         </motion.p>
+        <Button 
+          onClick={() => setShowRegisterCoachDialog(true)} 
+          variant="outline" 
+          size="sm"
+          className="mt-3 gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Register as a Coach
+        </Button>
       </header>
 
       {/* View Toggle */}

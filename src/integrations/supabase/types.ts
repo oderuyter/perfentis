@@ -3119,17 +3119,24 @@ export type Database = {
           address_line1: string | null
           address_line2: string | null
           address_postcode: string | null
+          approval_status: string | null
           contact_email: string | null
           created_at: string
           description: string | null
           email: string | null
           id: string
+          is_owner_submission: boolean | null
           logo_url: string | null
           name: string
           owner_email: string | null
           owner_id: string | null
           phone: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: string
+          submission_reason: string | null
+          submitted_by: string | null
           timezone: string | null
           updated_at: string
           website: string | null
@@ -3141,17 +3148,24 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           address_postcode?: string | null
+          approval_status?: string | null
           contact_email?: string | null
           created_at?: string
           description?: string | null
           email?: string | null
           id?: string
+          is_owner_submission?: boolean | null
           logo_url?: string | null
           name: string
           owner_email?: string | null
           owner_id?: string | null
           phone?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
+          submission_reason?: string | null
+          submitted_by?: string | null
           timezone?: string | null
           updated_at?: string
           website?: string | null
@@ -3163,17 +3177,24 @@ export type Database = {
           address_line1?: string | null
           address_line2?: string | null
           address_postcode?: string | null
+          approval_status?: string | null
           contact_email?: string | null
           created_at?: string
           description?: string | null
           email?: string | null
           id?: string
+          is_owner_submission?: boolean | null
           logo_url?: string | null
           name?: string
           owner_email?: string | null
           owner_id?: string | null
           phone?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: string
+          submission_reason?: string | null
+          submitted_by?: string | null
           timezone?: string | null
           updated_at?: string
           website?: string | null
@@ -4242,6 +4263,120 @@ export type Database = {
           id?: string
           image_url?: string
           note?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      registration_requests: {
+        Row: {
+          coach_bio: string | null
+          coach_certifications: string[] | null
+          coach_delivery_type: string | null
+          coach_hourly_rate: number | null
+          coach_location: string | null
+          coach_specialties: string[] | null
+          created_at: string
+          created_entity_id: string | null
+          description: string | null
+          event_date: string | null
+          event_end_date: string | null
+          event_location: string | null
+          event_mode: string | null
+          event_start_date: string | null
+          event_type: string | null
+          gym_address: string | null
+          gym_address_city: string | null
+          gym_address_country: string | null
+          gym_address_line1: string | null
+          gym_address_line2: string | null
+          gym_address_postcode: string | null
+          gym_email: string | null
+          gym_phone: string | null
+          gym_website: string | null
+          id: string
+          is_owner_or_manager: boolean | null
+          name: string
+          reason: string | null
+          rejection_reason: string | null
+          request_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coach_bio?: string | null
+          coach_certifications?: string[] | null
+          coach_delivery_type?: string | null
+          coach_hourly_rate?: number | null
+          coach_location?: string | null
+          coach_specialties?: string[] | null
+          created_at?: string
+          created_entity_id?: string | null
+          description?: string | null
+          event_date?: string | null
+          event_end_date?: string | null
+          event_location?: string | null
+          event_mode?: string | null
+          event_start_date?: string | null
+          event_type?: string | null
+          gym_address?: string | null
+          gym_address_city?: string | null
+          gym_address_country?: string | null
+          gym_address_line1?: string | null
+          gym_address_line2?: string | null
+          gym_address_postcode?: string | null
+          gym_email?: string | null
+          gym_phone?: string | null
+          gym_website?: string | null
+          id?: string
+          is_owner_or_manager?: boolean | null
+          name: string
+          reason?: string | null
+          rejection_reason?: string | null
+          request_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coach_bio?: string | null
+          coach_certifications?: string[] | null
+          coach_delivery_type?: string | null
+          coach_hourly_rate?: number | null
+          coach_location?: string | null
+          coach_specialties?: string[] | null
+          created_at?: string
+          created_entity_id?: string | null
+          description?: string | null
+          event_date?: string | null
+          event_end_date?: string | null
+          event_location?: string | null
+          event_mode?: string | null
+          event_start_date?: string | null
+          event_type?: string | null
+          gym_address?: string | null
+          gym_address_city?: string | null
+          gym_address_country?: string | null
+          gym_address_line1?: string | null
+          gym_address_line2?: string | null
+          gym_address_postcode?: string | null
+          gym_email?: string | null
+          gym_phone?: string | null
+          gym_website?: string | null
+          id?: string
+          is_owner_or_manager?: boolean | null
+          name?: string
+          reason?: string | null
+          rejection_reason?: string | null
+          request_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

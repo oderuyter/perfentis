@@ -14,11 +14,13 @@ import {
   ChevronUp,
   Dumbbell,
   Filter,
-  Check
+  Check,
+  Plus
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { GymDetailSheet } from "@/components/gym/GymDetailSheet";
 import { MembershipDetailSheet } from "@/components/gym/MembershipDetailSheet";
+import { RegisterGymDialog } from "@/components/registration/RegisterGymDialog";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -27,6 +29,7 @@ import {
   useMembershipCheckins 
 } from "@/hooks/useGymManagement";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -81,6 +84,7 @@ export default function GymMembership() {
   // Membership management state
   const [selectedMembership, setSelectedMembership] = useState<typeof memberships[0] | null>(null);
   const [pastMembershipsOpen, setPastMembershipsOpen] = useState(false);
+  const [showRegisterGymDialog, setShowRegisterGymDialog] = useState(false);
 
   const activeMembership = memberships.find((m) => m.status === "active");
   const activeMemberships = memberships.filter((m) => m.status === "active");
@@ -378,6 +382,16 @@ export default function GymMembership() {
 
         {/* Gym Directory Tab */}
         <TabsContent value="directory" className="mt-4 space-y-4">
+          {/* Register Button */}
+          <Button 
+            onClick={() => setShowRegisterGymDialog(true)}
+            className="w-full gap-2"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4" />
+            Register a Gym
+          </Button>
+
           {/* Search and Filters */}
           <div className="flex gap-2">
             <div className="relative flex-1">
@@ -596,6 +610,12 @@ export default function GymMembership() {
           }}
         />
       )}
+
+      {/* Register Gym Dialog */}
+      <RegisterGymDialog
+        open={showRegisterGymDialog}
+        onOpenChange={setShowRegisterGymDialog}
+      />
     </div>
   );
 }
