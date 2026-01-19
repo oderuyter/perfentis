@@ -8,9 +8,9 @@ export interface GymPass {
   gymId: string;
   gymName: string;
   membershipId: string;
+  membershipNumber: string;
   membershipLevel: string;
   status: "active" | "expired" | "suspended" | "pending";
-  qrToken: string;
 }
 
 export interface EventPass {
@@ -49,13 +49,13 @@ export function useQRWallet() {
     setIsLoading(true);
 
     try {
-      // Fetch gym memberships with QR tokens
+      // Fetch gym memberships with member numbers
       const { data: memberships, error: membershipError } = await supabase
         .from("memberships")
         .select(`
           id,
           status,
-          membership_token,
+          membership_number,
           gym_id,
           membership_level_id,
           gyms (id, name),
@@ -68,15 +68,15 @@ export function useQRWallet() {
         console.error("Error fetching gym memberships:", membershipError);
       } else if (memberships) {
         const gymPassList: GymPass[] = memberships
-          .filter((m) => m.membership_token && m.gyms)
+          .filter((m) => m.membership_number && m.gyms)
           .map((m) => ({
             id: m.id,
             gymId: m.gym_id,
             gymName: (m.gyms as any)?.name || "Unknown Gym",
             membershipId: m.id,
+            membershipNumber: m.membership_number,
             membershipLevel: (m.gym_membership_levels as any)?.name || "Standard",
             status: m.status as GymPass["status"],
-            qrToken: m.membership_token,
           }));
         setGymPasses(gymPassList);
       }
