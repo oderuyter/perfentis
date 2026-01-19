@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { usePortalThemeStandalone } from "@/hooks/usePortalTheme";
+import { PortalThemeToggle } from "@/components/portal/PortalThemeToggle";
 import {
   LayoutDashboard,
   Calendar,
@@ -16,22 +18,15 @@ import {
   FileText,
   Settings,
   ChevronDown,
+  ChevronLeft,
   Plus,
   Menu,
   X,
-  ArrowLeft,
   Inbox,
   UserPlus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,7 +35,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useProfile } from "@/hooks/useProfile";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { motion } from "framer-motion";
 
 interface Event {
   id: string;
@@ -73,9 +69,11 @@ export default function EventPortalLayout() {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, setTheme } = usePortalThemeStandalone("event");
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -110,59 +108,98 @@ export default function EventPortalLayout() {
 
   const selectedEvent = events.find((e) => e.id === selectedEventId);
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-2 mb-4">
-          <Trophy className="h-6 w-6 text-primary" />
-          <span className="font-bold text-lg">Event Portal</span>
-        </div>
-        {events.length > 0 && (
-          <Select value={selectedEventId || ""} onValueChange={handleEventChange}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select event" />
-            </SelectTrigger>
-            <SelectContent>
-              {events.map((event) => (
-                <SelectItem key={event.id} value={event.id}>
-                  {event.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {/* Header */}
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+        {(sidebarOpen || isMobile) && (
+          <span className="font-semibold text-lg">Event Portal</span>
+        )}
+        {isMobile ? (
+          <button
+            onClick={() => setMobileSidebarOpen(false)}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        ) : (
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
         )}
       </div>
 
+      {/* Event Selector */}
+      {events.length > 0 && (sidebarOpen || isMobile) && (
+        <div className="p-3 border-b border-border">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted transition-colors">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Trophy className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="font-medium text-sm truncate">
+                    {selectedEvent?.title || "Select Event"}
+                  </p>
+                </div>
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-56 bg-popover">
+              {events.map((event) => (
+                <DropdownMenuItem
+                  key={event.id}
+                  onClick={() => handleEventChange(event.id)}
+                  className={cn(selectedEventId === event.id && "bg-accent")}
+                >
+                  {event.title}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      )}
+
+      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-2">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => isMobile && setMobileSidebarOpen(false)}
             className={({ isActive }) =>
               cn(
-                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mb-1",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors mb-1",
                 isActive
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                !sidebarOpen && !isMobile && "justify-center"
               )
             }
           >
-            <item.icon className="h-4 w-4" />
-            {item.label}
+            <item.icon className="h-5 w-5 shrink-0" />
+            {(sidebarOpen || isMobile) && <span className="font-medium">{item.label}</span>}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-border">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-2 text-muted-foreground"
+      {/* Theme Toggle & Back to App */}
+      <div className="p-3 border-t border-border space-y-1">
+        <PortalThemeToggle theme={theme} setTheme={setTheme} collapsed={!sidebarOpen && !isMobile} />
+        <button
           onClick={() => navigate("/")}
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground",
+            !sidebarOpen && !isMobile && "justify-center"
+          )}
         >
-          <ArrowLeft className="h-4 w-4" />
-          Back to App
-        </Button>
+          <ChevronLeft className="h-5 w-5" />
+          {(sidebarOpen || isMobile) && <span className="text-sm">Back to App</span>}
+        </button>
       </div>
     </div>
   );
@@ -170,30 +207,42 @@ export default function EventPortalLayout() {
   return (
     <div className="min-h-screen bg-background flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 border-r border-border flex-col bg-card">
+      <aside className={cn(
+        "hidden lg:flex flex-col border-r border-border bg-card transition-all duration-300",
+        sidebarOpen ? "w-64" : "w-20"
+      )}>
         <SidebarContent />
       </aside>
 
+      {/* Mobile Sidebar Overlay */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      )}
+
       {/* Mobile Sidebar */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent side="left" className="p-0 w-64">
-          <SidebarContent />
-        </SheetContent>
-      </Sheet>
+      <motion.aside
+        initial={{ x: "-100%" }}
+        animate={{ x: mobileSidebarOpen ? 0 : "-100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="fixed left-0 top-0 bottom-0 w-72 bg-card z-50 lg:hidden flex flex-col border-r border-border"
+      >
+        <SidebarContent isMobile />
+      </motion.aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Top Bar */}
-        <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4">
+        <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 lg:px-6">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(true)}
+            <button
+              onClick={() => setMobileSidebarOpen(true)}
+              className="p-2 hover:bg-muted rounded-lg transition-colors lg:hidden"
             >
               <Menu className="h-5 w-5" />
-            </Button>
+            </button>
             <h1 className="font-semibold text-lg hidden sm:block">
               {selectedEvent?.title || "Event Portal"}
             </h1>
@@ -220,7 +269,7 @@ export default function EventPortalLayout() {
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="bg-popover">
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
                   Profile
                 </DropdownMenuItem>
