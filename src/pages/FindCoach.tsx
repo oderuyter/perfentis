@@ -549,6 +549,11 @@ export default function FindCoach() {
           </>
         )}
       </AnimatePresence>
+
+      <RegisterCoachDialog
+        open={showRegisterCoachDialog}
+        onOpenChange={setShowRegisterCoachDialog}
+      />
     </div>
   );
 }
