@@ -22,8 +22,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
-import { usePortalThemeStandalone } from "@/hooks/usePortalTheme";
-import { PortalThemeToggle } from "@/components/portal/PortalThemeToggle";
 import { supabase } from "@/integrations/supabase/client";
 
 interface NavItem {
@@ -59,8 +57,6 @@ export default function CoachPortalLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { theme, setTheme } = usePortalThemeStandalone("coach");
-  
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [coach, setCoach] = useState<Coach | null>(null);
@@ -205,9 +201,8 @@ export default function CoachPortalLayout() {
           })}
         </nav>
 
-        {/* Theme Toggle & Back to App */}
-        <div className="p-3 border-t border-border space-y-1">
-          <PortalThemeToggle theme={theme} setTheme={setTheme} collapsed={!sidebarOpen} />
+        {/* Back to App */}
+        <div className="p-3 border-t border-border">
           <button
             onClick={() => navigate("/")}
             className={cn(
@@ -296,8 +291,7 @@ export default function CoachPortalLayout() {
           })}
         </nav>
 
-        <div className="p-3 border-t border-border space-y-1">
-          <PortalThemeToggle theme={theme} setTheme={setTheme} />
+        <div className="p-3 border-t border-border">
           <button
             onClick={() => navigate("/")}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted transition-colors text-muted-foreground"
