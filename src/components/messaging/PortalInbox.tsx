@@ -294,21 +294,28 @@ export function PortalInbox({
                   >
                     <ArrowLeft className="h-5 w-5" />
                   </button>
-                  {selectedConversation && (
-                    <>
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>
-                          {selectedConversation.context_name?.[0]?.toUpperCase() || '?'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium text-sm">{selectedConversation.context_name}</p>
-                        {selectedConversation.subject && (
-                          <p className="text-xs text-muted-foreground">{selectedConversation.subject}</p>
-                        )}
-                      </div>
-                    </>
-                  )}
+                  {selectedConversation && (() => {
+                    const userParticipant = selectedConversation.participants?.find(p => p.role === 'user');
+                    const displayName = userParticipant?.display_name || selectedConversation.context_name || 'Unknown';
+                    const avatarUrl = userParticipant?.avatar_url;
+                    
+                    return (
+                      <>
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={avatarUrl || undefined} />
+                          <AvatarFallback>
+                            {displayName[0]?.toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium text-sm">{displayName}</p>
+                          {selectedConversation.subject && (
+                            <p className="text-xs text-muted-foreground">{selectedConversation.subject}</p>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
                 {selectedConversation && (
                   <div className="flex items-center gap-2">

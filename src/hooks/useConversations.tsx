@@ -271,15 +271,21 @@ export function usePortalConversations(contextType: ConversationContextType, con
         );
         const lastMessage = sortedMessages[0];
 
-        const participants = conv.conversation_participants?.map((p: { user_id: string; role: string }) => ({
-          user_id: p.user_id,
-          role: p.role,
-          display_name: profileMap.get(p.user_id)?.display_name,
-          avatar_url: profileMap.get(p.user_id)?.avatar_url,
-        }));
+        const participants = conv.conversation_participants?.map((p: { user_id: string; role: string }) => {
+          const profile = profileMap.get(p.user_id);
+          // Use display_name, fall back to a shortened user ID
+          const displayName = profile?.display_name || `User ${p.user_id.substring(0, 8)}`;
+          return {
+            user_id: p.user_id,
+            role: p.role,
+            display_name: displayName,
+            avatar_url: profile?.avatar_url,
+          };
+        });
 
-        // Find the user participant (not staff)
-        const userParticipant = participants?.find((p: { role: string }) => p.role === 'user');
+        // Find the user participant (not staff), or any participant if no 'user' role found
+        const userParticipant = participants?.find((p: { role: string }) => p.role === 'user') 
+          || participants?.[0];
 
         return {
           id: conv.id,
@@ -290,7 +296,7 @@ export function usePortalConversations(contextType: ConversationContextType, con
           assigned_user_id: conv.assigned_user_id,
           created_at: conv.created_at,
           updated_at: conv.updated_at,
-          context_name: userParticipant?.display_name || 'Unknown User',
+          context_name: userParticipant?.display_name || conv.subject || 'Conversation',
           last_message: lastMessage?.body_text,
           last_message_at: lastMessage?.created_at,
           participants,

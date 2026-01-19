@@ -49,7 +49,12 @@ export function useMessages(conversationId: string | null) {
         .select("user_id, display_name, avatar_url")
         .in("user_id", Array.from(senderIds));
 
-      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      const profileMap = new Map(profiles?.map(p => [p.user_id, {
+        user_id: p.user_id,
+        // Use display_name, fall back to shortened user ID
+        display_name: p.display_name || `User ${p.user_id.substring(0, 8)}`,
+        avatar_url: p.avatar_url
+      }]) || []);
 
       const transformed: Message[] = (data || []).map(msg => ({
         id: msg.id,
