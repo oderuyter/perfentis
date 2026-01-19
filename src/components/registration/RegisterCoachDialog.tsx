@@ -48,9 +48,9 @@ const SPECIALTY_OPTIONS = [
 ];
 
 const DELIVERY_TYPES = [
-  { value: "in-person", label: "In-Person Only" },
-  { value: "online", label: "Online Only" },
-  { value: "hybrid", label: "Both In-Person & Online" },
+  { value: "in_person", label: "In-Person Only" },
+  { value: "remote", label: "Remote Only" },
+  { value: "hybrid", label: "Both In-Person & Remote" },
 ];
 
 export function RegisterCoachDialog({ open, onOpenChange }: RegisterCoachDialogProps) {

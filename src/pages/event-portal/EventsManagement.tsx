@@ -30,10 +30,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Trash2, Eye, Calendar, MapPin, Users } from "lucide-react";
+import { Plus, Edit, Trash2, Eye, Calendar, MapPin, Users, Check, ChevronsUpDown } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface Event {
   id: string;
@@ -51,6 +65,19 @@ interface Event {
   contact_email: string | null;
   created_at: string;
   registration_count?: number;
+  category_id?: string | null;
+  gym_id?: string | null;
+}
+
+interface Gym {
+  id: string;
+  name: string;
+  address: string | null;
+}
+
+interface EventCategory {
+  id: string;
+  name: string;
 }
 
 interface ContextType {
@@ -68,6 +95,8 @@ const emptyEvent: Partial<Event> = {
   is_public: true,
   rules: "",
   contact_email: "",
+  category_id: "",
+  gym_id: "",
 };
 
 export default function EventsManagement() {
@@ -79,10 +108,45 @@ export default function EventsManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Partial<Event> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [gyms, setGyms] = useState<Gym[]>([]);
+  const [categories, setCategories] = useState<EventCategory[]>([]);
+  const [gymSearchOpen, setGymSearchOpen] = useState(false);
 
   useEffect(() => {
     fetchEvents();
+    fetchGyms();
+    fetchCategories();
   }, [user]);
+
+  const fetchGyms = async () => {
+    const { data } = await supabase
+      .from("gyms")
+      .select("id, name, address")
+      .eq("status", "active")
+      .order("name");
+    setGyms(data || []);
+  };
+
+  const fetchCategories = async () => {
+    const { data } = await supabase
+      .from("event_categories")
+      .select("id, name")
+      .eq("is_active", true)
+      .order("display_order");
+    setCategories(data || []);
+  };
+
+  const handleGymSelect = (gymId: string) => {
+    const selectedGym = gyms.find(g => g.id === gymId);
+    if (selectedGym) {
+      setEditingEvent(prev => ({
+        ...prev,
+        gym_id: gymId,
+        location: selectedGym.address || selectedGym.name,
+      }));
+    }
+    setGymSearchOpen(false);
+  };
 
   const fetchEvents = async () => {
     if (!user) return;
@@ -136,6 +200,8 @@ export default function EventsManagement() {
             is_public: editingEvent.is_public,
             rules: editingEvent.rules,
             contact_email: editingEvent.contact_email,
+            category_id: editingEvent.category_id || null,
+            gym_id: editingEvent.gym_id || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingEvent.id);
@@ -155,6 +221,8 @@ export default function EventsManagement() {
           is_public: editingEvent.is_public,
           rules: editingEvent.rules,
           contact_email: editingEvent.contact_email,
+          category_id: editingEvent.category_id || null,
+          gym_id: editingEvent.gym_id || null,
           organiser_id: user.id,
           status: "draft",
         });
@@ -264,6 +332,27 @@ export default function EventsManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label>Category</Label>
+                  <Select
+                    value={editingEvent?.category_id || ""}
+                    onValueChange={(v) =>
+                      setEditingEvent((prev) => ({ ...prev, category_id: v }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label>Event Type</Label>
                   <Select
                     value={editingEvent?.event_type || "single_day"}
@@ -280,36 +369,87 @@ export default function EventsManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Event Mode</Label>
-                  <Select
-                    value={editingEvent?.event_mode || "in_person"}
-                    onValueChange={(v) =>
-                      setEditingEvent((prev) => ({ ...prev, event_mode: v }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="in_person">In Person</SelectItem>
-                      <SelectItem value="online">Online</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label>Event Mode</Label>
+                <Select
+                  value={editingEvent?.event_mode || "in_person"}
+                  onValueChange={(v) =>
+                    setEditingEvent((prev) => ({ ...prev, event_mode: v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in_person">In Person</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Venue / Location</Label>
+                <Popover open={gymSearchOpen} onOpenChange={setGymSearchOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={gymSearchOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {editingEvent?.gym_id ? (
+                        <span className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          {gyms.find(g => g.id === editingEvent?.gym_id)?.name}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">Search gyms...</span>
+                      )}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search gyms..." />
+                      <CommandList>
+                        <CommandEmpty>No gyms found.</CommandEmpty>
+                        <CommandGroup>
+                          {gyms.map((gym) => (
+                            <CommandItem
+                              key={gym.id}
+                              value={gym.name}
+                              onSelect={() => handleGymSelect(gym.id)}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  editingEvent?.gym_id === gym.id ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div>
+                                <p className="font-medium">{gym.name}</p>
+                                {gym.address && (
+                                  <p className="text-xs text-muted-foreground">{gym.address}</p>
+                                )}
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <Input
                   id="location"
                   value={editingEvent?.location || ""}
                   onChange={(e) =>
-                    setEditingEvent((prev) => ({ ...prev, location: e.target.value }))
+                    setEditingEvent((prev) => ({ ...prev, location: e.target.value, gym_id: "" }))
                   }
-                  placeholder="CrossFit Box, 123 Main St, City"
+                  placeholder="Or enter address manually"
+                  className="mt-2"
                 />
               </div>
 
