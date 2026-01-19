@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Calendar, MapPin, Filter, List, CalendarDays, ChevronRight } from "lucide-react";
+import { Search, Calendar, MapPin, Filter, List, CalendarDays, ChevronRight, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { EventCalendarView } from "@/components/events/EventCalendarView";
 import { EventDetailSheet } from "@/components/events/EventDetailSheet";
 import { MyEventsSection } from "@/components/events/MyEventsSection";
+import { RegisterEventDialog } from "@/components/registration/RegisterEventDialog";
 import { cn } from "@/lib/utils";
 
 interface Event {
@@ -38,6 +39,7 @@ export default function Events() {
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "my">("list");
   const [filterMode, setFilterMode] = useState<"all" | "in-person" | "online" | "hybrid">("all");
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [showRegisterEventDialog, setShowRegisterEventDialog] = useState(false);
 
   useEffect(() => {
     fetchEvents();
@@ -82,7 +84,7 @@ export default function Events() {
   return (
     <div className="min-h-screen gradient-page pt-safe px-4 pb-24">
       {/* Header */}
-      <header className="pt-6 pb-6">
+      <header className="pt-6 pb-4">
         <motion.h1
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -98,6 +100,15 @@ export default function Events() {
         >
           Competitions & challenges
         </motion.p>
+        <Button 
+          onClick={() => setShowRegisterEventDialog(true)} 
+          variant="outline" 
+          size="sm"
+          className="mt-3 gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Register an Event
+        </Button>
       </header>
 
       {/* View Toggle */}
@@ -269,6 +280,11 @@ export default function Events() {
         onRegistrationChange={refetchRegistrations}
       />
 
+      {/* Register Event Dialog */}
+      <RegisterEventDialog
+        open={showRegisterEventDialog}
+        onOpenChange={setShowRegisterEventDialog}
+      />
     </div>
   );
 }
