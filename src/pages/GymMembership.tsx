@@ -72,7 +72,7 @@ export default function GymMembership() {
   const { user } = useAuth();
   const { memberships, isLoading: membershipsLoading, refetch: refetchMemberships } = useUserMemberships();
   
-  const [showQR, setShowQR] = useState<{ token: string; number: string | null } | null>(null);
+  const [showQR, setShowQR] = useState<{ memberId: string } | null>(null);
   
   // Gym directory state
   const [gymDirectory, setGymDirectory] = useState<GymDirectory[]>([]);
@@ -276,8 +276,7 @@ export default function GymMembership() {
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowQR({ 
-                          token: membership.membership_token, 
-                          number: membership.membership_number 
+                          memberId: membership.membership_number || membership.id
                         });
                       }}
                       className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-primary text-primary-foreground font-medium"
@@ -568,18 +567,16 @@ export default function GymMembership() {
                 
                 <div className="flex flex-col items-center">
                   <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
-                    {/* Use membership_number for scanning - it's what the scanner looks up */}
+                    {/* Use membership_number (Member ID) for scanning */}
                     <QRCodeSVG 
-                      value={showQR.number || showQR.token} 
+                      value={showQR.memberId} 
                       size={200}
                       level="M"
                       includeMargin={false}
                     />
                   </div>
                   
-                  {showQR.number && (
-                    <p className="font-mono text-xl font-bold">{showQR.number}</p>
-                  )}
+                  <p className="font-mono text-xl font-bold">{showQR.memberId}</p>
                 </div>
                 
                 {/* Pull indicator */}

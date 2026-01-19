@@ -154,7 +154,8 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
 
   const renderQRView = (pass: GymPass | EventPass) => {
     const isGym = isGymPass(pass);
-    const token = isGym ? pass.qrToken : pass.passToken;
+    // For gym passes, use membership number; for event passes, use secure token
+    const qrValue = isGym ? pass.membershipNumber : pass.passToken;
 
     return (
       <div className="flex flex-col items-center">
@@ -184,15 +185,22 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
           </p>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-lg mb-6">
+        <div className="bg-white p-6 rounded-2xl shadow-lg mb-4">
           <QRCodeSVG
-            value={token}
+            value={qrValue}
             size={200}
             level="H"
             includeMargin
             className="rounded-lg"
           />
         </div>
+
+        {/* Display the member ID below QR for gym passes */}
+        {isGym && (
+          <p className="font-mono text-sm font-medium text-foreground mb-4">
+            {pass.membershipNumber}
+          </p>
+        )}
 
         <p className="text-xs text-muted-foreground text-center max-w-xs">
           Show this QR code at check-in. Do not share this code with others.
