@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { usePortalThemeStandalone } from "@/hooks/usePortalTheme";
-import { PortalThemeToggle } from "@/components/portal/PortalThemeToggle";
 import {
   LayoutDashboard,
   Calendar,
@@ -69,7 +67,7 @@ export default function EventPortalLayout() {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
-  const { theme, setTheme } = usePortalThemeStandalone("event");
+  
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -187,9 +185,8 @@ export default function EventPortalLayout() {
         ))}
       </nav>
 
-      {/* Theme Toggle & Back to App */}
-      <div className="p-3 border-t border-border space-y-1">
-        <PortalThemeToggle theme={theme} setTheme={setTheme} collapsed={!sidebarOpen && !isMobile} />
+      {/* Back to App */}
+      <div className="p-3 border-t border-border">
         <button
           onClick={() => navigate("/")}
           className={cn(

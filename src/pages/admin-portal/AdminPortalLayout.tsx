@@ -5,8 +5,6 @@ import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { usePortalThemeStandalone } from "@/hooks/usePortalTheme";
-import { PortalThemeToggle } from "@/components/portal/PortalThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
@@ -74,7 +72,7 @@ export default function AdminPortalLayout() {
   const { isAdmin, isLoading: rolesLoading } = useRoles();
   const { user, signOut } = useAuth();
   const { profile } = useProfile();
-  const { theme, setTheme } = usePortalThemeStandalone("admin");
+  
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -179,9 +177,8 @@ export default function AdminPortalLayout() {
           ))}
         </nav>
 
-        {/* Theme Toggle & Back to App */}
-        <div className="p-2 border-t border-border space-y-1">
-          <PortalThemeToggle theme={theme} setTheme={setTheme} collapsed={!sidebarOpen} />
+        {/* Back to App */}
+        <div className="p-2 border-t border-border">
           <button
             onClick={() => navigate("/")}
             className={cn(
@@ -261,8 +258,7 @@ export default function AdminPortalLayout() {
                   </button>
                 ))}
               </nav>
-              <div className="p-2 border-t border-border space-y-1">
-                <PortalThemeToggle theme={theme} setTheme={setTheme} />
+              <div className="p-2 border-t border-border">
                 <button
                   onClick={() => navigate("/")}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
