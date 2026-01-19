@@ -84,12 +84,13 @@ export default function EventLeaderboards() {
       setWorkouts(workoutsRes.data || []);
       setDivisions(divisionsRes.data || []);
 
-      // Fetch all scores and registrations
+      // Fetch all scores and registrations (only active_for_event)
       let regsQuery = supabase
         .from("event_registrations")
-        .select("id, user_id, division_id")
+        .select("id, user_id, division_id, active_for_event")
         .eq("event_id", selectedEventId)
-        .in("status", ["confirmed", "checked_in"]);
+        .in("status", ["confirmed", "checked_in"])
+        .eq("active_for_event", true);
 
       if (selectedDivision !== "all") {
         regsQuery = regsQuery.eq("division_id", selectedDivision);

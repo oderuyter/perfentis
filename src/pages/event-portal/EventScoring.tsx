@@ -69,6 +69,7 @@ interface Registration {
   id: string;
   user_id: string;
   division_id: string | null;
+  active_for_event: boolean;
   profile?: { display_name: string | null };
 }
 
@@ -121,9 +122,10 @@ export default function EventScoring() {
           .eq("event_id", selectedEventId),
         supabase
           .from("event_registrations")
-          .select("id, user_id, division_id")
+          .select("id, user_id, division_id, active_for_event")
           .eq("event_id", selectedEventId)
-          .eq("status", "confirmed"),
+          .eq("status", "confirmed")
+          .eq("active_for_event", true),
       ]);
 
       setWorkouts(workoutsRes.data || []);

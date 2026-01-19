@@ -67,6 +67,8 @@ import EventClassesWorkouts from "./pages/event-portal/EventClassesWorkouts";
 import EventSchedule from "./pages/event-portal/EventSchedule";
 import EventScoring from "./pages/event-portal/EventScoring";
 import EventLeaderboards from "./pages/event-portal/EventLeaderboards";
+import EventCheckin from "./pages/event-portal/EventCheckin";
+import EventCheckinStation from "./pages/event-portal/EventCheckinStation";
 import EventStaff from "./pages/event-portal/EventStaff";
 import EventCommunications from "./pages/event-portal/EventCommunications";
 import EventBranding from "./pages/event-portal/EventBranding";
@@ -198,6 +200,8 @@ function AppRoutes() {
         <Route path="schedule" element={<EventSchedule />} />
         <Route path="scoring" element={<EventScoring />} />
         <Route path="leaderboards" element={<EventLeaderboards />} />
+        <Route path="checkin" element={<EventCheckin />} />
+        <Route path="checkin-station" element={<EventCheckinStation />} />
         <Route path="staff" element={<EventStaff />} />
         <Route path="communications" element={<EventCommunications />} />
         <Route path="branding" element={<EventBranding />} />
