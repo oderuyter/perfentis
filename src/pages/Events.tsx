@@ -100,16 +100,17 @@ export default function Events() {
         >
           Competitions & challenges
         </motion.p>
-        <Button 
-          onClick={() => setShowRegisterEventDialog(true)} 
-          variant="outline" 
-          size="sm"
-          className="mt-3 gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Register an Event
-        </Button>
       </header>
+
+      {/* Register Button */}
+      <Button 
+        onClick={() => setShowRegisterEventDialog(true)}
+        className="w-full gap-2 mb-4"
+        variant="outline"
+      >
+        <Plus className="h-4 w-4" />
+        Register an Event
+      </Button>
 
       {/* View Toggle */}
       <motion.div

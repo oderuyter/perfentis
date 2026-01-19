@@ -212,15 +212,6 @@ export default function FindCoach() {
         >
           Connect with expert coaches
         </motion.p>
-        <Button 
-          onClick={() => setShowRegisterCoachDialog(true)} 
-          variant="outline" 
-          size="sm"
-          className="mt-3 gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Register as a Coach
-        </Button>
       </header>
 
       {/* View Toggle */}
@@ -259,6 +250,16 @@ export default function FindCoach() {
       {/* Directory View */}
       {activeView === "directory" && (
         <>
+          {/* Register Button */}
+          <Button 
+            onClick={() => setShowRegisterCoachDialog(true)}
+            className="w-full gap-2 mt-4"
+            variant="outline"
+          >
+            <Plus className="h-4 w-4" />
+            Register as a Coach
+          </Button>
+
           {/* Search */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
