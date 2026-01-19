@@ -79,7 +79,8 @@ export default function CoachPortalLayout() {
       .from("coaches")
       .select("id, display_name, avatar_url")
       .eq("user_id", user.id)
-      .single();
+      .order("created_at", { ascending: false })
+      .limit(1);
 
     if (error) {
       console.error("Error fetching coach:", error);
@@ -87,7 +88,9 @@ export default function CoachPortalLayout() {
       return;
     }
 
-    setCoach(data);
+    if (data && data.length > 0) {
+      setCoach(data[0]);
+    }
     setLoading(false);
   };
 
