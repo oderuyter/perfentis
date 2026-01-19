@@ -84,7 +84,23 @@ export function useQRWallet() {
       // Fetch event passes within the visibility window (14 days before to 2 days after)
       const now = new Date();
 
-      const { data: passes, error: passError } = await supabase
+      // First, get user's registrations to find their passes
+      const { data: userRegistrations } = await supabase
+        .from("event_registrations")
+        .select("id")
+        .eq("user_id", user.id);
+
+      // Also check team memberships
+      const { data: userTeamMemberships } = await supabase
+        .from("event_team_members")
+        .select("id")
+        .eq("user_id", user.id);
+
+      const registrationIds = userRegistrations?.map((r) => r.id) || [];
+      const teamMemberIds = userTeamMemberships?.map((t) => t.id) || [];
+
+      // Build query for passes
+      let passQuery = supabase
         .from("event_registration_passes")
         .select(`
           id,
@@ -104,6 +120,24 @@ export function useQRWallet() {
           )
         `)
         .eq("status", "active");
+
+      // Filter by user's registrations or team memberships
+      if (registrationIds.length > 0 && teamMemberIds.length > 0) {
+        passQuery = passQuery.or(
+          `registration_id.in.(${registrationIds.join(",")}),team_member_id.in.(${teamMemberIds.join(",")})`
+        );
+      } else if (registrationIds.length > 0) {
+        passQuery = passQuery.in("registration_id", registrationIds);
+      } else if (teamMemberIds.length > 0) {
+        passQuery = passQuery.in("team_member_id", teamMemberIds);
+      } else {
+        // No registrations or team memberships, skip the query
+        setEventPasses([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: passes, error: passError } = await passQuery;
 
       if (passError) {
         console.error("Error fetching event passes:", passError);
