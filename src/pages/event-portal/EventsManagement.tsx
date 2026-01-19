@@ -60,6 +60,7 @@ interface Event {
   end_date: string | null;
   status: string;
   is_public: boolean;
+  enable_checkin: boolean;
   hero_image_url: string | null;
   rules: string | null;
   contact_email: string | null;
@@ -93,6 +94,7 @@ const emptyEvent: Partial<Event> = {
   start_date: "",
   end_date: "",
   is_public: true,
+  enable_checkin: false,
   rules: "",
   contact_email: "",
   category_id: "",
@@ -198,6 +200,7 @@ export default function EventsManagement() {
             start_date: editingEvent.start_date || null,
             end_date: editingEvent.end_date || null,
             is_public: editingEvent.is_public,
+            enable_checkin: editingEvent.enable_checkin ?? false,
             rules: editingEvent.rules,
             contact_email: editingEvent.contact_email,
             category_id: editingEvent.category_id || null,
@@ -219,6 +222,7 @@ export default function EventsManagement() {
           start_date: editingEvent.start_date || null,
           end_date: editingEvent.end_date || null,
           is_public: editingEvent.is_public,
+          enable_checkin: editingEvent.enable_checkin ?? false,
           rules: editingEvent.rules,
           contact_email: editingEvent.contact_email,
           category_id: editingEvent.category_id || null,
@@ -515,6 +519,21 @@ export default function EventsManagement() {
                   checked={editingEvent?.is_public ?? true}
                   onCheckedChange={(v) =>
                     setEditingEvent((prev) => ({ ...prev, is_public: v }))
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Enable QR Check-In</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Generate QR passes for registered competitors
+                  </p>
+                </div>
+                <Switch
+                  checked={editingEvent?.enable_checkin ?? false}
+                  onCheckedChange={(v) =>
+                    setEditingEvent((prev) => ({ ...prev, enable_checkin: v }))
                   }
                 />
               </div>
