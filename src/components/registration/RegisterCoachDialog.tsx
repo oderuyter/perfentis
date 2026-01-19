@@ -7,13 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Select,
   SelectContent,
@@ -162,17 +162,20 @@ export function RegisterCoachDialog({ open, onOpenChange }: RegisterCoachDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="bottom"
+        className="max-h-[90vh] overflow-y-auto pb-[calc(env(safe-area-inset-bottom)+1.5rem)]"
+      >
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5" />
             Register as a Coach
-          </DialogTitle>
-          <DialogDescription>
+          </SheetTitle>
+          <SheetDescription>
             Apply to become a listed coach on our platform. Your application will be reviewed by our team.
-          </DialogDescription>
-        </DialogHeader>
+          </SheetDescription>
+        </SheetHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -310,7 +313,7 @@ export function RegisterCoachDialog({ open, onOpenChange }: RegisterCoachDialogP
             />
           </div>
 
-          <DialogFooter>
+          <SheetFooter className="pb-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
@@ -318,9 +321,9 @@ export function RegisterCoachDialog({ open, onOpenChange }: RegisterCoachDialogP
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Submit Application
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }

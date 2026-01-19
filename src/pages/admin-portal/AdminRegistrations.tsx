@@ -38,6 +38,7 @@ import {
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { logAuditEvent } from "@/hooks/useAuditLog";
+import { createNotification } from "@/lib/notifications";
 
 interface RegistrationRequest {
   id: string;
@@ -232,6 +233,17 @@ export default function AdminRegistrations() {
           scope_type: "event",
           scope_id: eventData.id,
           is_active: true,
+        });
+
+        // Notify submitter to complete setup
+        await createNotification({
+          userId: request.user_id,
+          title: "Event approved",
+          body: `Your event "${request.name}" has been approved. Please review and complete the details before publishing.`,
+          type: "event",
+          entityType: "event",
+          entityId: eventData.id,
+          actionUrl: "/event-portal/events",
         });
       }
 
