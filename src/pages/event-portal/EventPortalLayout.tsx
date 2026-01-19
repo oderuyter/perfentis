@@ -22,6 +22,8 @@ import {
   X,
   Inbox,
   UserPlus,
+  ScanLine,
+  QrCode,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,8 @@ const navItems = [
   { to: "events", icon: Calendar, label: "Events" },
   { to: "divisions", icon: Users, label: "Categories / Divisions" },
   { to: "registrations", icon: UserCheck, label: "Registration & Teams" },
+  { to: "checkin", icon: QrCode, label: "Check-In" },
+  { to: "checkin-station", icon: ScanLine, label: "Check-In Station" },
   { to: "workouts", icon: Dumbbell, label: "Workouts" },
   { to: "classes", icon: Calendar, label: "Classes & Schedule" },
   { to: "schedule", icon: Clock, label: "Heats" },
