@@ -1621,6 +1621,76 @@ export type Database = {
         }
         Relationships: []
       }
+      event_checkins: {
+        Row: {
+          checked_in_at: string
+          checked_in_by_user_id: string
+          created_at: string
+          device_id: string | null
+          event_id: string
+          id: string
+          method: string
+          operation_id: string
+          registration_id: string | null
+          source: string
+          team_member_id: string | null
+          undone_at: string | null
+          undone_by_user_id: string | null
+        }
+        Insert: {
+          checked_in_at?: string
+          checked_in_by_user_id: string
+          created_at?: string
+          device_id?: string | null
+          event_id: string
+          id?: string
+          method: string
+          operation_id: string
+          registration_id?: string | null
+          source: string
+          team_member_id?: string | null
+          undone_at?: string | null
+          undone_by_user_id?: string | null
+        }
+        Update: {
+          checked_in_at?: string
+          checked_in_by_user_id?: string
+          created_at?: string
+          device_id?: string | null
+          event_id?: string
+          id?: string
+          method?: string
+          operation_id?: string
+          registration_id?: string | null
+          source?: string
+          team_member_id?: string | null
+          undone_at?: string | null
+          undone_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_checkins_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_checkins_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_checkins_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "event_team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_class_categories: {
         Row: {
           created_at: string
@@ -2052,8 +2122,64 @@ export type Database = {
           },
         ]
       }
+      event_registration_passes: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          pass_token: string
+          registration_id: string | null
+          revoked_at: string | null
+          status: string
+          team_member_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          pass_token: string
+          registration_id?: string | null
+          revoked_at?: string | null
+          status?: string
+          team_member_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          pass_token?: string
+          registration_id?: string | null
+          revoked_at?: string | null
+          status?: string
+          team_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_registration_passes_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_passes_registration_id_fkey"
+            columns: ["registration_id"]
+            isOneToOne: false
+            referencedRelation: "event_registrations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registration_passes_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "event_team_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
+          active_for_event: boolean | null
           amount_paid: number | null
           checked_in_at: string | null
           created_at: string
@@ -2072,6 +2198,7 @@ export type Database = {
           waiver_accepted: boolean | null
         }
         Insert: {
+          active_for_event?: boolean | null
           amount_paid?: number | null
           checked_in_at?: string | null
           created_at?: string
@@ -2090,6 +2217,7 @@ export type Database = {
           waiver_accepted?: boolean | null
         }
         Update: {
+          active_for_event?: boolean | null
           amount_paid?: number | null
           checked_in_at?: string | null
           created_at?: string
@@ -2615,6 +2743,7 @@ export type Database = {
           contact_email: string | null
           created_at: string
           description: string | null
+          enable_checkin: boolean | null
           end_date: string | null
           event_date: string | null
           event_mode: string | null
@@ -2637,6 +2766,7 @@ export type Database = {
           contact_email?: string | null
           created_at?: string
           description?: string | null
+          enable_checkin?: boolean | null
           end_date?: string | null
           event_date?: string | null
           event_mode?: string | null
@@ -2659,6 +2789,7 @@ export type Database = {
           contact_email?: string | null
           created_at?: string
           description?: string | null
+          enable_checkin?: boolean | null
           end_date?: string | null
           event_date?: string | null
           event_mode?: string | null
@@ -5246,6 +5377,14 @@ export type Database = {
         }
         Returns: string
       }
+      create_event_pass: {
+        Args: {
+          p_event_id: string
+          p_registration_id?: string
+          p_team_member_id?: string
+        }
+        Returns: string
+      }
       create_notification: {
         Args: {
           _action_url?: string
@@ -5259,6 +5398,7 @@ export type Database = {
         Returns: string
       }
       generate_membership_number: { Args: { _gym_id: string }; Returns: string }
+      generate_pass_token: { Args: never; Returns: string }
       get_coach_id: { Args: { _user_id: string }; Returns: string }
       has_capability: {
         Args: { _capability_name: string; _scope_id?: string; _user_id: string }

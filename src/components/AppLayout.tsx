@@ -5,9 +5,11 @@ import { WorkoutBiscuit } from "./workout/WorkoutBiscuit";
 import { GlobalDrawer, HamburgerButton } from "./GlobalDrawer";
 import { useProfile } from "@/hooks/useProfile";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useQRWallet } from "@/hooks/useQRWallet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Dumbbell, Bell } from "lucide-react";
+import { User, Dumbbell, Bell, QrCode } from "lucide-react";
 import { NotificationCenter } from "@/components/profile/NotificationCenter";
+import { QRWalletSheet } from "@/components/wallet/QRWalletSheet";
 
 interface AppLayoutProps {
   hideNav?: boolean;
@@ -16,8 +18,10 @@ interface AppLayoutProps {
 export function AppLayout({ hideNav = false }: AppLayoutProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [qrWalletOpen, setQrWalletOpen] = useState(false);
   const { profile } = useProfile();
   const { unreadCount } = useNotifications();
+  const { totalPasses } = useQRWallet();
   const navigate = useNavigate();
 
   const handleProfileClick = () => {
@@ -42,8 +46,19 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
               <Dumbbell className="h-6 w-6 text-white" />
             </button>
             
-            {/* Right: Notification Bell + Profile Avatar */}
+            {/* Right: QR Wallet + Notification Bell + Profile Avatar */}
             <div className="flex items-center gap-2">
+              {/* QR Wallet Button - Only show if user has passes */}
+              {totalPasses > 0 && (
+                <button
+                  onClick={() => setQrWalletOpen(true)}
+                  className="relative p-2 rounded-full hover:bg-white/10 transition-colors"
+                  aria-label="QR Wallet"
+                >
+                  <QrCode className="h-5 w-5 text-white" />
+                </button>
+              )}
+
               {/* Notification Bell */}
               <button
                 onClick={() => {
@@ -97,6 +112,12 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
       <NotificationCenter 
         isOpen={notificationsOpen} 
         onClose={() => setNotificationsOpen(false)} 
+      />
+
+      {/* QR Wallet Sheet */}
+      <QRWalletSheet
+        isOpen={qrWalletOpen}
+        onClose={() => setQrWalletOpen(false)}
       />
     </div>
   );
