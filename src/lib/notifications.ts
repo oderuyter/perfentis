@@ -86,15 +86,83 @@ export async function notifyCoachMessage(userId: string, coachName: string, requ
   });
 }
 
-export async function notifyPlanAssigned(userId: string, planName: string, planId?: string) {
+export async function notifyPlanAssigned(userId: string, planName: string, coachName: string, assignmentId?: string) {
   return createNotification({
     userId,
     title: "Training Plan Assigned",
-    body: `Your coach assigned "${planName}" to you`,
+    body: `${coachName} assigned "${planName}" to you`,
     type: "coach",
-    entityType: "training_plan",
-    entityId: planId,
+    entityType: "client_plan_assignment",
+    entityId: assignmentId,
     actionUrl: "/train",
+  });
+}
+
+export async function notifyNewWeekUnlocked(userId: string, planName: string, weekNumber: number, assignmentId?: string) {
+  return createNotification({
+    userId,
+    title: "New Week Unlocked",
+    body: `Week ${weekNumber} of "${planName}" is ready`,
+    type: "coach",
+    entityType: "client_plan_assignment",
+    entityId: assignmentId,
+    actionUrl: "/train",
+  });
+}
+
+export async function notifyWorkoutScheduledToday(userId: string, workoutName: string, planName: string) {
+  return createNotification({
+    userId,
+    title: "Today's Workout Ready",
+    body: `"${workoutName}" from ${planName} is scheduled for today`,
+    type: "coach",
+    entityType: "plan_workout",
+    actionUrl: "/train",
+  });
+}
+
+export async function notifyMissedWorkout(userId: string, workoutName: string, planName: string) {
+  return createNotification({
+    userId,
+    title: "Missed Workout",
+    body: `You missed "${workoutName}" from ${planName}. Jump back in when you can!`,
+    type: "coach",
+    entityType: "plan_workout",
+    actionUrl: "/train",
+  });
+}
+
+export async function notifyPlanUpdatedByCoach(userId: string, planName: string, coachName: string, assignmentId?: string) {
+  return createNotification({
+    userId,
+    title: "Plan Updated",
+    body: `${coachName} made changes to "${planName}"`,
+    type: "coach",
+    entityType: "client_plan_assignment",
+    entityId: assignmentId,
+    actionUrl: "/train",
+  });
+}
+
+export async function notifyStreakMilestone(userId: string, streakDays: number) {
+  return createNotification({
+    userId,
+    title: "Streak Milestone! 🔥",
+    body: `${streakDays} day workout streak! Keep it going!`,
+    type: "workout",
+    actionUrl: "/progress",
+  });
+}
+
+export async function notifyCoachFeedback(userId: string, coachName: string, workoutName: string, sessionId?: string) {
+  return createNotification({
+    userId,
+    title: "Coach Feedback",
+    body: `${coachName} left feedback on your "${workoutName}" workout`,
+    type: "coach",
+    entityType: "workout_session",
+    entityId: sessionId,
+    actionUrl: sessionId ? `/progress?session=${sessionId}` : "/progress",
   });
 }
 
@@ -103,6 +171,18 @@ export async function notifyCheckinDue(userId: string, coachName: string, checki
     userId,
     title: "Check-in Due",
     body: `${coachName} is waiting for your check-in`,
+    type: "coach",
+    entityType: "client_checkin",
+    entityId: checkinId,
+    actionUrl: "/train",
+  });
+}
+
+export async function notifyCheckinOverdue(userId: string, coachName: string, daysPast: number, checkinId?: string) {
+  return createNotification({
+    userId,
+    title: "Check-in Overdue",
+    body: `Your check-in for ${coachName} is ${daysPast} day${daysPast > 1 ? 's' : ''} overdue`,
     type: "coach",
     entityType: "client_checkin",
     entityId: checkinId,
