@@ -2,23 +2,76 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Minus, Plus, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ExerciseSet } from '@/types/workout';
+import type { ExerciseSet, ExerciseSetType } from '@/types/workout';
+import { CardioSetEditor } from './CardioSetEditor';
+import { useProfile } from '@/hooks/useProfile';
 
 interface SetEditorProps {
   sets: ExerciseSet[];
   currentSetIndex: number;
   onUpdateSet: (setIndex: number, updates: Partial<ExerciseSet>) => void;
   onSelectSet: (setIndex: number) => void;
+  exerciseType?: ExerciseSetType;
 }
 
-export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: SetEditorProps) {
-  // Current set is always in edit mode
-  const [editingSet, setEditingSet] = useState<number | null>(null);
+export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet, exerciseType = 'strength' }: SetEditorProps) {
+  // If cardio, use the CardioSetEditor
+  if (exerciseType === 'cardio') {
+    return (
+      <CardioSetEditor
+        sets={sets}
+        currentSetIndex={currentSetIndex}
+        onUpdateSet={onUpdateSet}
+        onSelectSet={onSelectSet}
+      />
+    );
+  }
 
-  // Auto-open edit mode for current set when it changes
+  // Strength set editor
+  return (
+    <StrengthSetEditor
+      sets={sets}
+      currentSetIndex={currentSetIndex}
+      onUpdateSet={onUpdateSet}
+      onSelectSet={onSelectSet}
+    />
+  );
+}
+
+interface StrengthSetEditorProps {
+  sets: ExerciseSet[];
+  currentSetIndex: number;
+  onUpdateSet: (setIndex: number, updates: Partial<ExerciseSet>) => void;
+  onSelectSet: (setIndex: number) => void;
+}
+
+function StrengthSetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: StrengthSetEditorProps) {
+  const [editingSet, setEditingSet] = useState<number | null>(null);
+  const { profile } = useProfile();
+  const units = (profile?.units as 'metric' | 'imperial') || 'metric';
+  const weightUnit = units === 'metric' ? 'kg' : 'lbs';
+  const weightStep = units === 'metric' ? 2.5 : 5;
+
   useEffect(() => {
     setEditingSet(null);
   }, [currentSetIndex]);
+
+  // Convert weight for display (stored in kg)
+  const displayWeight = (weightKg: number | null) => {
+    if (weightKg === null) return null;
+    if (units === 'imperial') {
+      return Math.round(weightKg * 2.205 * 10) / 10; // kg to lbs
+    }
+    return weightKg;
+  };
+
+  // Convert weight back to kg for storage
+  const toKg = (weight: number) => {
+    if (units === 'imperial') {
+      return Math.round(weight / 2.205 * 10) / 10; // lbs to kg
+    }
+    return weight;
+  };
 
   return (
     <div className="space-y-2">
@@ -36,13 +89,9 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
             transition={{ delay: index * 0.05 }}
             className={cn(
               "rounded-xl p-3 border transition-all",
-              // Completed sets
               isCompleted && "bg-accent-subtle/50 border-accent/30",
-              // Current/active set - highlighted with gradient
               isCurrent && !isCompleted && "gradient-card-accent border-accent shadow-md ring-2 ring-accent/20",
-              // Remaining sets
               isRemaining && "bg-muted/30 border-border/30 opacity-60",
-              // Clickable non-current sets
               !isCurrent && "cursor-pointer active:scale-[0.98]"
             )}
             onClick={() => {
@@ -54,7 +103,6 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
             {/* Set Header Row */}
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
-                {/* Set number indicator */}
                 <div className={cn(
                   "h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors flex-shrink-0",
                   isCompleted && "bg-accent text-accent-foreground",
@@ -64,7 +112,6 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
                   {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
                 </div>
                 
-                {/* Display values for non-editing states */}
                 {!isCurrent && !isEditing && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className={cn(
@@ -72,7 +119,7 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
                       isCompleted && "text-foreground",
                       isRemaining && "text-muted-foreground"
                     )}>
-                      {set.completedWeight ?? set.targetWeight ?? '—'} kg
+                      {displayWeight(set.completedWeight ?? set.targetWeight) ?? '—'} {weightUnit}
                     </span>
                     <span className="text-muted-foreground">×</span>
                     <span className={cn(
@@ -91,7 +138,6 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
                 )}
               </div>
 
-              {/* Edit button for completed sets */}
               {!isCurrent && isCompleted && !isEditing && (
                 <button
                   onClick={(e) => {
@@ -105,23 +151,26 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
               )}
             </div>
 
-            {/* Editing Interface - Full width below header */}
             {(isCurrent && !isCompleted) && (
               <ActiveSetEditor
-                weight={set.completedWeight ?? set.targetWeight ?? 0}
+                weight={displayWeight(set.completedWeight ?? set.targetWeight) ?? 0}
                 reps={set.completedReps ?? parseInt(set.targetReps.match(/\d+/)?.[0] || '0')}
+                weightUnit={weightUnit}
+                weightStep={weightStep}
                 onUpdate={(weight, reps) => {
-                  onUpdateSet(index, { completedWeight: weight, completedReps: reps });
+                  onUpdateSet(index, { completedWeight: toKg(weight), completedReps: reps });
                 }}
               />
             )}
 
             {isEditing && (
               <InlineEditor
-                weight={set.completedWeight ?? set.targetWeight ?? 0}
+                weight={displayWeight(set.completedWeight ?? set.targetWeight) ?? 0}
                 reps={set.completedReps ?? parseInt(set.targetReps.match(/\d+/)?.[0] || '0')}
+                weightUnit={weightUnit}
+                weightStep={weightStep}
                 onUpdate={(weight, reps) => {
-                  onUpdateSet(index, { completedWeight: weight, completedReps: reps });
+                  onUpdateSet(index, { completedWeight: toKg(weight), completedReps: reps });
                   setEditingSet(null);
                 }}
                 onCancel={() => setEditingSet(null)}
@@ -137,15 +186,16 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
 interface ActiveSetEditorProps {
   weight: number;
   reps: number;
+  weightUnit: string;
+  weightStep: number;
   onUpdate: (weight: number, reps: number) => void;
 }
 
 // Always-visible editor for the current active set - mobile-optimized stacked layout
-function ActiveSetEditor({ weight, reps, onUpdate }: ActiveSetEditorProps) {
+function ActiveSetEditor({ weight, reps, weightUnit, weightStep, onUpdate }: ActiveSetEditorProps) {
   const [editWeight, setEditWeight] = useState(weight);
   const [editReps, setEditReps] = useState(reps);
 
-  // Sync with props when they change externally
   useEffect(() => {
     setEditWeight(weight);
     setEditReps(reps);
@@ -168,7 +218,7 @@ function ActiveSetEditor({ weight, reps, onUpdate }: ActiveSetEditorProps) {
         <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Weight</span>
         <div className="flex-1 flex items-center justify-center gap-2 bg-background/80 rounded-xl p-1 shadow-sm border border-border/50">
           <button
-            onClick={() => handleWeightChange(Math.max(0, editWeight - 2.5))}
+            onClick={() => handleWeightChange(Math.max(0, editWeight - weightStep))}
             className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg transition-colors active:scale-95"
           >
             <Minus className="h-5 w-5" />
@@ -180,12 +230,12 @@ function ActiveSetEditor({ weight, reps, onUpdate }: ActiveSetEditorProps) {
               value={editWeight}
               onChange={e => handleWeightChange(parseFloat(e.target.value) || 0)}
               className="w-full text-center bg-transparent text-xl font-bold focus:outline-none"
-              step="2.5"
+              step={weightStep}
             />
-            <span className="text-xs text-muted-foreground">kg</span>
+            <span className="text-xs text-muted-foreground">{weightUnit}</span>
           </div>
           <button
-            onClick={() => handleWeightChange(editWeight + 2.5)}
+            onClick={() => handleWeightChange(editWeight + weightStep)}
             className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg transition-colors active:scale-95"
           >
             <Plus className="h-5 w-5" />
@@ -228,11 +278,13 @@ function ActiveSetEditor({ weight, reps, onUpdate }: ActiveSetEditorProps) {
 interface InlineEditorProps {
   weight: number;
   reps: number;
+  weightUnit: string;
+  weightStep: number;
   onUpdate: (weight: number, reps: number) => void;
   onCancel: () => void;
 }
 
-function InlineEditor({ weight, reps, onUpdate, onCancel }: InlineEditorProps) {
+function InlineEditor({ weight, reps, weightUnit, weightStep, onUpdate, onCancel }: InlineEditorProps) {
   const [editWeight, setEditWeight] = useState(weight);
   const [editReps, setEditReps] = useState(reps);
 
@@ -243,7 +295,7 @@ function InlineEditor({ weight, reps, onUpdate, onCancel }: InlineEditorProps) {
         <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Weight</span>
         <div className="flex-1 flex items-center justify-center gap-2 bg-muted rounded-xl p-1">
           <button
-            onClick={() => setEditWeight(Math.max(0, editWeight - 2.5))}
+            onClick={() => setEditWeight(Math.max(0, editWeight - weightStep))}
             className="h-9 w-9 flex items-center justify-center hover:bg-muted-foreground/10 rounded-lg transition-colors"
           >
             <Minus className="h-4 w-4" />
@@ -255,12 +307,12 @@ function InlineEditor({ weight, reps, onUpdate, onCancel }: InlineEditorProps) {
               value={editWeight}
               onChange={e => setEditWeight(parseFloat(e.target.value) || 0)}
               className="w-full text-center bg-transparent text-lg font-semibold focus:outline-none"
-              step="2.5"
+              step={weightStep}
             />
-            <span className="text-xs text-muted-foreground">kg</span>
+            <span className="text-xs text-muted-foreground">{weightUnit}</span>
           </div>
           <button
-            onClick={() => setEditWeight(editWeight + 2.5)}
+            onClick={() => setEditWeight(editWeight + weightStep)}
             className="h-9 w-9 flex items-center justify-center hover:bg-muted-foreground/10 rounded-lg transition-colors"
           >
             <Plus className="h-4 w-4" />

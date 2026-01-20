@@ -11,12 +11,21 @@ const STORAGE_KEY = 'active_workout_state';
 const HR_UPDATE_INTERVAL = 2000;
 
 function createInitialExercise(exercise: Exercise, index: number): ActiveExercise {
+  const isCardio = exercise.exerciseType === 'cardio';
+  
   const sets: ExerciseSet[] = Array.from({ length: exercise.sets }, (_, i) => ({
     setNumber: i + 1,
     targetWeight: exercise.weight ?? null,
     targetReps: exercise.reps,
     completedWeight: exercise.weight ?? null,
     completedReps: null,
+    // Cardio fields
+    targetTime: exercise.duration ? exercise.duration * 60 : null,
+    targetDistance: null,
+    completedTime: null,
+    completedDistance: null,
+    completedSpeed: null,
+    // Common fields
     completed: false,
     completedAt: null,
     rpe: null,
@@ -29,11 +38,12 @@ function createInitialExercise(exercise: Exercise, index: number): ActiveExercis
     name: exercise.name,
     originalIndex: index,
     sets,
-    restDuration: 90,
+    restDuration: isCardio ? 60 : 90,
     skipped: false,
     swappedFrom: null,
     addedMidWorkout: false,
     muscleGroup: undefined,
+    exerciseType: exercise.exerciseType,
   };
 }
 
@@ -336,7 +346,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
   }, []);
 
   // Add exercise
-  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string }) => {
+  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string; exerciseType?: 'strength' | 'cardio' }) => {
     setState(prev => {
       if (!prev) return null;
       const newExercise: ActiveExercise = {
@@ -349,6 +359,13 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
           targetReps: '8-12',
           completedWeight: null,
           completedReps: null,
+          // Cardio fields
+          targetTime: null,
+          targetDistance: null,
+          completedTime: null,
+          completedDistance: null,
+          completedSpeed: null,
+          // Common fields
           completed: false,
           completedAt: null,
           rpe: null,
@@ -360,6 +377,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
         swappedFrom: null,
         addedMidWorkout: true,
         muscleGroup: exercise.muscleGroup,
+        exerciseType: exercise.exerciseType,
       };
       
       return { ...prev, exercises: [...prev.exercises, newExercise] };

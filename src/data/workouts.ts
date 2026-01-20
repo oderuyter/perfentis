@@ -1,12 +1,15 @@
 // Placeholder workout data
+export type ExerciseTypeData = 'strength' | 'cardio';
+
 export interface Exercise {
   id: string;
   name: string;
   sets: number;
   reps: string;
   weight?: number;
-  duration?: number;
+  duration?: number; // minutes for cardio
   notes?: string;
+  exerciseType?: ExerciseTypeData;
 }
 
 export interface Workout {
@@ -56,7 +59,7 @@ export const workouts: Workout[] = [
     focus: "Aerobic Base",
     description: "Steady-state cardio at conversational pace",
     exercises: [
-      { id: "1", name: "Treadmill Walk/Jog", sets: 1, reps: "40 min", duration: 40 },
+      { id: "1", name: "Treadmill Walk/Jog", sets: 1, reps: "40 min", duration: 40, exerciseType: 'cardio' },
     ],
   },
   {
