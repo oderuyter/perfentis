@@ -389,32 +389,50 @@ export type Database = {
         Row: {
           assigned_at: string
           client_id: string
+          coach_name: string | null
+          completed_workouts: number | null
           created_at: string
+          current_week: number | null
           end_date: string | null
           id: string
+          last_workout_at: string | null
           plan_id: string
+          progress_percentage: number | null
           start_date: string
           status: string
+          total_workouts: number | null
         }
         Insert: {
           assigned_at?: string
           client_id: string
+          coach_name?: string | null
+          completed_workouts?: number | null
           created_at?: string
+          current_week?: number | null
           end_date?: string | null
           id?: string
+          last_workout_at?: string | null
           plan_id: string
+          progress_percentage?: number | null
           start_date: string
           status?: string
+          total_workouts?: number | null
         }
         Update: {
           assigned_at?: string
           client_id?: string
+          coach_name?: string | null
+          completed_workouts?: number | null
           created_at?: string
+          current_week?: number | null
           end_date?: string | null
           id?: string
+          last_workout_at?: string | null
           plan_id?: string
+          progress_percentage?: number | null
           start_date?: string
           status?: string
+          total_workouts?: number | null
         }
         Relationships: [
           {
@@ -2826,6 +2844,8 @@ export type Database = {
       }
       exercise_logs: {
         Row: {
+          athlete_notes: string | null
+          coach_prescribed_notes: string | null
           created_at: string
           exercise_id: string
           exercise_name: string
@@ -2836,6 +2856,8 @@ export type Database = {
           session_id: string
         }
         Insert: {
+          athlete_notes?: string | null
+          coach_prescribed_notes?: string | null
           created_at?: string
           exercise_id: string
           exercise_name: string
@@ -2846,6 +2868,8 @@ export type Database = {
           session_id: string
         }
         Update: {
+          athlete_notes?: string | null
+          coach_prescribed_notes?: string | null
           created_at?: string
           exercise_id?: string
           exercise_name?: string
@@ -4198,6 +4222,58 @@ export type Database = {
           },
         ]
       }
+      plan_workout_overrides: {
+        Row: {
+          assignment_id: string
+          created_at: string
+          exercise_overrides: Json | null
+          id: string
+          plan_workout_id: string
+          updated_at: string
+          workout_notes: string | null
+        }
+        Insert: {
+          assignment_id: string
+          created_at?: string
+          exercise_overrides?: Json | null
+          id?: string
+          plan_workout_id: string
+          updated_at?: string
+          workout_notes?: string | null
+        }
+        Update: {
+          assignment_id?: string
+          created_at?: string
+          exercise_overrides?: Json | null
+          id?: string
+          plan_workout_id?: string
+          updated_at?: string
+          workout_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_workout_overrides_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_assigned_plans"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "plan_workout_overrides_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "client_plan_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_workout_overrides_plan_workout_id_fkey"
+            columns: ["plan_workout_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plan_workouts: {
         Row: {
           coach_notes: string | null
@@ -4823,10 +4899,13 @@ export type Database = {
           exercise_version: number | null
           id: string
           is_completed: boolean | null
+          load_guidance: string | null
           rest_duration: number | null
           rpe: number | null
           set_number: number
           target_reps: number | null
+          target_reps_max: number | null
+          target_reps_min: number | null
           target_weight: number | null
           tempo: string | null
         }
@@ -4838,10 +4917,13 @@ export type Database = {
           exercise_version?: number | null
           id?: string
           is_completed?: boolean | null
+          load_guidance?: string | null
           rest_duration?: number | null
           rpe?: number | null
           set_number: number
           target_reps?: number | null
+          target_reps_max?: number | null
+          target_reps_min?: number | null
           target_weight?: number | null
           tempo?: string | null
         }
@@ -4853,10 +4935,13 @@ export type Database = {
           exercise_version?: number | null
           id?: string
           is_completed?: boolean | null
+          load_guidance?: string | null
           rest_duration?: number | null
           rpe?: number | null
           set_number?: number
           target_reps?: number | null
+          target_reps_max?: number | null
+          target_reps_min?: number | null
           target_weight?: number | null
           tempo?: string | null
         }
@@ -5187,8 +5272,13 @@ export type Database = {
           id: string
           max_hr: number | null
           notes: string | null
+          operation_id: string | null
+          plan_assignment_id: string | null
+          plan_week_number: number | null
+          plan_workout_id: string | null
           started_at: string
           status: string
+          synced_at: string | null
           total_volume: number | null
           user_id: string
           workout_name: string
@@ -5202,8 +5292,13 @@ export type Database = {
           id?: string
           max_hr?: number | null
           notes?: string | null
+          operation_id?: string | null
+          plan_assignment_id?: string | null
+          plan_week_number?: number | null
+          plan_workout_id?: string | null
           started_at: string
           status?: string
+          synced_at?: string | null
           total_volume?: number | null
           user_id: string
           workout_name: string
@@ -5217,17 +5312,122 @@ export type Database = {
           id?: string
           max_hr?: number | null
           notes?: string | null
+          operation_id?: string | null
+          plan_assignment_id?: string | null
+          plan_week_number?: number | null
+          plan_workout_id?: string | null
           started_at?: string
           status?: string
+          synced_at?: string | null
           total_volume?: number | null
           user_id?: string
           workout_name?: string
           workout_template_id?: string | null
         }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sessions_plan_assignment_id_fkey"
+            columns: ["plan_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "athlete_assigned_plans"
+            referencedColumns: ["assignment_id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_plan_assignment_id_fkey"
+            columns: ["plan_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "client_plan_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_plan_workout_id_fkey"
+            columns: ["plan_workout_id"]
+            isOneToOne: false
+            referencedRelation: "plan_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_sync_queue: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          operation_id: string
+          operation_type: string
+          payload: Json
+          retry_count: number | null
+          status: string
+          synced_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          operation_id: string
+          operation_type: string
+          payload: Json
+          retry_count?: number | null
+          status?: string
+          synced_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          operation_id?: string
+          operation_type?: string
+          payload?: Json
+          retry_count?: number | null
+          status?: string
+          synced_at?: string | null
+          user_id?: string
+        }
         Relationships: []
       }
     }
     Views: {
+      athlete_assigned_plans: {
+        Row: {
+          assigned_at: string | null
+          assignment_id: string | null
+          client_id: string | null
+          coach_avatar: string | null
+          coach_name: string | null
+          completed_workouts: number | null
+          current_week: number | null
+          duration_weeks: number | null
+          end_date: string | null
+          last_workout_at: string | null
+          plan_description: string | null
+          plan_id: string | null
+          plan_name: string | null
+          plan_type: string | null
+          progress_percentage: number | null
+          start_date: string | null
+          status: string | null
+          total_workouts: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_plan_assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "coach_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_plan_assignments_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "training_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profiles_secure: {
         Row: {
           accent_color: string | null
@@ -5399,6 +5599,22 @@ export type Database = {
       }
       generate_membership_number: { Args: { _gym_id: string }; Returns: string }
       generate_pass_token: { Args: never; Returns: string }
+      get_athlete_current_workout: {
+        Args: { p_user_id: string }
+        Returns: {
+          assignment_id: string
+          coach_name: string
+          coach_notes: string
+          current_week: number
+          day_of_week: number
+          exercise_data: Json
+          override_data: Json
+          plan_name: string
+          workout_description: string
+          workout_id: string
+          workout_name: string
+        }[]
+      }
       get_coach_id: { Args: { _user_id: string }; Returns: string }
       has_capability: {
         Args: { _capability_name: string; _scope_id?: string; _user_id: string }
