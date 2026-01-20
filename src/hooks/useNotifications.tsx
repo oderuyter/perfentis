@@ -15,9 +15,12 @@ export interface UserNotification {
   created_at: string;
 }
 
+export type NotificationCategory = "workout" | "coach" | "event" | "gym" | "system" | "messages";
+
 export interface NotificationPreferences {
   id: string;
   user_id: string;
+  // Legacy fields (still supported)
   workout_reminders: boolean;
   habit_reminders: boolean;
   coach_messages: boolean;
@@ -26,6 +29,14 @@ export interface NotificationPreferences {
   announcements: boolean;
   push_enabled: boolean;
   email_enabled: boolean;
+  // New category-based email preferences
+  email_workout: boolean;
+  email_coach: boolean;
+  email_event: boolean;
+  email_gym: boolean;
+  email_system: boolean;
+  email_messages: boolean;
+  message_email_throttle_minutes: number;
 }
 
 export function useNotifications() {

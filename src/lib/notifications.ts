@@ -15,6 +15,7 @@ interface CreateNotificationParams {
 /**
  * Creates a notification for a user.
  * Respects user notification preferences via the database function.
+ * Email notifications are handled by the database trigger/function.
  */
 export async function createNotification({
   userId,
