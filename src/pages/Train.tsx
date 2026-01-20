@@ -2,6 +2,8 @@ import { motion } from "framer-motion";
 import { Clock, Dumbbell, Heart, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { workouts } from "@/data/workouts";
+import { AssignedPlansSection } from "@/components/train/AssignedPlansSection";
+import { WorkoutRecoveryPrompt } from "@/components/train/WorkoutRecoveryPrompt";
 
 const typeIcons = {
   strength: Dumbbell,
@@ -14,6 +16,9 @@ export default function Train() {
     <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
+      
+      {/* Workout Recovery Prompt */}
+      <WorkoutRecoveryPrompt />
       
       {/* Header */}
       <header className="relative pt-14 pb-4">
@@ -34,8 +39,19 @@ export default function Train() {
         </motion.p>
       </header>
 
+      {/* Assigned Plans Section - Always visible if user has active assignments */}
+      <AssignedPlansSection />
+
       {/* Workout List */}
       <div className="relative space-y-3 mt-4">
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2"
+        >
+          Quick Workouts
+        </motion.p>
+        
         {workouts.map((workout, index) => {
           const TypeIcon = typeIcons[workout.type];
           
