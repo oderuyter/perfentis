@@ -324,6 +324,31 @@ export default function CoachPlans() {
     setShowAssignSheet(true);
   };
 
+  const handleAddWorkout = async (weekId: string, currentCount: number) => {
+    try {
+      const { data: newWorkout, error } = await supabase
+        .from("plan_workouts")
+        .insert({
+          week_id: weekId,
+          name: `Workout ${currentCount + 1}`,
+          order_index: currentCount,
+          exercise_data: [],
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Open the exercise editor for the new workout
+      setSelectedWorkout(newWorkout);
+      setShowExerciseEditor(true);
+      refetch();
+    } catch (error) {
+      console.error("Error adding workout:", error);
+      toast.error("Failed to add workout");
+    }
+  };
+
   const getDayName = (day: number | null) => {
     if (day === null) return "Unscheduled";
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -459,57 +484,63 @@ export default function CoachPlans() {
                               </div>
                             </AccordionTrigger>
                             <AccordionContent>
-                              {week.plan_workouts?.length > 0 ? (
-                                <div className="space-y-2 pl-6">
-                                  {week.plan_workouts
-                                    .sort(
-                                      (a: PlanWorkout, b: PlanWorkout) =>
-                                        a.order_index - b.order_index
-                                    )
-                                    .map((workout: PlanWorkout) => {
-                                      const exerciseCount = Array.isArray(workout.exercise_data) 
-                                        ? workout.exercise_data.length 
-                                        : 0;
-                                      return (
-                                        <div
-                                          key={workout.id}
-                                          className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 group"
-                                        >
-                                          <Dumbbell className="h-4 w-4 text-muted-foreground" />
-                                          <div className="flex-1">
-                                            <p className="text-sm font-medium">
-                                              {workout.name}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                              {exerciseCount} exercise{exerciseCount !== 1 ? 's' : ''}
-                                              {workout.description && ` • ${workout.description}`}
-                                            </p>
-                                          </div>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              setSelectedWorkout(workout);
-                                              setShowExerciseEditor(true);
-                                            }}
-                                          >
-                                            <Settings className="h-3.5 w-3.5 mr-1" />
-                                            Edit
-                                          </Button>
-                                          <Badge variant="outline" className="text-xs">
-                                            {getDayName(workout.day_of_week)}
-                                          </Badge>
+                              <div className="space-y-2 pl-6">
+                                {week.plan_workouts?.length > 0 && week.plan_workouts
+                                  .sort(
+                                    (a: PlanWorkout, b: PlanWorkout) =>
+                                      a.order_index - b.order_index
+                                  )
+                                  .map((workout: PlanWorkout) => {
+                                    const exerciseCount = Array.isArray(workout.exercise_data) 
+                                      ? workout.exercise_data.length 
+                                      : 0;
+                                    return (
+                                      <div
+                                        key={workout.id}
+                                        className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 group"
+                                      >
+                                        <Dumbbell className="h-4 w-4 text-muted-foreground" />
+                                        <div className="flex-1">
+                                          <p className="text-sm font-medium">
+                                            {workout.name}
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {exerciseCount} exercise{exerciseCount !== 1 ? 's' : ''}
+                                            {workout.description && ` • ${workout.description}`}
+                                          </p>
                                         </div>
-                                      );
-                                    })}
-                                </div>
-                              ) : (
-                                <p className="text-sm text-muted-foreground pl-6">
-                                  No workouts added yet
-                                </p>
-                              )}
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedWorkout(workout);
+                                            setShowExerciseEditor(true);
+                                          }}
+                                        >
+                                          <Settings className="h-3.5 w-3.5 mr-1" />
+                                          Edit
+                                        </Button>
+                                        <Badge variant="outline" className="text-xs">
+                                          {getDayName(workout.day_of_week)}
+                                        </Badge>
+                                      </div>
+                                    );
+                                  })}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full mt-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleAddWorkout(week.id, week.plan_workouts?.length || 0);
+                                  }}
+                                >
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Add Workout
+                                </Button>
+                              </div>
                             </AccordionContent>
                           </AccordionItem>
                         ))}
