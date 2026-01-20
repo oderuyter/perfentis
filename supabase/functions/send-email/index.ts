@@ -249,13 +249,32 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { to, template, data, subject, contextType, contextId, actorUserId, skipLog, isRetry, emailLogId }: EmailRequest = await req.json();
+    const {
+      to,
+      template,
+      data,
+      subject,
+      contextType,
+      contextId,
+      actorUserId,
+      skipLog,
+      isRetry,
+      emailLogId,
+    }: EmailRequest = await req.json();
+
+    // Resend appears to enforce test-mode recipient matching strictly; normalize.
+    const toEmail = (to || "").trim().toLowerCase();
+    const templateKey = template;
 
     // Validate required fields
-    if (!to || !template) {
+    if (!toEmail || !templateKey) {
       return new Response(
-        JSON.stringify({ success: false, error: "Missing required fields: to, template", errorCode: "VALIDATION_ERROR" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({
+          success: false,
+          error: "Missing required fields: to, template",
+          errorCode: "VALIDATION_ERROR",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -263,21 +282,25 @@ const handler = async (req: Request): Promise<Response> => {
     if (!resendApiKey) {
       console.error("RESEND_API_KEY not configured");
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Email service not configured. RESEND_API_KEY is missing.", 
-          errorCode: "CONFIG_ERROR" 
+        JSON.stringify({
+          success: false,
+          error: "Email service not configured. RESEND_API_KEY is missing.",
+          errorCode: "CONFIG_ERROR",
         }),
-        { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
     // Get template
-    const templateDef = templates[template];
+    const templateDef = templates[templateKey];
     if (!templateDef) {
       return new Response(
-        JSON.stringify({ success: false, error: `Unknown template: ${template}`, errorCode: "TEMPLATE_ERROR" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({
+          success: false,
+          error: `Unknown template: ${templateKey}`,
+          errorCode: "TEMPLATE_ERROR",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
@@ -298,8 +321,8 @@ const handler = async (req: Request): Promise<Response> => {
       const { data: logEntry, error: logError } = await supabase
         .from("email_logs")
         .insert({
-          to_email: to,
-          template_key: template,
+          to_email: toEmail,
+          template_key: templateKey,
           subject: emailSubject,
           context_type: contextType || null,
           context_id: contextId || null,
@@ -326,11 +349,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     while (attempt <= MAX_RETRIES) {
       try {
-        console.log(`Sending email to ${to}, template: ${template}, attempt: ${attempt}`);
+        console.log(`Sending email to ${toEmail}, template: ${templateKey}, attempt: ${attempt}`);
 
         const emailResponse = await resend.emails.send({
           from: "Flow Fitness <onboarding@resend.dev>",
-          to: [to],
+          to: [toEmail],
           subject: emailSubject,
           html: emailHtml,
         });
@@ -364,12 +387,15 @@ const handler = async (req: Request): Promise<Response> => {
 
         // If there's an error in the response
         if (emailResponse.error) {
-          throw new Error(emailResponse.error.message || "Unknown Resend error");
+          const errAny = emailResponse.error as any;
+          const e: any = new Error(errAny.message || "Unknown Resend error");
+          e.statusCode = errAny.statusCode;
+          e.name = errAny.name || e.name;
+          throw e;
         }
 
         // Unexpected response format
         throw new Error("Unexpected response from Resend");
-
       } catch (err: any) {
         lastError = err;
         console.error(`Email send attempt ${attempt} failed:`, err.message);
@@ -389,7 +415,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // All retries failed
     const errorMessage = lastError?.message || "Failed to send email";
-    const errorCode = lastError?.statusCode?.toString() || "SEND_ERROR";
+    const errorCode = lastError?.statusCode?.toString() || lastError?.name || "SEND_ERROR";
 
     if (logId) {
       await supabase
@@ -404,6 +430,7 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("id", logId);
     }
 
+    // IMPORTANT: return 200 so clients using `functions.invoke` can reliably read the JSON body.
     return new Response(
       JSON.stringify({
         success: false,
@@ -411,14 +438,15 @@ const handler = async (req: Request): Promise<Response> => {
         error: errorMessage,
         errorCode,
       } as EmailResponse),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
-
   } catch (error: any) {
     console.error("Error in send-email function:", error);
+
+    // IMPORTANT: return 200 so clients using `functions.invoke` can reliably read the JSON body.
     return new Response(
       JSON.stringify({ success: false, error: error.message, errorCode: "INTERNAL_ERROR" }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };
