@@ -49,6 +49,7 @@ import {
   Dumbbell,
   MoreVertical,
   UserPlus,
+  Settings,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -60,6 +61,7 @@ import { useTrainingPlans, useCoachClients } from "@/hooks/useCoach";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
+import { WorkoutExerciseEditor } from "@/components/coach/WorkoutExerciseEditor";
 
 interface Coach {
   id: string;
@@ -95,6 +97,10 @@ export default function CoachPlans() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("templates");
+
+  // Workout exercise editor state
+  const [showExerciseEditor, setShowExerciseEditor] = useState(false);
+  const [selectedWorkout, setSelectedWorkout] = useState<PlanWorkout | null>(null);
 
   // Form state
   const [planName, setPlanName] = useState("");
@@ -460,27 +466,44 @@ export default function CoachPlans() {
                                       (a: PlanWorkout, b: PlanWorkout) =>
                                         a.order_index - b.order_index
                                     )
-                                    .map((workout: PlanWorkout) => (
-                                      <div
-                                        key={workout.id}
-                                        className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
-                                      >
-                                        <Dumbbell className="h-4 w-4 text-muted-foreground" />
-                                        <div className="flex-1">
-                                          <p className="text-sm font-medium">
-                                            {workout.name}
-                                          </p>
-                                          {workout.description && (
-                                            <p className="text-xs text-muted-foreground">
-                                              {workout.description}
+                                    .map((workout: PlanWorkout) => {
+                                      const exerciseCount = Array.isArray(workout.exercise_data) 
+                                        ? workout.exercise_data.length 
+                                        : 0;
+                                      return (
+                                        <div
+                                          key={workout.id}
+                                          className="flex items-center gap-3 p-2 rounded-lg bg-muted/50 group"
+                                        >
+                                          <Dumbbell className="h-4 w-4 text-muted-foreground" />
+                                          <div className="flex-1">
+                                            <p className="text-sm font-medium">
+                                              {workout.name}
                                             </p>
-                                          )}
+                                            <p className="text-xs text-muted-foreground">
+                                              {exerciseCount} exercise{exerciseCount !== 1 ? 's' : ''}
+                                              {workout.description && ` • ${workout.description}`}
+                                            </p>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-7 px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedWorkout(workout);
+                                              setShowExerciseEditor(true);
+                                            }}
+                                          >
+                                            <Settings className="h-3.5 w-3.5 mr-1" />
+                                            Edit
+                                          </Button>
+                                          <Badge variant="outline" className="text-xs">
+                                            {getDayName(workout.day_of_week)}
+                                          </Badge>
                                         </div>
-                                        <Badge variant="outline" className="text-xs">
-                                          {getDayName(workout.day_of_week)}
-                                        </Badge>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                 </div>
                               ) : (
                                 <p className="text-sm text-muted-foreground pl-6">
@@ -761,6 +784,20 @@ export default function CoachPlans() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Workout Exercise Editor */}
+      <WorkoutExerciseEditor
+        open={showExerciseEditor}
+        onOpenChange={setShowExerciseEditor}
+        workoutId={selectedWorkout?.id || ''}
+        workoutName={selectedWorkout?.name || ''}
+        initialExerciseData={
+          Array.isArray(selectedWorkout?.exercise_data) 
+            ? selectedWorkout.exercise_data 
+            : []
+        }
+        onSave={() => refetch()}
+      />
     </div>
   );
 }
