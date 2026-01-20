@@ -138,11 +138,10 @@ Deno.serve(async (req) => {
         userIdMap[demoUser.role] = userId;
         userIdMap[demoUser.email] = userId;
 
-        // Update profile
+        // Update profile (note: profiles table doesn't have email column, it's in auth.users)
         await supabaseAdmin.from('profiles').upsert({
           user_id: userId,
           display_name: demoUser.name,
-          email: demoUser.email,
           telephone: '+44 7700 900' + Math.floor(100 + Math.random() * 900),
           address_line1: '123 Demo Street',
           address_city: 'London',
