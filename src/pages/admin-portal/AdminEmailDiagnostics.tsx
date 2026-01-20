@@ -111,10 +111,10 @@ export default function AdminEmailDiagnostics() {
       if (searchMessageId) {
         query = query.ilike("resend_message_id", `%${searchMessageId}%`);
       }
-      if (filterTemplate) {
+      if (filterTemplate && filterTemplate !== "all") {
         query = query.eq("template_key", filterTemplate);
       }
-      if (filterStatus) {
+      if (filterStatus && filterStatus !== "all") {
         query = query.eq("status", filterStatus);
       }
 
@@ -244,11 +244,16 @@ export default function AdminEmailDiagnostics() {
                   <p className="text-xs text-muted-foreground">onboarding@resend.dev</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg border">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              <div className="flex items-center gap-3 p-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
+                <AlertTriangle className="h-5 w-5 text-yellow-600" />
                 <div>
                   <p className="font-medium text-sm">Domain Verification</p>
-                  <p className="text-xs text-muted-foreground">Check Resend dashboard</p>
+                  <p className="text-xs text-muted-foreground">
+                    Using test mode (onboarding@resend.dev). To send to any email, 
+                    <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="text-primary underline ml-1">
+                      verify your domain
+                    </a>
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-3 rounded-lg border">
@@ -437,7 +442,7 @@ export default function AdminEmailDiagnostics() {
                     <SelectValue placeholder="All templates" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All templates</SelectItem>
+                    <SelectItem value="all">All templates</SelectItem>
                     {TEMPLATE_OPTIONS.map((t) => (
                       <SelectItem key={t.value} value={t.value}>
                         {t.label}
@@ -450,7 +455,7 @@ export default function AdminEmailDiagnostics() {
                     <SelectValue placeholder="All statuses" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All statuses</SelectItem>
+                    <SelectItem value="all">All statuses</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="sent">Sent</SelectItem>
                     <SelectItem value="delivered">Delivered</SelectItem>
