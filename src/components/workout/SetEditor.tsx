@@ -26,7 +26,7 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
         const isCompleted = set.completed;
         const isCurrent = index === currentSetIndex;
         const isRemaining = index > currentSetIndex && !isCompleted;
-        const isEditing = editingSet === index || isCurrent;
+        const isEditing = editingSet === index;
 
         return (
           <motion.div
@@ -51,11 +51,12 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
               }
             }}
           >
-            <div className="flex items-center justify-between">
+            {/* Set Header Row */}
+            <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 {/* Set number indicator */}
                 <div className={cn(
-                  "h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors",
+                  "h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors flex-shrink-0",
                   isCompleted && "bg-accent text-accent-foreground",
                   isCurrent && !isCompleted && "bg-accent text-accent-foreground shadow-sm",
                   isRemaining && "bg-muted text-muted-foreground"
@@ -63,68 +64,69 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: S
                   {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
                 </div>
                 
-                <div className="flex items-center gap-2">
-                  {isCurrent && !isCompleted ? (
-                    // Current set - always show inline editor
-                    <ActiveSetEditor
-                      weight={set.completedWeight ?? set.targetWeight ?? 0}
-                      reps={set.completedReps ?? parseInt(set.targetReps.match(/\d+/)?.[0] || '0')}
-                      onUpdate={(weight, reps) => {
-                        onUpdateSet(index, { completedWeight: weight, completedReps: reps });
-                      }}
-                    />
-                  ) : editingSet === index ? (
-                    // Editing a completed set
-                    <InlineEditor
-                      weight={set.completedWeight ?? set.targetWeight ?? 0}
-                      reps={set.completedReps ?? parseInt(set.targetReps.match(/\d+/)?.[0] || '0')}
-                      onUpdate={(weight, reps) => {
-                        onUpdateSet(index, { completedWeight: weight, completedReps: reps });
-                        setEditingSet(null);
-                      }}
-                      onCancel={() => setEditingSet(null)}
-                    />
-                  ) : (
-                    // Display mode
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className={cn(
-                        "font-semibold",
-                        isCompleted && "text-foreground",
-                        isRemaining && "text-muted-foreground"
-                      )}>
-                        {set.completedWeight ?? set.targetWeight ?? '—'} kg
+                {/* Display values for non-editing states */}
+                {!isCurrent && !isEditing && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className={cn(
+                      "font-semibold",
+                      isCompleted && "text-foreground",
+                      isRemaining && "text-muted-foreground"
+                    )}>
+                      {set.completedWeight ?? set.targetWeight ?? '—'} kg
+                    </span>
+                    <span className="text-muted-foreground">×</span>
+                    <span className={cn(
+                      "font-semibold",
+                      isCompleted && "text-foreground",
+                      isRemaining && "text-muted-foreground"
+                    )}>
+                      {set.completedReps ?? set.targetReps}
+                    </span>
+                    {set.rpe && (
+                      <span className="text-xs text-muted-foreground ml-1 px-1.5 py-0.5 bg-muted rounded">
+                        RPE {set.rpe}
                       </span>
-                      <span className="text-muted-foreground">×</span>
-                      <span className={cn(
-                        "font-semibold",
-                        isCompleted && "text-foreground",
-                        isRemaining && "text-muted-foreground"
-                      )}>
-                        {set.completedReps ?? set.targetReps}
-                      </span>
-                      {set.rpe && (
-                        <span className="text-xs text-muted-foreground ml-1 px-1.5 py-0.5 bg-muted rounded">
-                          RPE {set.rpe}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Edit button for completed sets */}
-              {!isCurrent && isCompleted && editingSet !== index && (
+              {!isCurrent && isCompleted && !isEditing && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setEditingSet(index);
                   }}
-                  className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors"
+                  className="h-8 w-8 rounded-full bg-muted/50 flex items-center justify-center hover:bg-muted transition-colors flex-shrink-0"
                 >
                   <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                 </button>
               )}
             </div>
+
+            {/* Editing Interface - Full width below header */}
+            {(isCurrent && !isCompleted) && (
+              <ActiveSetEditor
+                weight={set.completedWeight ?? set.targetWeight ?? 0}
+                reps={set.completedReps ?? parseInt(set.targetReps.match(/\d+/)?.[0] || '0')}
+                onUpdate={(weight, reps) => {
+                  onUpdateSet(index, { completedWeight: weight, completedReps: reps });
+                }}
+              />
+            )}
+
+            {isEditing && (
+              <InlineEditor
+                weight={set.completedWeight ?? set.targetWeight ?? 0}
+                reps={set.completedReps ?? parseInt(set.targetReps.match(/\d+/)?.[0] || '0')}
+                onUpdate={(weight, reps) => {
+                  onUpdateSet(index, { completedWeight: weight, completedReps: reps });
+                  setEditingSet(null);
+                }}
+                onCancel={() => setEditingSet(null)}
+              />
+            )}
           </motion.div>
         );
       })}
@@ -138,7 +140,7 @@ interface ActiveSetEditorProps {
   onUpdate: (weight: number, reps: number) => void;
 }
 
-// Always-visible editor for the current active set
+// Always-visible editor for the current active set - mobile-optimized stacked layout
 function ActiveSetEditor({ weight, reps, onUpdate }: ActiveSetEditorProps) {
   const [editWeight, setEditWeight] = useState(weight);
   const [editReps, setEditReps] = useState(reps);
@@ -160,52 +162,64 @@ function ActiveSetEditor({ weight, reps, onUpdate }: ActiveSetEditorProps) {
   };
 
   return (
-    <div className="flex items-center gap-3" onClick={e => e.stopPropagation()}>
-      {/* Weight control */}
-      <div className="flex items-center gap-1 bg-background/80 rounded-lg px-1 shadow-sm border border-border/50">
-        <button
-          onClick={() => handleWeightChange(Math.max(0, editWeight - 2.5))}
-          className="h-9 w-9 flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors"
-        >
-          <Minus className="h-4 w-4" />
-        </button>
-        <input
-          type="number"
-          value={editWeight}
-          onChange={e => handleWeightChange(parseFloat(e.target.value) || 0)}
-          className="w-14 text-center bg-transparent text-base font-bold focus:outline-none"
-          step="2.5"
-        />
-        <button
-          onClick={() => handleWeightChange(editWeight + 2.5)}
-          className="h-9 w-9 flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+    <div className="space-y-3" onClick={e => e.stopPropagation()}>
+      {/* Weight row */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Weight</span>
+        <div className="flex-1 flex items-center justify-center gap-2 bg-background/80 rounded-xl p-1 shadow-sm border border-border/50">
+          <button
+            onClick={() => handleWeightChange(Math.max(0, editWeight - 2.5))}
+            className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg transition-colors active:scale-95"
+          >
+            <Minus className="h-5 w-5" />
+          </button>
+          <div className="flex-1 min-w-0 text-center">
+            <input
+              type="number"
+              inputMode="decimal"
+              value={editWeight}
+              onChange={e => handleWeightChange(parseFloat(e.target.value) || 0)}
+              className="w-full text-center bg-transparent text-xl font-bold focus:outline-none"
+              step="2.5"
+            />
+            <span className="text-xs text-muted-foreground">kg</span>
+          </div>
+          <button
+            onClick={() => handleWeightChange(editWeight + 2.5)}
+            className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg transition-colors active:scale-95"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        </div>
       </div>
       
-      <span className="text-muted-foreground font-medium">×</span>
-      
-      {/* Reps control */}
-      <div className="flex items-center gap-1 bg-background/80 rounded-lg px-1 shadow-sm border border-border/50">
-        <button
-          onClick={() => handleRepsChange(Math.max(0, editReps - 1))}
-          className="h-9 w-9 flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors"
-        >
-          <Minus className="h-4 w-4" />
-        </button>
-        <input
-          type="number"
-          value={editReps}
-          onChange={e => handleRepsChange(parseInt(e.target.value) || 0)}
-          className="w-10 text-center bg-transparent text-base font-bold focus:outline-none"
-        />
-        <button
-          onClick={() => handleRepsChange(editReps + 1)}
-          className="h-9 w-9 flex items-center justify-center hover:bg-muted/50 rounded-lg transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-        </button>
+      {/* Reps row */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Reps</span>
+        <div className="flex-1 flex items-center justify-center gap-2 bg-background/80 rounded-xl p-1 shadow-sm border border-border/50">
+          <button
+            onClick={() => handleRepsChange(Math.max(0, editReps - 1))}
+            className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg transition-colors active:scale-95"
+          >
+            <Minus className="h-5 w-5" />
+          </button>
+          <div className="flex-1 min-w-0 text-center">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={editReps}
+              onChange={e => handleRepsChange(parseInt(e.target.value) || 0)}
+              className="w-full text-center bg-transparent text-xl font-bold focus:outline-none"
+            />
+            <span className="text-xs text-muted-foreground">reps</span>
+          </div>
+          <button
+            onClick={() => handleRepsChange(editReps + 1)}
+            className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg transition-colors active:scale-95"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -223,57 +237,82 @@ function InlineEditor({ weight, reps, onUpdate, onCancel }: InlineEditorProps) {
   const [editReps, setEditReps] = useState(reps);
 
   return (
-    <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-      <div className="flex items-center gap-1 bg-muted rounded-lg px-1">
-        <button
-          onClick={() => setEditWeight(Math.max(0, editWeight - 2.5))}
-          className="p-1.5"
-        >
-          <Minus className="h-3 w-3" />
-        </button>
-        <input
-          type="number"
-          value={editWeight}
-          onChange={e => setEditWeight(parseFloat(e.target.value) || 0)}
-          className="w-12 text-center bg-transparent text-sm font-semibold"
-        />
-        <button
-          onClick={() => setEditWeight(editWeight + 2.5)}
-          className="p-1.5"
-        >
-          <Plus className="h-3 w-3" />
-        </button>
+    <div className="space-y-3" onClick={e => e.stopPropagation()}>
+      {/* Weight row */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Weight</span>
+        <div className="flex-1 flex items-center justify-center gap-2 bg-muted rounded-xl p-1">
+          <button
+            onClick={() => setEditWeight(Math.max(0, editWeight - 2.5))}
+            className="h-9 w-9 flex items-center justify-center hover:bg-muted-foreground/10 rounded-lg transition-colors"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <div className="flex-1 min-w-0 text-center">
+            <input
+              type="number"
+              inputMode="decimal"
+              value={editWeight}
+              onChange={e => setEditWeight(parseFloat(e.target.value) || 0)}
+              className="w-full text-center bg-transparent text-lg font-semibold focus:outline-none"
+              step="2.5"
+            />
+            <span className="text-xs text-muted-foreground">kg</span>
+          </div>
+          <button
+            onClick={() => setEditWeight(editWeight + 2.5)}
+            className="h-9 w-9 flex items-center justify-center hover:bg-muted-foreground/10 rounded-lg transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
       </div>
       
-      <span className="text-muted-foreground">×</span>
-      
-      <div className="flex items-center gap-1 bg-muted rounded-lg px-1">
-        <button
-          onClick={() => setEditReps(Math.max(0, editReps - 1))}
-          className="p-1.5"
-        >
-          <Minus className="h-3 w-3" />
-        </button>
-        <input
-          type="number"
-          value={editReps}
-          onChange={e => setEditReps(parseInt(e.target.value) || 0)}
-          className="w-8 text-center bg-transparent text-sm font-semibold"
-        />
-        <button
-          onClick={() => setEditReps(editReps + 1)}
-          className="p-1.5"
-        >
-          <Plus className="h-3 w-3" />
-        </button>
+      {/* Reps row */}
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Reps</span>
+        <div className="flex-1 flex items-center justify-center gap-2 bg-muted rounded-xl p-1">
+          <button
+            onClick={() => setEditReps(Math.max(0, editReps - 1))}
+            className="h-9 w-9 flex items-center justify-center hover:bg-muted-foreground/10 rounded-lg transition-colors"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+          <div className="flex-1 min-w-0 text-center">
+            <input
+              type="number"
+              inputMode="numeric"
+              value={editReps}
+              onChange={e => setEditReps(parseInt(e.target.value) || 0)}
+              className="w-full text-center bg-transparent text-lg font-semibold focus:outline-none"
+            />
+            <span className="text-xs text-muted-foreground">reps</span>
+          </div>
+          <button
+            onClick={() => setEditReps(editReps + 1)}
+            className="h-9 w-9 flex items-center justify-center hover:bg-muted-foreground/10 rounded-lg transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
       </div>
       
-      <button
-        onClick={() => onUpdate(editWeight, editReps)}
-        className="p-1.5 bg-accent text-accent-foreground rounded-lg"
-      >
-        <Check className="h-3.5 w-3.5" />
-      </button>
+      {/* Confirm button */}
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={onCancel}
+          className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => onUpdate(editWeight, editReps)}
+          className="px-4 py-1.5 bg-accent text-accent-foreground rounded-lg text-sm font-medium flex items-center gap-1.5"
+        >
+          <Check className="h-4 w-4" />
+          Save
+        </button>
+      </div>
     </div>
   );
 }

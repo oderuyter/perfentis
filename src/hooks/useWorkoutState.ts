@@ -287,12 +287,27 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
     });
   }, []);
 
-  // Edit rest duration
-  const editRestDuration = useCallback((newDuration: number) => {
+  // Edit rest duration with optional apply to all remaining sets
+  const editRestDuration = useCallback((newDuration: number, applyToAll?: boolean) => {
     setState(prev => {
       if (!prev) return null;
+      
+      let exercises = prev.exercises;
+      
+      // If apply to all, update rest duration for all remaining exercises
+      if (applyToAll) {
+        exercises = prev.exercises.map((exercise, idx) => {
+          // Update current and all future exercises
+          if (idx >= prev.currentExerciseIndex) {
+            return { ...exercise, restDuration: newDuration };
+          }
+          return exercise;
+        });
+      }
+      
       return {
         ...prev,
+        exercises,
         restDuration: newDuration,
         restTimeRemaining: newDuration,
         restTimerStartedAt: new Date().toISOString(),
