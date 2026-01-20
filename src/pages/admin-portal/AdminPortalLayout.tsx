@@ -38,6 +38,7 @@ import {
   User,
   Music,
   Inbox,
+  Mail,
 } from "lucide-react";
 
 interface NavItem {
@@ -63,6 +64,7 @@ const navItems: NavItem[] = [
   { to: "/admin-portal/notifications", icon: Bell, label: "Notifications" },
   { to: "/admin-portal/imports", icon: FileUp, label: "Imports & Exports" },
   { to: "/admin-portal/logs", icon: FileText, label: "Logs & Audit" },
+  { to: "/admin-portal/email-diagnostics", icon: Mail, label: "Email Diagnostics" },
   { to: "/admin-portal/settings", icon: Settings, label: "Settings" },
 ];
 

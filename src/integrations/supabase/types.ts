@@ -670,6 +670,10 @@ export type Database = {
           coach_id: string
           created_at: string
           email: string
+          email_error: string | null
+          email_log_id: string | null
+          email_sent_at: string | null
+          email_status: string | null
           expires_at: string
           id: string
           message: string | null
@@ -684,6 +688,10 @@ export type Database = {
           coach_id: string
           created_at?: string
           email: string
+          email_error?: string | null
+          email_log_id?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           expires_at?: string
           id?: string
           message?: string | null
@@ -698,6 +706,10 @@ export type Database = {
           coach_id?: string
           created_at?: string
           email?: string
+          email_error?: string | null
+          email_log_id?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           expires_at?: string
           id?: string
           message?: string | null
@@ -712,6 +724,13 @@ export type Database = {
             columns: ["coach_id"]
             isOneToOne: false
             referencedRelation: "coaches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_invitations_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
             referencedColumns: ["id"]
           },
           {
@@ -1574,6 +1593,95 @@ export type Database = {
           },
         ]
       }
+      email_delivery_events: {
+        Row: {
+          created_at: string
+          email_log_id: string
+          event_type: string
+          id: string
+          occurred_at: string
+          payload_json: Json | null
+        }
+        Insert: {
+          created_at?: string
+          email_log_id: string
+          event_type: string
+          id?: string
+          occurred_at?: string
+          payload_json?: Json | null
+        }
+        Update: {
+          created_at?: string
+          email_log_id?: string
+          event_type?: string
+          id?: string
+          occurred_at?: string
+          payload_json?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_delivery_events_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_logs: {
+        Row: {
+          actor_user_id: string | null
+          attempt_count: number
+          context_id: string | null
+          context_type: string | null
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          id: string
+          last_attempt_at: string
+          metadata: Json | null
+          resend_message_id: string | null
+          status: string
+          subject: string
+          template_key: string
+          to_email: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          attempt_count?: number
+          context_id?: string | null
+          context_type?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string
+          metadata?: Json | null
+          resend_message_id?: string | null
+          status?: string
+          subject: string
+          template_key: string
+          to_email: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          attempt_count?: number
+          context_id?: string | null
+          context_type?: string | null
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string
+          metadata?: Json | null
+          resend_message_id?: string | null
+          status?: string
+          subject?: string
+          template_key?: string
+          to_email?: string
+        }
+        Relationships: []
+      }
       event_assets: {
         Row: {
           alt_text: string | null
@@ -1996,6 +2104,10 @@ export type Database = {
           accepted_by: string | null
           created_at: string
           email: string
+          email_error: string | null
+          email_log_id: string | null
+          email_sent_at: string | null
+          email_status: string | null
           event_id: string
           expires_at: string | null
           id: string
@@ -2011,6 +2123,10 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           email: string
+          email_error?: string | null
+          email_log_id?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           event_id: string
           expires_at?: string | null
           id?: string
@@ -2026,6 +2142,10 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           email?: string
+          email_error?: string | null
+          email_log_id?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           event_id?: string
           expires_at?: string | null
           id?: string
@@ -2037,6 +2157,13 @@ export type Database = {
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "event_invites_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "event_invites_event_id_fkey"
             columns: ["event_id"]
@@ -3230,6 +3357,10 @@ export type Database = {
           accepted_by: string | null
           created_at: string
           email: string
+          email_error: string | null
+          email_log_id: string | null
+          email_sent_at: string | null
+          email_status: string | null
           expires_at: string
           gym_id: string
           id: string
@@ -3244,6 +3375,10 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           email: string
+          email_error?: string | null
+          email_log_id?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           expires_at: string
           gym_id: string
           id?: string
@@ -3258,6 +3393,10 @@ export type Database = {
           accepted_by?: string | null
           created_at?: string
           email?: string
+          email_error?: string | null
+          email_log_id?: string | null
+          email_sent_at?: string | null
+          email_status?: string | null
           expires_at?: string
           gym_id?: string
           id?: string
@@ -3268,6 +3407,13 @@ export type Database = {
           token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gym_invitations_email_log_id_fkey"
+            columns: ["email_log_id"]
+            isOneToOne: false
+            referencedRelation: "email_logs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "gym_invitations_gym_id_fkey"
             columns: ["gym_id"]
@@ -3950,6 +4096,27 @@ export type Database = {
           },
         ]
       }
+      message_email_throttle: {
+        Row: {
+          conversation_id: string
+          id: string
+          last_email_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          last_email_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          last_email_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       message_read_receipts: {
         Row: {
           id: string
@@ -4055,11 +4222,18 @@ export type Database = {
           announcements: boolean | null
           coach_messages: boolean | null
           created_at: string
+          email_coach: boolean | null
           email_enabled: boolean | null
+          email_event: boolean | null
+          email_gym: boolean | null
+          email_messages: boolean | null
+          email_system: boolean | null
+          email_workout: boolean | null
           event_updates: boolean | null
           gym_updates: boolean | null
           habit_reminders: boolean | null
           id: string
+          message_email_throttle_minutes: number | null
           push_enabled: boolean | null
           updated_at: string
           user_id: string
@@ -4069,11 +4243,18 @@ export type Database = {
           announcements?: boolean | null
           coach_messages?: boolean | null
           created_at?: string
+          email_coach?: boolean | null
           email_enabled?: boolean | null
+          email_event?: boolean | null
+          email_gym?: boolean | null
+          email_messages?: boolean | null
+          email_system?: boolean | null
+          email_workout?: boolean | null
           event_updates?: boolean | null
           gym_updates?: boolean | null
           habit_reminders?: boolean | null
           id?: string
+          message_email_throttle_minutes?: number | null
           push_enabled?: boolean | null
           updated_at?: string
           user_id: string
@@ -4083,11 +4264,18 @@ export type Database = {
           announcements?: boolean | null
           coach_messages?: boolean | null
           created_at?: string
+          email_coach?: boolean | null
           email_enabled?: boolean | null
+          email_event?: boolean | null
+          email_gym?: boolean | null
+          email_messages?: boolean | null
+          email_system?: boolean | null
+          email_workout?: boolean | null
           event_updates?: boolean | null
           gym_updates?: boolean | null
           habit_reminders?: boolean | null
           id?: string
+          message_email_throttle_minutes?: number | null
           push_enabled?: boolean | null
           updated_at?: string
           user_id?: string
@@ -5568,6 +5756,10 @@ export type Database = {
       }
     }
     Functions: {
+      can_send_message_email: {
+        Args: { p_conversation_id: string; p_user_id: string }
+        Returns: boolean
+      }
       create_conversation_rpc: {
         Args: {
           p_context_id: string
@@ -5645,6 +5837,10 @@ export type Database = {
           _severity?: string
         }
         Returns: string
+      }
+      should_send_notification_email: {
+        Args: { p_notification_type: string; p_user_id: string }
+        Returns: boolean
       }
       user_has_crm_access: {
         Args: { p_context_id: string; p_context_type: string }

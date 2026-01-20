@@ -95,6 +95,7 @@ import AdminLogs from "./pages/admin-portal/AdminLogs";
 import AdminSettings from "./pages/admin-portal/AdminSettings";
 import AdminInbox from "./pages/admin-portal/AdminInbox";
 import AdminRegistrations from "./pages/admin-portal/AdminRegistrations";
+import AdminEmailDiagnostics from "./pages/admin-portal/AdminEmailDiagnostics";
 
 const queryClient = new QueryClient();
 
@@ -228,6 +229,7 @@ function AppRoutes() {
         <Route path="settings" element={<AdminSettings />} />
         <Route path="inbox" element={<AdminInbox />} />
         <Route path="registrations" element={<AdminRegistrations />} />
+        <Route path="email-diagnostics" element={<AdminEmailDiagnostics />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
