@@ -53,13 +53,16 @@ export const workouts: Workout[] = [
   },
   {
     id: "3",
-    name: "Zone 2 Cardio",
-    type: "cardio",
-    duration: 40,
-    focus: "Aerobic Base",
-    description: "Steady-state cardio at conversational pace",
+    name: "Mixed Training Session",
+    type: "mixed",
+    duration: 45,
+    focus: "Full Body + Cardio",
+    description: "Combined strength and cardio training",
     exercises: [
-      { id: "1", name: "Treadmill Walk/Jog", sets: 1, reps: "40 min", duration: 40, exerciseType: 'cardio' },
+      { id: "1", name: "Barbell Squat", sets: 3, reps: "8-10", weight: 80, exerciseType: 'strength' },
+      { id: "2", name: "Treadmill Run", sets: 1, reps: "15 min", duration: 15, exerciseType: 'cardio' },
+      { id: "3", name: "Bench Press", sets: 3, reps: "8-10", weight: 60, exerciseType: 'strength' },
+      { id: "4", name: "Rowing Machine", sets: 1, reps: "10 min", duration: 10, exerciseType: 'cardio' },
     ],
   },
   {
