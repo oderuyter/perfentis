@@ -10,9 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { 
   Mail, Send, CheckCircle, XCircle, AlertTriangle, RefreshCw, 
-  Search, Clock, ArrowRight, ExternalLink, Activity, Shield, Loader2
+  Search, Clock, ArrowRight, ExternalLink, Activity, Shield, Loader2,
+  Settings, Key, Globe, Save, Eye, EyeOff
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +85,89 @@ export default function AdminEmailDiagnostics() {
   const [searchMessageId, setSearchMessageId] = useState("");
   const [filterTemplate, setFilterTemplate] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+
+  // Settings state
+  const [fromEmail, setFromEmail] = useState("onboarding@resend.dev");
+  const [fromName, setFromName] = useState("Lovable");
+  const [replyToEmail, setReplyToEmail] = useState("");
+  const [enabledCategories, setEnabledCategories] = useState({
+    gym_invite: true,
+    coach_invite: true,
+    event_invite: true,
+    notifications: true,
+  });
+  const [showApiKeyHint, setShowApiKeyHint] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
+
+  // Load email settings from database
+  useEffect(() => {
+    loadEmailSettings();
+  }, []);
+
+  const loadEmailSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("app_settings" as any)
+        .select("*")
+        .eq("category", "email")
+        .maybeSingle();
+
+      if (data) {
+        const settings = (data as any).settings as Record<string, any>;
+        if (settings) {
+          setFromEmail(settings.from_email || "onboarding@resend.dev");
+          setFromName(settings.from_name || "Lovable");
+          setReplyToEmail(settings.reply_to || "");
+          setEnabledCategories({
+            gym_invite: settings.enabled_gym_invite ?? true,
+            coach_invite: settings.enabled_coach_invite ?? true,
+            event_invite: settings.enabled_event_invite ?? true,
+            notifications: settings.enabled_notifications ?? true,
+          });
+        }
+      }
+      setSettingsLoaded(true);
+    } catch (err) {
+      console.error("Failed to load email settings:", err);
+      setSettingsLoaded(true);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    setSettingsSaving(true);
+    try {
+      const settings = {
+        from_email: fromEmail,
+        from_name: fromName,
+        reply_to: replyToEmail,
+        enabled_gym_invite: enabledCategories.gym_invite,
+        enabled_coach_invite: enabledCategories.coach_invite,
+        enabled_event_invite: enabledCategories.event_invite,
+        enabled_notifications: enabledCategories.notifications,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Use raw SQL via rpc or direct insert since table might not be in types yet
+      const { error } = await supabase
+        .from("app_settings" as any)
+        .upsert({
+          category: "email",
+          settings,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: "category"
+        });
+
+      if (error) throw error;
+      toast.success("Email settings saved successfully");
+    } catch (err: any) {
+      console.error("Failed to save settings:", err);
+      toast.error("Failed to save settings: " + (err.message || "Unknown error"));
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   useEffect(() => {
     loadHealth();
@@ -279,6 +364,7 @@ export default function AdminEmailDiagnostics() {
         <TabsList>
           <TabsTrigger value="test">Send Test Email</TabsTrigger>
           <TabsTrigger value="logs">Email Logs</TabsTrigger>
+          <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="troubleshooting">Troubleshooting</TabsTrigger>
         </TabsList>
 
@@ -604,6 +690,238 @@ export default function AdminEmailDiagnostics() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="settings">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Resend Integration */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Key className="h-5 w-5" />
+                  <CardTitle>Resend Integration</CardTitle>
+                </div>
+                <CardDescription>
+                  Configure your Resend API connection
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>API Key Status</Label>
+                  <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
+                    {health?.resendConfigured ? (
+                      <>
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">API Key Configured</p>
+                          <p className="text-xs text-muted-foreground">
+                            {showApiKeyHint ? "RESEND_API_KEY is set in secrets" : "••••••••••••••••"}
+                          </p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => setShowApiKeyHint(!showApiKeyHint)}
+                        >
+                          {showApiKeyHint ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-5 w-5 text-red-500" />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm text-red-600">API Key Missing</p>
+                          <p className="text-xs text-muted-foreground">
+                            Add RESEND_API_KEY to your secrets
+                          </p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    To update the API key, go to{" "}
+                    <a 
+                      href="https://resend.com/api-keys" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary underline"
+                    >
+                      Resend API Keys
+                    </a>
+                    {" "}and update the RESEND_API_KEY secret in your project settings.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Domain Status</Label>
+                  <div className="flex items-center gap-3 p-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
+                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
+                    <div>
+                      <p className="font-medium text-sm">Using Test Mode</p>
+                      <p className="text-xs text-muted-foreground">
+                        Currently using onboarding@resend.dev which only sends to verified emails.
+                      </p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <a 
+                      href="https://resend.com/domains" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <Globe className="h-4 w-4 mr-2" />
+                      Verify Domain in Resend
+                    </a>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Email Sender Settings */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  <CardTitle>Sender Settings</CardTitle>
+                </div>
+                <CardDescription>
+                  Configure default sender information for emails
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fromEmail">From Email Address</Label>
+                  <Input
+                    id="fromEmail"
+                    type="email"
+                    placeholder="noreply@yourdomain.com"
+                    value={fromEmail}
+                    onChange={(e) => setFromEmail(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Must use a verified domain in Resend, or use onboarding@resend.dev for testing
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="fromName">From Name</Label>
+                  <Input
+                    id="fromName"
+                    placeholder="Your App Name"
+                    value={fromName}
+                    onChange={(e) => setFromName(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="replyTo">Reply-To Email (optional)</Label>
+                  <Input
+                    id="replyTo"
+                    type="email"
+                    placeholder="support@yourdomain.com"
+                    value={replyToEmail}
+                    onChange={(e) => setReplyToEmail(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Where replies to your emails should go
+                  </p>
+                </div>
+
+                <Button 
+                  onClick={handleSaveSettings} 
+                  disabled={settingsSaving}
+                  className="w-full"
+                >
+                  {settingsSaving ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-2" />
+                  )}
+                  Save Sender Settings
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Email Categories */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  <CardTitle>Email Categories</CardTitle>
+                </div>
+                <CardDescription>
+                  Enable or disable email sending for different categories
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Gym Invitations</p>
+                      <p className="text-xs text-muted-foreground">Invite members to gyms</p>
+                    </div>
+                    <Switch
+                      checked={enabledCategories.gym_invite}
+                      onCheckedChange={(checked) => 
+                        setEnabledCategories(prev => ({ ...prev, gym_invite: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Coach Invitations</p>
+                      <p className="text-xs text-muted-foreground">Invite clients to coaching</p>
+                    </div>
+                    <Switch
+                      checked={enabledCategories.coach_invite}
+                      onCheckedChange={(checked) => 
+                        setEnabledCategories(prev => ({ ...prev, coach_invite: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Event Invitations</p>
+                      <p className="text-xs text-muted-foreground">Event & team invites</p>
+                    </div>
+                    <Switch
+                      checked={enabledCategories.event_invite}
+                      onCheckedChange={(checked) => 
+                        setEnabledCategories(prev => ({ ...prev, event_invite: checked }))
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Notifications</p>
+                      <p className="text-xs text-muted-foreground">System notifications</p>
+                    </div>
+                    <Switch
+                      checked={enabledCategories.notifications}
+                      onCheckedChange={(checked) => 
+                        setEnabledCategories(prev => ({ ...prev, notifications: checked }))
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Button 
+                    onClick={handleSaveSettings} 
+                    disabled={settingsSaving}
+                  >
+                    {settingsSaving ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Save Category Settings
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="troubleshooting">
