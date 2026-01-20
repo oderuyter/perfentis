@@ -251,10 +251,23 @@ export default function ActiveWorkout() {
                 {/* Subtle gradient overlay */}
                 <div className="absolute inset-0 gradient-metric opacity-50" />
                 <div className="relative">
-                  <p className="text-5xl font-bold tracking-tight text-center text-accent-foreground">
-                    {currentSet?.completedWeight ?? currentSet?.targetWeight ?? '—'} kg
-                  </p>
-                  <p className="text-2xl text-muted-foreground mt-2 text-center">× {currentSet?.completedReps ?? currentSet?.targetReps}</p>
+                  {currentExercise.exerciseType === 'cardio' ? (
+                    <>
+                      <p className="text-5xl font-bold tracking-tight text-center text-accent-foreground">
+                        {currentSet?.completedTime ? formatTime(currentSet.completedTime) : (currentSet?.targetTime ? formatTime(currentSet.targetTime) : '0:00')}
+                      </p>
+                      <p className="text-2xl text-muted-foreground mt-2 text-center">
+                        {currentSet?.completedDistance ? `${(currentSet.completedDistance / 1000).toFixed(2)} km` : '— km'}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-5xl font-bold tracking-tight text-center text-accent-foreground">
+                        {currentSet?.completedWeight ?? currentSet?.targetWeight ?? '—'} kg
+                      </p>
+                      <p className="text-2xl text-muted-foreground mt-2 text-center">× {currentSet?.completedReps ?? currentSet?.targetReps}</p>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -266,6 +279,7 @@ export default function ActiveWorkout() {
                   currentSetIndex={state.currentSetIndex}
                   onUpdateSet={(setIndex, updates) => updateSet(state.currentExerciseIndex, setIndex, updates)}
                   onSelectSet={(setIndex) => goToExercise(state.currentExerciseIndex, setIndex)}
+                  exerciseType={currentExercise.exerciseType}
                 />
               </div>
             </motion.div>

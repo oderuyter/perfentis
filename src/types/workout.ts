@@ -1,11 +1,21 @@
 // Extended workout types for active workout state management
 
+export type ExerciseSetType = 'strength' | 'cardio';
+
 export interface ExerciseSet {
   setNumber: number;
+  // Strength metrics
   targetWeight: number | null;
   targetReps: string;
   completedWeight: number | null;
   completedReps: number | null;
+  // Cardio metrics
+  targetTime: number | null; // seconds
+  targetDistance: number | null; // meters (stored in metric, converted for display)
+  completedTime: number | null; // seconds
+  completedDistance: number | null; // meters
+  completedSpeed: number | null; // m/s (stored in metric)
+  // Pace is auto-calculated from time and distance
   completed: boolean;
   completedAt: string | null;
   // Advanced metrics (progressive disclosure)
@@ -24,6 +34,79 @@ export interface ActiveExercise {
   swappedFrom: string | null; // original exercise id if swapped
   addedMidWorkout: boolean;
   muscleGroup?: string;
+  exerciseType?: ExerciseSetType; // 'strength' or 'cardio'
+}
+
+// Unit conversion helpers
+export function metersToMiles(meters: number): number {
+  return meters / 1609.344;
+}
+
+export function milesToMeters(miles: number): number {
+  return miles * 1609.344;
+}
+
+export function metersToKm(meters: number): number {
+  return meters / 1000;
+}
+
+export function kmToMeters(km: number): number {
+  return km * 1000;
+}
+
+// Calculate pace from time (seconds) and distance (meters)
+// Returns pace in min/km or min/mile based on units
+export function calculatePace(timeSeconds: number, distanceMeters: number, units: 'metric' | 'imperial' = 'metric'): string {
+  if (!timeSeconds || !distanceMeters || distanceMeters === 0) return '—';
+  
+  const distanceInUnit = units === 'metric' 
+    ? distanceMeters / 1000 // km
+    : metersToMiles(distanceMeters); // miles
+  
+  const paceSeconds = timeSeconds / distanceInUnit;
+  const paceMinutes = Math.floor(paceSeconds / 60);
+  const paceSecs = Math.round(paceSeconds % 60);
+  
+  return `${paceMinutes}:${paceSecs.toString().padStart(2, '0')}`;
+}
+
+// Calculate speed from time (seconds) and distance (meters)
+// Returns speed in km/h or mph based on units
+export function calculateSpeed(timeSeconds: number, distanceMeters: number, units: 'metric' | 'imperial' = 'metric'): number {
+  if (!timeSeconds || !distanceMeters || timeSeconds === 0) return 0;
+  
+  const speedMps = distanceMeters / timeSeconds; // m/s
+  
+  if (units === 'metric') {
+    return Math.round(speedMps * 3.6 * 10) / 10; // km/h
+  } else {
+    return Math.round(speedMps * 2.237 * 10) / 10; // mph
+  }
+}
+
+// Format time duration as MM:SS or HH:MM:SS
+export function formatDuration(seconds: number): string {
+  if (!seconds || seconds < 0) return '0:00';
+  
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Parse duration string (MM:SS or HH:MM:SS) to seconds
+export function parseDuration(duration: string): number {
+  const parts = duration.split(':').map(p => parseInt(p) || 0);
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  } else if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  }
+  return parseInt(duration) || 0;
 }
 
 export interface HRData {
