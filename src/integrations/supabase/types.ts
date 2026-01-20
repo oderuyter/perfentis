@@ -1058,6 +1058,7 @@ export type Database = {
           display_name: string
           hourly_rate: number | null
           id: string
+          is_demo: boolean | null
           is_online: boolean | null
           is_public: boolean | null
           location: string | null
@@ -1074,6 +1075,7 @@ export type Database = {
           display_name: string
           hourly_rate?: number | null
           id?: string
+          is_demo?: boolean | null
           is_online?: boolean | null
           is_public?: boolean | null
           location?: string | null
@@ -1090,6 +1092,7 @@ export type Database = {
           display_name?: string
           hourly_rate?: number | null
           id?: string
+          is_demo?: boolean | null
           is_online?: boolean | null
           is_public?: boolean | null
           location?: string | null
@@ -1138,6 +1141,7 @@ export type Database = {
           context_type: string
           created_at: string
           id: string
+          is_demo: boolean | null
           status: string
           subject: string | null
           updated_at: string
@@ -1148,6 +1152,7 @@ export type Database = {
           context_type: string
           created_at?: string
           id?: string
+          is_demo?: boolean | null
           status?: string
           subject?: string | null
           updated_at?: string
@@ -1158,6 +1163,7 @@ export type Database = {
           context_type?: string
           created_at?: string
           id?: string
+          is_demo?: boolean | null
           status?: string
           subject?: string | null
           updated_at?: string
@@ -1616,6 +1622,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      demo_seed_registry: {
+        Row: {
+          created_at: string
+          demo_seed_key: string
+          entity_email: string | null
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          created_at?: string
+          demo_seed_key?: string
+          entity_email?: string | null
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          created_at?: string
+          demo_seed_key?: string
+          entity_email?: string | null
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
       }
       email_delivery_events: {
         Row: {
@@ -2921,6 +2957,7 @@ export type Database = {
           hero_image_url: string | null
           id: string
           image_url: string | null
+          is_demo: boolean | null
           is_public: boolean | null
           location: string | null
           organiser_id: string
@@ -2944,6 +2981,7 @@ export type Database = {
           hero_image_url?: string | null
           id?: string
           image_url?: string | null
+          is_demo?: boolean | null
           is_public?: boolean | null
           location?: string | null
           organiser_id: string
@@ -2967,6 +3005,7 @@ export type Database = {
           hero_image_url?: string | null
           id?: string
           image_url?: string | null
+          is_demo?: boolean | null
           is_public?: boolean | null
           location?: string | null
           organiser_id?: string
@@ -3684,6 +3723,7 @@ export type Database = {
           description: string | null
           email: string | null
           id: string
+          is_demo: boolean | null
           is_owner_submission: boolean | null
           logo_url: string | null
           name: string
@@ -3713,6 +3753,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_demo?: boolean | null
           is_owner_submission?: boolean | null
           logo_url?: string | null
           name: string
@@ -3742,6 +3783,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          is_demo?: boolean | null
           is_owner_submission?: boolean | null
           logo_url?: string | null
           name?: string
@@ -4041,6 +4083,7 @@ export type Database = {
           gym_id: string
           id: string
           invitation_id: string | null
+          is_demo: boolean | null
           membership_level_id: string | null
           membership_number: string | null
           membership_token: string
@@ -4061,6 +4104,7 @@ export type Database = {
           gym_id: string
           id?: string
           invitation_id?: string | null
+          is_demo?: boolean | null
           membership_level_id?: string | null
           membership_number?: string | null
           membership_token?: string
@@ -4081,6 +4125,7 @@ export type Database = {
           gym_id?: string
           id?: string
           invitation_id?: string | null
+          is_demo?: boolean | null
           membership_level_id?: string | null
           membership_number?: string | null
           membership_token?: string
@@ -4777,6 +4822,7 @@ export type Database = {
           hr_zones_mode: string | null
           id: string
           instagram_handle: string | null
+          is_demo: boolean | null
           last_active_at: string | null
           last_name: string | null
           max_hr: number | null
@@ -4823,6 +4869,7 @@ export type Database = {
           hr_zones_mode?: string | null
           id?: string
           instagram_handle?: string | null
+          is_demo?: boolean | null
           last_active_at?: string | null
           last_name?: string | null
           max_hr?: number | null
@@ -4869,6 +4916,7 @@ export type Database = {
           hr_zones_mode?: string | null
           id?: string
           instagram_handle?: string | null
+          is_demo?: boolean | null
           last_active_at?: string | null
           last_name?: string | null
           max_hr?: number | null
@@ -5328,6 +5376,7 @@ export type Database = {
           duration_weeks: number | null
           id: string
           is_active: boolean
+          is_demo: boolean | null
           is_template: boolean
           name: string
           parent_plan_id: string | null
@@ -5342,6 +5391,7 @@ export type Database = {
           duration_weeks?: number | null
           id?: string
           is_active?: boolean
+          is_demo?: boolean | null
           is_template?: boolean
           name: string
           parent_plan_id?: string | null
@@ -5356,6 +5406,7 @@ export type Database = {
           duration_weeks?: number | null
           id?: string
           is_active?: boolean
+          is_demo?: boolean | null
           is_template?: boolean
           name?: string
           parent_plan_id?: string | null
@@ -5482,6 +5533,7 @@ export type Database = {
           duration_seconds: number | null
           ended_at: string | null
           id: string
+          is_demo: boolean | null
           max_hr: number | null
           notes: string | null
           operation_id: string | null
@@ -5502,6 +5554,7 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          is_demo?: boolean | null
           max_hr?: number | null
           notes?: string | null
           operation_id?: string | null
@@ -5522,6 +5575,7 @@ export type Database = {
           duration_seconds?: number | null
           ended_at?: string | null
           id?: string
+          is_demo?: boolean | null
           max_hr?: number | null
           notes?: string | null
           operation_id?: string | null
