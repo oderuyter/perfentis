@@ -40,6 +40,7 @@ interface ExerciseOverride {
   sets_max?: number;
   reps_min?: number;
   reps_max?: number;
+  rest_seconds?: number;
   load_guidance?: string;
   coach_notes?: string;
   substituted_exercise_id?: string;
@@ -360,17 +361,34 @@ export function PlanOverrideSheet({
                                           </div>
                                         </div>
                                       </div>
-                                      <div>
-                                        <Label className="text-xs">Load Guidance</Label>
-                                        <Input
-                                          placeholder="e.g., 70-75% 1RM, RPE 7-8"
-                                          className="h-8 text-sm mt-1"
-                                          value={override?.load_guidance || ''}
-                                          onChange={(e) => updateExerciseOverride(
-                                            workout.id, workout.name, idx, exercise.name,
-                                            'load_guidance', e.target.value
-                                          )}
-                                        />
+                                      <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                          <Label className="text-xs">Rest Time (sec)</Label>
+                                          <Input
+                                            type="number"
+                                            placeholder={exercise.rest_seconds?.toString() || "90"}
+                                            min={0}
+                                            step={15}
+                                            className="h-8 text-sm mt-1"
+                                            value={override?.rest_seconds || ''}
+                                            onChange={(e) => updateExerciseOverride(
+                                              workout.id, workout.name, idx, exercise.name,
+                                              'rest_seconds', e.target.value ? parseInt(e.target.value) : undefined
+                                            )}
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label className="text-xs">Load Guidance</Label>
+                                          <Input
+                                            placeholder="e.g., 70-75% 1RM"
+                                            className="h-8 text-sm mt-1"
+                                            value={override?.load_guidance || ''}
+                                            onChange={(e) => updateExerciseOverride(
+                                              workout.id, workout.name, idx, exercise.name,
+                                              'load_guidance', e.target.value
+                                            )}
+                                          />
+                                        </div>
                                       </div>
                                       <div>
                                         <Label className="text-xs">Exercise Notes</Label>
