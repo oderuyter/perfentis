@@ -216,7 +216,8 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
       // Mark set as completed
       currentSet.completed = true;
       currentSet.completedAt = new Date().toISOString();
-      if (currentSet.completedReps === null) {
+      // Only auto-fill reps for strength exercises
+      if (currentExercise.exerciseType !== 'cardio' && currentSet.completedReps === null) {
         // Parse target reps (handle ranges like "8-10")
         const repsMatch = currentSet.targetReps.match(/\d+/);
         currentSet.completedReps = repsMatch ? parseInt(repsMatch[0]) : 0;
@@ -349,6 +350,9 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
   const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string; exerciseType?: 'strength' | 'cardio' }) => {
     setState(prev => {
       if (!prev) return null;
+
+      const isCardio = exercise.exerciseType === 'cardio';
+
       const newExercise: ActiveExercise = {
         exerciseId: exercise.id,
         name: exercise.name,
@@ -356,7 +360,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
         sets: Array.from({ length: exercise.sets || 3 }, (_, i) => ({
           setNumber: i + 1,
           targetWeight: null,
-          targetReps: '8-12',
+          targetReps: isCardio ? '' : '8-12',
           completedWeight: null,
           completedReps: null,
           // Cardio fields
@@ -372,7 +376,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
           tempo: null,
           note: null,
         })),
-        restDuration: 90,
+        restDuration: isCardio ? 60 : 90,
         skipped: false,
         swappedFrom: null,
         addedMidWorkout: true,

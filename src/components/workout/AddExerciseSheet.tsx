@@ -10,7 +10,7 @@ import { ExerciseDetailSheet } from '@/components/exercises/ExerciseDetailSheet'
 import type { Exercise } from '@/types/exercise';
 
 interface AddExerciseSheetProps {
-  onAdd: (exercise: { id: string; name: string; sets?: number; version?: number }) => void;
+  onAdd: (exercise: { id: string; name: string; sets?: number; version?: number; exerciseType?: 'strength' | 'cardio' }) => void;
   onClose: () => void;
 }
 
@@ -34,7 +34,8 @@ export function AddExerciseSheet({ onAdd, onClose }: AddExerciseSheetProps) {
       id: exercise.exercise_id, 
       name: exercise.name, 
       sets: 3,
-      version: exercise.version 
+      version: exercise.version,
+      exerciseType: exercise.type,
     });
     onClose();
   };

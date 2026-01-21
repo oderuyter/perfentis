@@ -15,6 +15,20 @@ import {
 } from '@/types/workout';
 import { useProfile } from '@/hooks/useProfile';
 
+function formatHmsDots(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds || 0));
+  const hours = Math.floor(s / 3600);
+  const mins = Math.floor((s % 3600) / 60);
+  const secs = s % 60;
+  return `${hours.toString().padStart(2, '0')}.${mins.toString().padStart(2, '0')}.${secs.toString().padStart(2, '0')}`;
+}
+
+function parseHmsDots(input: string): number {
+  // Accept HH.MM.SS (requested) and HH:MM:SS / MM:SS
+  const normalized = input.trim().replace(/\./g, ':');
+  return parseDuration(normalized);
+}
+
 interface CardioSetEditorProps {
   sets: ExerciseSet[];
   currentSetIndex: number;
@@ -55,6 +69,7 @@ export function CardioSetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSe
         const displayDistance = set.completedDistance ?? set.targetDistance;
         const pace = calculatePace(displayTime || 0, displayDistance || 0, units);
         const speed = calculateSpeed(displayTime || 0, displayDistance || 0, units);
+        const speedDisplay = displayTime && displayDistance ? speed.toFixed(1) : '—';
 
         return (
           <motion.div
@@ -97,7 +112,7 @@ export function CardioSetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSe
                         isCompleted && "text-foreground",
                         isRemaining && "text-muted-foreground"
                       )}>
-                        {displayTime ? formatDuration(displayTime) : '—'}
+                        {displayTime !== null && displayTime !== undefined ? formatHmsDots(displayTime) : '—'}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -109,6 +124,28 @@ export function CardioSetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSe
                       )}>
                         {formatDistance(displayDistance)} {distanceUnit}
                       </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className={cn(
+                        "font-semibold",
+                        isCompleted && "text-foreground",
+                        isRemaining && "text-muted-foreground"
+                      )}>
+                        {pace}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{paceUnit}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Zap className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className={cn(
+                        "font-semibold",
+                        isCompleted && "text-foreground",
+                        isRemaining && "text-muted-foreground"
+                      )}>
+                        {speedDisplay}
+                      </span>
+                      <span className="text-xs text-muted-foreground">{speedUnit}</span>
                     </div>
                   </div>
                 )}
@@ -232,12 +269,12 @@ function ActiveCardioEditor({ time, distance, speed, units, onUpdate }: ActiveCa
           <div className="flex-1 min-w-0 text-center">
             <input
               type="text"
-              value={formatDuration(editTime)}
-              onChange={e => handleTimeChange(parseDuration(e.target.value))}
+              value={formatHmsDots(editTime)}
+              onChange={e => handleTimeChange(parseHmsDots(e.target.value))}
               className="w-full text-center bg-transparent text-xl font-bold focus:outline-none"
-              placeholder="0:00"
+              placeholder="00.00.00"
             />
-            <span className="text-xs text-muted-foreground">mm:ss</span>
+            <span className="text-xs text-muted-foreground">hh.mm.ss</span>
           </div>
           <button
             onClick={() => handleTimeChange(editTime + 15)}
@@ -338,12 +375,12 @@ function InlineCardioEditor({ time, distance, speed, units, onUpdate, onCancel }
           <div className="flex-1 min-w-0 text-center">
             <input
               type="text"
-              value={formatDuration(editTime)}
-              onChange={e => setEditTime(parseDuration(e.target.value))}
+              value={formatHmsDots(editTime)}
+              onChange={e => setEditTime(parseHmsDots(e.target.value))}
               className="w-full text-center bg-transparent text-lg font-semibold focus:outline-none"
-              placeholder="0:00"
+              placeholder="00.00.00"
             />
-            <span className="text-xs text-muted-foreground">mm:ss</span>
+            <span className="text-xs text-muted-foreground">hh.mm.ss</span>
           </div>
           <button
             onClick={() => setEditTime(editTime + 15)}
