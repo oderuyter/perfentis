@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Train from "./pages/Train";
 import SplitDetail from "./pages/train/SplitDetail";
 import SplitBuilder from "./pages/train/SplitBuilder";
+import WorkoutBuilder from "./pages/train/WorkoutBuilder";
 import Exercises from "./pages/Exercises";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
@@ -148,6 +149,8 @@ function AppRoutes() {
         <Route path="/train" element={<Train />} />
         <Route path="/train/split/:splitId" element={<SplitDetail />} />
         <Route path="/train/split/:splitId/edit" element={<SplitBuilder />} />
+        <Route path="/train/workout/new" element={<WorkoutBuilder />} />
+        <Route path="/train/workout/:templateId/edit" element={<WorkoutBuilder />} />
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />

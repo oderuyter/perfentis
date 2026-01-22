@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Play, ChevronRight, Calendar, Target, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,10 +38,12 @@ export function ActiveSplitCard() {
               Set an active split to organize your training
             </p>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/train?tab=splits">
-              Browse Splits
-            </Link>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => navigate('/train?tab=splits')}
+          >
+            Browse Splits
           </Button>
         </div>
       </div>

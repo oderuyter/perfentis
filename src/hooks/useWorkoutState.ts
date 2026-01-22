@@ -76,6 +76,35 @@ function createInitialState(workout: Workout): ActiveWorkoutState {
   };
 }
 
+function createFreeformState(): ActiveWorkoutState {
+  return {
+    workoutId: 'freeform',
+    workoutName: 'Freeform Workout',
+    startedAt: new Date().toISOString(),
+    currentExerciseIndex: 0,
+    currentSetIndex: 0,
+    phase: 'exercise',
+    exercises: [],
+    elapsedTime: 0,
+    restTimeRemaining: 90,
+    restTimerStartedAt: null,
+    restTimerPausedAt: null,
+    restDuration: 90,
+    hrData: {
+      currentHR: 0,
+      zone: 1,
+      timeInZones: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+      avgHR: 0,
+      maxHR: 0,
+      samples: [],
+    },
+    workoutNote: null,
+    status: 'active',
+    completedAt: null,
+    lastSavedAt: new Date().toISOString(),
+  };
+}
+
 export function loadSavedWorkout(): ActiveWorkoutState | null {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -93,10 +122,11 @@ export function clearSavedWorkout(): void {
   localStorage.removeItem(STORAGE_KEY);
 }
 
-export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWorkoutState | null) {
+export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWorkoutState | null, isFreeform?: boolean) {
   const [state, setState] = useState<ActiveWorkoutState | null>(() => {
     if (resumeState) return resumeState;
     if (workout) return createInitialState(workout);
+    if (isFreeform) return createFreeformState();
     return null;
   });
 
