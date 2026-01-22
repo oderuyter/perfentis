@@ -1,17 +1,40 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, Dumbbell, Heart, Zap } from "lucide-react";
-import { Link } from "react-router-dom";
-import { workouts } from "@/data/workouts";
-import { AssignedPlansSection } from "@/components/train/AssignedPlansSection";
+import { Link, useNavigate } from "react-router-dom";
+import { 
+  Play, 
+  Dumbbell, 
+  Heart, 
+  Zap, 
+  Clock, 
+  ChevronRight,
+  Library,
+  Layers,
+  Plus,
+  Search,
+  Filter
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { WorkoutRecoveryPrompt } from "@/components/train/WorkoutRecoveryPrompt";
-
-const typeIcons = {
-  strength: Dumbbell,
-  cardio: Heart,
-  mixed: Zap,
-};
+import { AssignedPlansSection } from "@/components/train/AssignedPlansSection";
+import { ActiveSplitCard } from "@/components/train/ActiveSplitCard";
+import { WorkoutDirectory } from "@/components/train/WorkoutDirectory";
+import { SplitDirectory } from "@/components/train/SplitDirectory";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Train() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [directoryTab, setDirectoryTab] = useState<"workouts" | "splits">("workouts");
+
+  const handleJustTrain = () => {
+    // Navigate to free workout (live builder mode)
+    navigate("/workout/free/active");
+  };
+
   return (
     <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
       {/* Ambient glow */}
@@ -35,92 +58,73 @@ export default function Train() {
           transition={{ delay: 0.05 }}
           className="text-muted-foreground mt-1"
         >
-          Choose your workout
+          Build strength, track progress
         </motion.p>
       </header>
 
-      {/* Assigned Plans Section - Always visible if user has active assignments */}
-      <AssignedPlansSection />
-
-      {/* Workout List */}
-      <div className="relative space-y-3 mt-4">
-        <motion.p 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2"
+      {/* Primary CTA: Just Train */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="mb-6"
+      >
+        <Button 
+          onClick={handleJustTrain}
+          className="w-full h-16 text-lg font-semibold gap-3 bg-primary hover:bg-primary/90"
+          size="lg"
         >
-          Quick Workouts
-        </motion.p>
-        
-        {workouts.map((workout, index) => {
-          const TypeIcon = typeIcons[workout.type];
-          
-          return (
-            <motion.div
-              key={workout.id}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + index * 0.05 }}
-            >
-              <Link to={`/workout/${workout.id}`} className="block">
-                <div className="card-glass p-4 active:scale-[0.98] transition-transform">
-                  <div className="flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/12 flex items-center justify-center flex-shrink-0">
-                      <TypeIcon className="h-5 w-5 text-primary" />
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-base text-foreground">
-                        {workout.name}
-                      </h3>
-                      {workout.focus && (
-                        <p className="text-sm text-muted-foreground mt-0.5 truncate">
-                          {workout.focus}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Clock className="h-3.5 w-3.5" />
-                          <span className="text-xs">{workout.duration} min</span>
-                        </div>
-                        <span className="text-xs text-muted-foreground capitalize">
-                          {workout.type}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {workout.exercises.length} exercises
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-            </motion.div>
-          );
-        })}
+          <Play className="h-6 w-6" />
+          Just Train
+        </Button>
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          Start a session and add exercises as you go
+        </p>
+      </motion.div>
 
-        {/* Free Workout Card */}
+      {/* Active Split Card (if user has one) */}
+      {user && (
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 + workouts.length * 0.05 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6"
         >
-          <Link to="/workout/free" className="block">
-            <div className="rounded-xl p-4 border border-dashed border-border/50 bg-surface-card/50 active:scale-[0.98] transition-transform">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-base text-foreground">Free Workout</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">
-                    Log as you go
-                  </p>
-                </div>
-              </div>
-            </div>
-          </Link>
+          <ActiveSplitCard />
         </motion.div>
-      </div>
+      )}
+
+      {/* Assigned Plans Section (coach assigned) */}
+      <AssignedPlansSection />
+
+      {/* Directory Tabs */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="mt-6"
+      >
+        <Tabs value={directoryTab} onValueChange={(v) => setDirectoryTab(v as "workouts" | "splits")}>
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="workouts" className="gap-2">
+              <Dumbbell className="h-4 w-4" />
+              Workouts
+            </TabsTrigger>
+            <TabsTrigger value="splits" className="gap-2">
+              <Layers className="h-4 w-4" />
+              Splits
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="workouts" className="mt-0">
+            <WorkoutDirectory />
+          </TabsContent>
+
+          <TabsContent value="splits" className="mt-0">
+            <SplitDirectory />
+          </TabsContent>
+        </Tabs>
+      </motion.div>
     </div>
   );
 }

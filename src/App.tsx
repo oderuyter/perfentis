@@ -8,6 +8,8 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AppLayout } from "./components/AppLayout";
 import Home from "./pages/Home";
 import Train from "./pages/Train";
+import SplitDetail from "./pages/train/SplitDetail";
+import SplitBuilder from "./pages/train/SplitBuilder";
 import Exercises from "./pages/Exercises";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
@@ -96,6 +98,8 @@ import AdminSettings from "./pages/admin-portal/AdminSettings";
 import AdminInbox from "./pages/admin-portal/AdminInbox";
 import AdminRegistrations from "./pages/admin-portal/AdminRegistrations";
 import AdminEmailDiagnostics from "./pages/admin-portal/AdminEmailDiagnostics";
+import AdminWorkoutModeration from "./pages/admin-portal/AdminWorkoutModeration";
+import AdminSplitModeration from "./pages/admin-portal/AdminSplitModeration";
 
 const queryClient = new QueryClient();
 
@@ -142,6 +146,8 @@ function AppRoutes() {
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/" element={<Home />} />
         <Route path="/train" element={<Train />} />
+        <Route path="/train/split/:splitId" element={<SplitDetail />} />
+        <Route path="/train/split/:splitId/edit" element={<SplitBuilder />} />
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />
@@ -219,6 +225,8 @@ function AppRoutes() {
         <Route path="coaches" element={<AdminCoaches />} />
         <Route path="events" element={<AdminEvents />} />
         <Route path="workouts" element={<AdminWorkouts />} />
+        <Route path="workout-moderation" element={<AdminWorkoutModeration />} />
+        <Route path="split-moderation" element={<AdminSplitModeration />} />
         <Route path="exercises" element={<AdminExercises />} />
         <Route path="playlists" element={<AdminPlaylists />} />
         <Route path="billing" element={<AdminBilling />} />
@@ -233,6 +241,8 @@ function AppRoutes() {
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
+      <Route path="/workout/template/:templateId/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
+      <Route path="/workout/split/:splitId/:workoutId/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
