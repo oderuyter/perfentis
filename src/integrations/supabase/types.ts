@@ -5269,6 +5269,151 @@ export type Database = {
         }
         Relationships: []
       }
+      split_weeks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          notes: string | null
+          split_id: string
+          week_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          split_id: string
+          week_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          split_id?: string
+          week_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "split_weeks_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "training_splits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      split_workout_completions: {
+        Row: {
+          completed_at: string
+          id: string
+          split_id: string
+          split_workout_id: string
+          user_id: string
+          week_id: string
+          workout_session_id: string | null
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          split_id: string
+          split_workout_id: string
+          user_id: string
+          week_id: string
+          workout_session_id?: string | null
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          split_id?: string
+          split_workout_id?: string
+          user_id?: string
+          week_id?: string
+          workout_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "split_workout_completions_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "training_splits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "split_workout_completions_split_workout_id_fkey"
+            columns: ["split_workout_id"]
+            isOneToOne: false
+            referencedRelation: "split_workouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "split_workout_completions_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "split_weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "split_workout_completions_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      split_workouts: {
+        Row: {
+          created_at: string
+          day_label: string | null
+          day_number: number | null
+          embedded_workout_data: Json | null
+          id: string
+          notes: string | null
+          order_index: number
+          week_id: string
+          workout_template_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          day_label?: string | null
+          day_number?: number | null
+          embedded_workout_data?: Json | null
+          id?: string
+          notes?: string | null
+          order_index?: number
+          week_id: string
+          workout_template_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          day_label?: string | null
+          day_number?: number | null
+          embedded_workout_data?: Json | null
+          id?: string
+          notes?: string | null
+          order_index?: number
+          week_id?: string
+          workout_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "split_workouts_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "split_weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "split_workouts_workout_template_id_fkey"
+            columns: ["workout_template_id"]
+            isOneToOne: false
+            referencedRelation: "workout_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_rotas: {
         Row: {
           created_at: string
@@ -5431,6 +5576,124 @@ export type Database = {
           },
         ]
       }
+      training_splits: {
+        Row: {
+          created_at: string
+          days_per_week: number | null
+          description: string | null
+          difficulty_level: string | null
+          equipment_needed: string[] | null
+          goal_tags: string[] | null
+          id: string
+          is_curated: boolean
+          is_ongoing: boolean
+          owner_user_id: string | null
+          parent_split_id: string | null
+          published_version: number | null
+          rejection_reason: string | null
+          source: string
+          status: string
+          title: string
+          updated_at: string
+          use_count: number
+          version: number
+          view_count: number
+          weeks_count: number | null
+          workout_type: string
+        }
+        Insert: {
+          created_at?: string
+          days_per_week?: number | null
+          description?: string | null
+          difficulty_level?: string | null
+          equipment_needed?: string[] | null
+          goal_tags?: string[] | null
+          id?: string
+          is_curated?: boolean
+          is_ongoing?: boolean
+          owner_user_id?: string | null
+          parent_split_id?: string | null
+          published_version?: number | null
+          rejection_reason?: string | null
+          source?: string
+          status?: string
+          title: string
+          updated_at?: string
+          use_count?: number
+          version?: number
+          view_count?: number
+          weeks_count?: number | null
+          workout_type?: string
+        }
+        Update: {
+          created_at?: string
+          days_per_week?: number | null
+          description?: string | null
+          difficulty_level?: string | null
+          equipment_needed?: string[] | null
+          goal_tags?: string[] | null
+          id?: string
+          is_curated?: boolean
+          is_ongoing?: boolean
+          owner_user_id?: string | null
+          parent_split_id?: string | null
+          published_version?: number | null
+          rejection_reason?: string | null
+          source?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          use_count?: number
+          version?: number
+          view_count?: number
+          weeks_count?: number | null
+          workout_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_splits_parent_split_id_fkey"
+            columns: ["parent_split_id"]
+            isOneToOne: false
+            referencedRelation: "training_splits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_active_split: {
+        Row: {
+          activated_at: string
+          current_week: number
+          id: string
+          split_id: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string
+          current_week?: number
+          id?: string
+          split_id: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string
+          current_week?: number
+          id?: string
+          split_id?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_active_split_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "training_splits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notifications: {
         Row: {
           action_url: string | null
@@ -5540,9 +5803,14 @@ export type Database = {
           plan_assignment_id: string | null
           plan_week_number: number | null
           plan_workout_id: string | null
+          session_type: string | null
+          split_id: string | null
+          split_week_id: string | null
+          split_workout_id: string | null
           started_at: string
           status: string
           synced_at: string | null
+          template_id: string | null
           total_volume: number | null
           user_id: string
           workout_name: string
@@ -5561,9 +5829,14 @@ export type Database = {
           plan_assignment_id?: string | null
           plan_week_number?: number | null
           plan_workout_id?: string | null
+          session_type?: string | null
+          split_id?: string | null
+          split_week_id?: string | null
+          split_workout_id?: string | null
           started_at: string
           status?: string
           synced_at?: string | null
+          template_id?: string | null
           total_volume?: number | null
           user_id: string
           workout_name: string
@@ -5582,9 +5855,14 @@ export type Database = {
           plan_assignment_id?: string | null
           plan_week_number?: number | null
           plan_workout_id?: string | null
+          session_type?: string | null
+          split_id?: string | null
+          split_week_id?: string | null
+          split_workout_id?: string | null
           started_at?: string
           status?: string
           synced_at?: string | null
+          template_id?: string | null
           total_volume?: number | null
           user_id?: string
           workout_name?: string
@@ -5610,6 +5888,34 @@ export type Database = {
             columns: ["plan_workout_id"]
             isOneToOne: false
             referencedRelation: "plan_workouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_split_id_fkey"
+            columns: ["split_id"]
+            isOneToOne: false
+            referencedRelation: "training_splits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_split_week_id_fkey"
+            columns: ["split_week_id"]
+            isOneToOne: false
+            referencedRelation: "split_weeks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_split_workout_id_fkey"
+            columns: ["split_workout_id"]
+            isOneToOne: false
+            referencedRelation: "split_workouts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sessions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "workout_templates"
             referencedColumns: ["id"]
           },
         ]
@@ -5652,6 +5958,86 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workout_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          difficulty_level: string | null
+          equipment_needed: string[] | null
+          estimated_duration_minutes: number | null
+          exercise_data: Json | null
+          id: string
+          is_curated: boolean
+          owner_user_id: string | null
+          parent_template_id: string | null
+          published_version: number | null
+          rejection_reason: string | null
+          source: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          use_count: number
+          version: number
+          view_count: number
+          workout_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          difficulty_level?: string | null
+          equipment_needed?: string[] | null
+          estimated_duration_minutes?: number | null
+          exercise_data?: Json | null
+          id?: string
+          is_curated?: boolean
+          owner_user_id?: string | null
+          parent_template_id?: string | null
+          published_version?: number | null
+          rejection_reason?: string | null
+          source?: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          use_count?: number
+          version?: number
+          view_count?: number
+          workout_type?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          difficulty_level?: string | null
+          equipment_needed?: string[] | null
+          estimated_duration_minutes?: number | null
+          exercise_data?: Json | null
+          id?: string
+          is_curated?: boolean
+          owner_user_id?: string | null
+          parent_template_id?: string | null
+          published_version?: number | null
+          rejection_reason?: string | null
+          source?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          use_count?: number
+          version?: number
+          view_count?: number
+          workout_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_templates_parent_template_id_fkey"
+            columns: ["parent_template_id"]
+            isOneToOne: false
+            referencedRelation: "workout_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
