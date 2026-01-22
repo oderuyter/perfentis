@@ -43,9 +43,9 @@ export default function SplitBuilder() {
   const { splitId } = useParams<{ splitId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isNew = splitId === 'new';
+  const isNew = !splitId; // No splitId means creating new
   
-  const { data: existingSplit, isLoading } = useTrainingSplit(isNew ? undefined : splitId);
+  const { data: existingSplit, isLoading } = useTrainingSplit(splitId);
   const { createSplit, addWeek, addWorkoutToWeek } = useTrainingSplits();
 
   // Form state
@@ -125,7 +125,7 @@ export default function SplitBuilder() {
     });
   };
 
-  if (isLoading && !isNew) {
+  if (isLoading && !isNew && splitId) {
     return (
       <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
         <div className="fixed inset-0 gradient-glow pointer-events-none" />

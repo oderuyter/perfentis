@@ -47,7 +47,8 @@ export default function WorkoutBuilder() {
   const { templateId } = useParams<{ templateId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isNew = templateId === 'new';
+  // Route is /train/workout/new for creating, /train/workout/:templateId/edit for editing
+  const isNew = !templateId || templateId === 'new';
   
   const { createTemplate } = useWorkoutTemplates();
 
@@ -64,8 +65,10 @@ export default function WorkoutBuilder() {
 
   // Load existing template
   useEffect(() => {
-    if (!isNew && templateId) {
+    if (!isNew && templateId && templateId !== 'new') {
       loadTemplate();
+    } else {
+      setLoading(false);
     }
   }, [templateId, isNew]);
 
