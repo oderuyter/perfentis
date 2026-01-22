@@ -147,6 +147,7 @@ function AppRoutes() {
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/" element={<Home />} />
         <Route path="/train" element={<Train />} />
+        <Route path="/train/split/new" element={<SplitBuilder />} />
         <Route path="/train/split/:splitId" element={<SplitDetail />} />
         <Route path="/train/split/:splitId/edit" element={<SplitBuilder />} />
         <Route path="/train/workout/new" element={<WorkoutBuilder />} />
