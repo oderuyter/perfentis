@@ -248,8 +248,9 @@ export function useTrainingSplits() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (_, splitId) => {
       queryClient.invalidateQueries({ queryKey: ['training-splits'] });
+      queryClient.invalidateQueries({ queryKey: ['training-split', splitId] });
     },
   });
 
@@ -288,8 +289,22 @@ export function useTrainingSplits() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['training-splits'] });
+      // Also invalidate the specific split query
+      if (data?.week_id) {
+        // We need to get the split_id from the week
+        supabase
+          .from('split_weeks')
+          .select('split_id')
+          .eq('id', data.week_id)
+          .single()
+          .then(({ data: weekData }) => {
+            if (weekData?.split_id) {
+              queryClient.invalidateQueries({ queryKey: ['training-split', weekData.split_id] });
+            }
+          });
+      }
     },
   });
 

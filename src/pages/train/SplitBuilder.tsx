@@ -214,10 +214,10 @@ export default function SplitBuilder() {
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
-                    {[4, 6, 8, 10, 12, 16].map(n => (
+                  <SelectContent className="max-h-60">
+                    {Array.from({ length: 52 }, (_, i) => i + 1).map(n => (
                       <SelectItem key={n} value={n.toString()}>
-                        {n} weeks
+                        {n} week{n > 1 ? 's' : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -9,7 +9,8 @@ import {
   Trash2,
   Dumbbell,
   Heart,
-  Clock
+  Clock,
+  Timer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,6 +41,7 @@ interface ExerciseEntry {
   sets: number;
   reps: string;
   notes?: string;
+  rest_seconds?: number;
   exerciseType?: 'strength' | 'cardio';
 }
 
@@ -99,7 +101,8 @@ export default function WorkoutBuilder() {
             sets: ex.sets || 3,
             reps: ex.reps || '8-12',
             notes: ex.notes,
-            exerciseType: ex.exerciseType,
+            rest_seconds: ex.rest_seconds,
+            exerciseType: ex.exerciseType || ex.exercise_type,
           })));
         }
       }
@@ -118,6 +121,7 @@ export default function WorkoutBuilder() {
       name: exercise.name,
       sets: exercise.sets || 3,
       reps: exercise.exerciseType === 'cardio' ? '' : '8-12',
+      rest_seconds: 90, // Default rest
       exerciseType: exercise.exerciseType,
     };
     setExercises(prev => [...prev, newExercise]);
@@ -154,6 +158,7 @@ export default function WorkoutBuilder() {
         reps: parseInt(ex.reps) || 0,
         reps_min: undefined,
         reps_max: undefined,
+        rest_seconds: ex.rest_seconds || 90,
         notes: ex.notes || undefined,
         exercise_type: ex.exerciseType,
         order_index: index,
@@ -350,50 +355,70 @@ export default function WorkoutBuilder() {
                 {exercises.map((exercise, index) => (
                   <div 
                     key={exercise.id}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
+                    className="p-3 rounded-lg bg-muted/50 space-y-2"
                   >
-                    <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                    <div className="h-8 w-8 rounded-lg bg-primary/12 flex items-center justify-center flex-shrink-0">
-                      {exercise.exerciseType === 'cardio' ? (
-                        <Heart className="h-4 w-4 text-primary" />
-                      ) : (
-                        <Dumbbell className="h-4 w-4 text-primary" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{exercise.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Input
-                          type="number"
-                          value={exercise.sets}
-                          onChange={(e) => handleUpdateExercise(exercise.id, { sets: parseInt(e.target.value) || 3 })}
-                          className="w-16 h-7 text-xs"
-                          min={1}
-                          max={10}
-                        />
-                        <span className="text-xs text-muted-foreground">sets</span>
-                        {exercise.exerciseType !== 'cardio' && (
-                          <>
-                            <span className="text-muted-foreground">×</span>
-                            <Input
-                              value={exercise.reps}
-                              onChange={(e) => handleUpdateExercise(exercise.id, { reps: e.target.value })}
-                              className="w-16 h-7 text-xs"
-                              placeholder="8-12"
-                            />
-                            <span className="text-xs text-muted-foreground">reps</span>
-                          </>
+                    <div className="flex items-center gap-3">
+                      <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <div className="h-8 w-8 rounded-lg bg-primary/12 flex items-center justify-center flex-shrink-0">
+                        {exercise.exerciseType === 'cardio' ? (
+                          <Heart className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Dumbbell className="h-4 w-4 text-primary" />
                         )}
                       </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{exercise.name}</p>
+                      </div>
+                      <Button 
+                        size="icon" 
+                        variant="ghost" 
+                        className="h-8 w-8 flex-shrink-0"
+                        onClick={() => handleRemoveExercise(exercise.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
                     </div>
-                    <Button 
-                      size="icon" 
-                      variant="ghost" 
-                      className="h-8 w-8 flex-shrink-0"
-                      onClick={() => handleRemoveExercise(exercise.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+                    <div className="flex items-center gap-2 pl-10">
+                      <Input
+                        type="number"
+                        value={exercise.sets}
+                        onChange={(e) => handleUpdateExercise(exercise.id, { sets: parseInt(e.target.value) || 3 })}
+                        className="w-14 h-7 text-xs"
+                        min={1}
+                        max={10}
+                      />
+                      <span className="text-xs text-muted-foreground">sets</span>
+                      {exercise.exerciseType !== 'cardio' && (
+                        <>
+                          <span className="text-muted-foreground">×</span>
+                          <Input
+                            value={exercise.reps}
+                            onChange={(e) => handleUpdateExercise(exercise.id, { reps: e.target.value })}
+                            className="w-14 h-7 text-xs"
+                            placeholder="8-12"
+                          />
+                          <span className="text-xs text-muted-foreground">reps</span>
+                        </>
+                      )}
+                      <div className="ml-auto flex items-center gap-1">
+                        <Timer className="h-3 w-3 text-muted-foreground" />
+                        <Select 
+                          value={(exercise.rest_seconds || 90).toString()} 
+                          onValueChange={(v) => handleUpdateExercise(exercise.id, { rest_seconds: parseInt(v) })}
+                        >
+                          <SelectTrigger className="h-7 w-20 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300].map(s => (
+                              <SelectItem key={s} value={s.toString()}>
+                                {s < 60 ? `${s}s` : `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
                   </div>
                 ))}
                 <Button 

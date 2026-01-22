@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy } from "lucide-react";
+import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save } from "lucide-react";
 
 import { useParams, useNavigate } from "react-router-dom";
 import { workouts } from "@/data/workouts";
@@ -17,6 +17,7 @@ import { AddExerciseSheet } from "@/components/workout/AddExerciseSheet";
 import { RestTimerEdit } from "@/components/workout/RestTimerEdit";
 import { ExerciseNav } from "@/components/workout/ExerciseNav";
 import { AdvancedMetrics } from "@/components/workout/AdvancedMetrics";
+import { SaveAsTemplateDialog } from "@/components/workout/SaveAsTemplateDialog";
 import { toast } from "sonner";
 import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
 
@@ -66,6 +67,7 @@ export default function ActiveWorkout() {
   const [showExerciseNav, setShowExerciseNav] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(!!resumeState);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
 
   // Navigate away without ending workout - just go back
   const handleMinimize = useCallback(() => {
@@ -163,9 +165,22 @@ export default function ActiveWorkout() {
     const completedSets = state.exercises.flatMap(e => e.sets).filter(s => s.completed);
     const totalVolume = completedSets.reduce((sum, s) => sum + (s.completedWeight || 0) * (s.completedReps || 0), 0);
     
+    // Prepare exercises for template saving
+    const templateExercises = state.exercises.map(ex => {
+      const repsValue = ex.sets[0]?.completedReps || ex.sets[0]?.targetReps || 8;
+      return {
+        exercise_id: ex.exerciseId || '',
+        name: ex.name,
+        sets: ex.sets.length,
+        reps: typeof repsValue === 'number' ? repsValue : parseInt(String(repsValue)) || 8,
+        exerciseType: ex.exerciseType as 'strength' | 'cardio' | undefined,
+        rest_seconds: 90,
+      };
+    });
+    
     return (
       <div className="fixed inset-0 bg-background flex flex-col items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center w-full max-w-xs">
           <div className="h-20 w-20 rounded-full gradient-card-accent flex items-center justify-center mx-auto mb-6 shadow-lg">
             <Check className="h-10 w-10 text-accent-foreground" />
           </div>
@@ -194,7 +209,7 @@ export default function ActiveWorkout() {
             </motion.div>
           )}
           
-          <div className="grid grid-cols-2 gap-4 w-full max-w-xs mb-8">
+          <div className="grid grid-cols-2 gap-4 w-full mb-6">
             <div className="gradient-card rounded-xl p-4 border border-border/50 shadow-card">
               <p className="text-2xl font-semibold">{formatTime(state.elapsedTime)}</p>
               <p className="text-xs text-muted-foreground mt-1">Duration</p>
@@ -204,8 +219,30 @@ export default function ActiveWorkout() {
               <p className="text-xs text-muted-foreground mt-1">Sets</p>
             </div>
           </div>
-          <Button onClick={handleFinish} className="w-full max-w-xs h-12 rounded-xl font-semibold">Done</Button>
+          
+          {/* Save as Template CTA */}
+          {isFreeform && state.exercises.length > 0 && (
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSaveTemplate(true)}
+              className="w-full h-12 rounded-xl font-semibold mb-3 gap-2"
+            >
+              <Save className="h-5 w-5" />
+              Save as Template
+            </Button>
+          )}
+          
+          <Button onClick={handleFinish} className="w-full h-12 rounded-xl font-semibold">Done</Button>
         </motion.div>
+        
+        {/* Save as Template Dialog */}
+        <SaveAsTemplateDialog
+          open={showSaveTemplate}
+          onClose={() => setShowSaveTemplate(false)}
+          exercises={templateExercises}
+          suggestedName=""
+          duration={Math.round(state.elapsedTime / 60)}
+        />
       </div>
     );
   }
