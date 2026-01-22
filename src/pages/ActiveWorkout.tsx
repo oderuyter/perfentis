@@ -31,9 +31,12 @@ export default function ActiveWorkout() {
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  const workout = workouts.find(w => w.id === id);
+  const isFreeform = id === 'free';
+  const workout = isFreeform ? null : workouts.find(w => w.id === id);
   const savedState = loadSavedWorkout();
-  const resumeState = savedState?.workoutId === id ? savedState : null;
+  const resumeState = isFreeform 
+    ? (savedState?.workoutId === 'freeform' ? savedState : null)
+    : (savedState?.workoutId === id ? savedState : null);
   
   const {
     state,
@@ -48,7 +51,7 @@ export default function ActiveWorkout() {
     addExercise,
     removeExercise,
     endWorkout,
-  } = useWorkoutState(workout || null, resumeState);
+  } = useWorkoutState(workout || null, resumeState, isFreeform);
 
   const { saveWorkoutSession } = useWorkoutHistory();
   const { checkAndSavePRs } = usePersonalRecords();
@@ -114,7 +117,10 @@ export default function ActiveWorkout() {
     navigate("/");
   }, [navigate, state, saveWorkoutSession, checkAndSavePRs, user]);
 
-  if (!workout || !state) {
+  // For freeform workouts without exercises yet, show empty state with add prompt
+  const hasNoExercises = state && state.exercises.length === 0;
+  
+  if (!state) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <p className="text-muted-foreground">Workout not found</p>
@@ -226,7 +232,28 @@ export default function ActiveWorkout() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col px-4 py-4 overflow-y-auto">
         <AnimatePresence mode="wait">
-          {state.phase === "exercise" ? (
+          {hasNoExercises ? (
+            // Empty state for freeform workouts
+            <motion.div 
+              key="empty" 
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -20 }} 
+              className="flex-1 flex flex-col items-center justify-center text-center"
+            >
+              <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-6">
+                <Plus className="h-10 w-10 text-muted-foreground" />
+              </div>
+              <h2 className="text-xl font-semibold mb-2">Add Your First Exercise</h2>
+              <p className="text-muted-foreground mb-6 max-w-xs">
+                Tap the + button below to add exercises from the library and start building your workout
+              </p>
+              <Button onClick={() => setShowAdd(true)} size="lg" className="gap-2">
+                <Plus className="h-5 w-5" />
+                Add Exercise
+              </Button>
+            </motion.div>
+          ) : state.phase === "exercise" && currentExercise ? (
             <motion.div key="exercise" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div>

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
   Play, 
   Dumbbell, 
@@ -27,8 +27,29 @@ import { useAuth } from "@/hooks/useAuth";
 
 export default function Train() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
-  const [directoryTab, setDirectoryTab] = useState<"workouts" | "splits">("workouts");
+  
+  // Read tab from URL params
+  const urlTab = searchParams.get('tab');
+  const [directoryTab, setDirectoryTab] = useState<"workouts" | "splits">(
+    urlTab === 'splits' ? 'splits' : 'workouts'
+  );
+
+  // Sync tab with URL
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'splits' && directoryTab !== 'splits') {
+      setDirectoryTab('splits');
+    } else if (tab === 'workouts' && directoryTab !== 'workouts') {
+      setDirectoryTab('workouts');
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: "workouts" | "splits") => {
+    setDirectoryTab(tab);
+    setSearchParams({ tab });
+  };
 
   const handleJustTrain = () => {
     // Navigate to free workout (live builder mode)
@@ -104,7 +125,7 @@ export default function Train() {
         transition={{ delay: 0.2 }}
         className="mt-6"
       >
-        <Tabs value={directoryTab} onValueChange={(v) => setDirectoryTab(v as "workouts" | "splits")}>
+        <Tabs value={directoryTab} onValueChange={(v) => handleTabChange(v as "workouts" | "splits")}>
           <TabsList className="grid w-full grid-cols-2 mb-4">
             <TabsTrigger value="workouts" className="gap-2">
               <Dumbbell className="h-4 w-4" />

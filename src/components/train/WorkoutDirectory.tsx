@@ -164,7 +164,7 @@ export function WorkoutDirectory() {
           <Button 
             variant="outline" 
             className="w-full border-dashed gap-2"
-            onClick={() => navigate('/workout/free/active')}
+            onClick={() => navigate('/train/workout/new')}
           >
             <Plus className="h-4 w-4" />
             Create New Workout
