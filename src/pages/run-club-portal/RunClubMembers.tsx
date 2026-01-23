@@ -9,7 +9,9 @@ import {
   X,
   Loader2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Flame,
+  ChevronRight,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -29,9 +31,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RunClub, useRunClubManagement } from "@/hooks/useRunClubs";
+import { useMemberAttendanceStats } from "@/hooks/useRunClubAttendance";
+import { MemberAttendanceHistory } from "@/components/run-clubs/MemberAttendanceHistory";
 import { toast } from "sonner";
 
 interface RunClubPortalContext {
@@ -58,6 +68,11 @@ export default function RunClubMembers() {
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [reason, setReason] = useState("");
   const [processing, setProcessing] = useState<string | null>(null);
+  const [memberDetailSheet, setMemberDetailSheet] = useState<{
+    open: boolean;
+    userId: string | null;
+    displayName: string | null;
+  }>({ open: false, userId: null, displayName: null });
 
   if (!selectedClubId) {
     return (
@@ -199,7 +214,12 @@ export default function RunClubMembers() {
               filteredMembers.map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center justify-between p-4 bg-card border border-border rounded-lg"
+                  className="flex items-center justify-between p-4 bg-card border border-border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => setMemberDetailSheet({
+                    open: true,
+                    userId: member.user_id,
+                    displayName: (member as any).profile?.display_name || 'Unknown Member'
+                  })}
                 >
                   <div className="flex items-center gap-3">
                     <Avatar>
@@ -218,24 +238,28 @@ export default function RunClubMembers() {
                     </div>
                   </div>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => {
-                          setSelectedItem(member.id);
-                          setSuspendDialogOpen(true);
-                        }}
-                        className="text-destructive"
-                      >
-                        Suspend Member
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center gap-2">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedItem(member.id);
+                            setSuspendDialogOpen(true);
+                          }}
+                          className="text-destructive"
+                        >
+                          Suspend Member
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               ))
             )}
@@ -405,6 +429,55 @@ export default function RunClubMembers() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Member Detail Sheet with Attendance */}
+      <MemberAttendanceSheet
+        open={memberDetailSheet.open}
+        onOpenChange={(open) => setMemberDetailSheet({ ...memberDetailSheet, open })}
+        clubId={selectedClubId}
+        userId={memberDetailSheet.userId}
+        displayName={memberDetailSheet.displayName}
+      />
     </div>
+  );
+}
+
+// Separate component to use the hook properly
+function MemberAttendanceSheet({
+  open,
+  onOpenChange,
+  clubId,
+  userId,
+  displayName
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  clubId: string | null;
+  userId: string | null;
+  displayName: string | null;
+}) {
+  const { stats, history, isLoading } = useMemberAttendanceStats(
+    open ? clubId : null,
+    userId || undefined
+  );
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full sm:max-w-lg overflow-auto">
+        <SheetHeader>
+          <SheetTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            {displayName || 'Member'}
+          </SheetTitle>
+        </SheetHeader>
+        <div className="py-4">
+          <MemberAttendanceHistory
+            stats={stats}
+            history={history}
+            isLoading={isLoading}
+          />
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
