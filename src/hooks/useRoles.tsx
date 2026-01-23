@@ -15,7 +15,7 @@ export type AppRole =
   | 'run_club_organiser'
   | 'run_club_member';
 
-export type RoleScope = 'global' | 'gym' | 'event';
+export type RoleScope = 'global' | 'gym' | 'event' | 'run_club';
 
 export interface UserRole {
   id: string;
