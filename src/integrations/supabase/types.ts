@@ -5111,6 +5111,633 @@ export type Database = {
           },
         ]
       }
+      run_club_announcements: {
+        Row: {
+          author_user_id: string
+          body: string
+          created_at: string
+          id: string
+          is_pinned: boolean | null
+          published_at: string | null
+          run_club_id: string
+          send_email: boolean | null
+          send_notification: boolean | null
+          title: string
+        }
+        Insert: {
+          author_user_id: string
+          body: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean | null
+          published_at?: string | null
+          run_club_id: string
+          send_email?: boolean | null
+          send_notification?: boolean | null
+          title: string
+        }
+        Update: {
+          author_user_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_pinned?: boolean | null
+          published_at?: string | null
+          run_club_id?: string
+          send_email?: boolean | null
+          send_notification?: boolean | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_announcements_run_club_id_fkey"
+            columns: ["run_club_id"]
+            isOneToOne: false
+            referencedRelation: "run_clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_club_applications: {
+        Row: {
+          applicant_email: string | null
+          applicant_name: string | null
+          applicant_phone: string | null
+          applied_at: string
+          conversation_id: string | null
+          created_at: string
+          crm_lead_id: string | null
+          id: string
+          message: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          run_club_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applicant_email?: string | null
+          applicant_name?: string | null
+          applicant_phone?: string | null
+          applied_at?: string
+          conversation_id?: string | null
+          created_at?: string
+          crm_lead_id?: string | null
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          run_club_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applicant_email?: string | null
+          applicant_name?: string | null
+          applicant_phone?: string | null
+          applied_at?: string
+          conversation_id?: string | null
+          created_at?: string
+          crm_lead_id?: string | null
+          id?: string
+          message?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          run_club_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_applications_run_club_id_fkey"
+            columns: ["run_club_id"]
+            isOneToOne: false
+            referencedRelation: "run_clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_club_attendance: {
+        Row: {
+          attended: boolean | null
+          created_at: string
+          id: string
+          notes: string | null
+          recorded_at: string
+          recorded_by: string | null
+          run_club_id: string
+          run_id: string
+          run_instance_id: string | null
+          user_id: string
+        }
+        Insert: {
+          attended?: boolean | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          run_club_id: string
+          run_id: string
+          run_instance_id?: string | null
+          user_id: string
+        }
+        Update: {
+          attended?: boolean | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          recorded_by?: string | null
+          run_club_id?: string
+          run_id?: string
+          run_instance_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_attendance_run_club_id_fkey"
+            columns: ["run_club_id"]
+            isOneToOne: false
+            referencedRelation: "run_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_club_attendance_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run_club_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_club_attendance_run_instance_id_fkey"
+            columns: ["run_instance_id"]
+            isOneToOne: false
+            referencedRelation: "run_club_run_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_club_event_registrations: {
+        Row: {
+          event_id: string
+          id: string
+          registered_at: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          registered_at?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          registered_at?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "run_club_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_club_events: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          description: string | null
+          distances: string[] | null
+          end_time: string | null
+          event_date: string
+          event_type: string | null
+          external_registration_url: string | null
+          ical_uid: string | null
+          id: string
+          location: string | null
+          location_coords: Json | null
+          registration_deadline: string | null
+          registration_required: boolean | null
+          run_club_id: string
+          start_time: string | null
+          status: string | null
+          sync_version: number | null
+          timezone: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          distances?: string[] | null
+          end_time?: string | null
+          event_date: string
+          event_type?: string | null
+          external_registration_url?: string | null
+          ical_uid?: string | null
+          id?: string
+          location?: string | null
+          location_coords?: Json | null
+          registration_deadline?: string | null
+          registration_required?: boolean | null
+          run_club_id: string
+          start_time?: string | null
+          status?: string | null
+          sync_version?: number | null
+          timezone?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          distances?: string[] | null
+          end_time?: string | null
+          event_date?: string
+          event_type?: string | null
+          external_registration_url?: string | null
+          ical_uid?: string | null
+          id?: string
+          location?: string | null
+          location_coords?: Json | null
+          registration_deadline?: string | null
+          registration_required?: boolean | null
+          run_club_id?: string
+          start_time?: string | null
+          status?: string | null
+          sync_version?: number | null
+          timezone?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_events_run_club_id_fkey"
+            columns: ["run_club_id"]
+            isOneToOne: false
+            referencedRelation: "run_clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_club_members: {
+        Row: {
+          created_at: string
+          id: string
+          internal_notes: string | null
+          joined_at: string
+          run_club_id: string
+          status: string
+          suspended_at: string | null
+          suspension_reason: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          internal_notes?: string | null
+          joined_at?: string
+          run_club_id: string
+          status?: string
+          suspended_at?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          internal_notes?: string | null
+          joined_at?: string
+          run_club_id?: string
+          status?: string
+          suspended_at?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_members_run_club_id_fkey"
+            columns: ["run_club_id"]
+            isOneToOne: false
+            referencedRelation: "run_clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_club_organisers: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          run_club_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          run_club_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          run_club_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_organisers_run_club_id_fkey"
+            columns: ["run_club_id"]
+            isOneToOne: false
+            referencedRelation: "run_clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_club_run_instances: {
+        Row: {
+          cancellation_reason: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          run_club_id: string
+          run_id: string
+          scheduled_date: string
+          scheduled_time: string | null
+          status: string | null
+          updated_at: string
+          weather_conditions: string | null
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          run_club_id: string
+          run_id: string
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: string | null
+          updated_at?: string
+          weather_conditions?: string | null
+        }
+        Update: {
+          cancellation_reason?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          run_club_id?: string
+          run_id?: string
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: string | null
+          updated_at?: string
+          weather_conditions?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_run_instances_run_club_id_fkey"
+            columns: ["run_club_id"]
+            isOneToOne: false
+            referencedRelation: "run_clubs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "run_club_run_instances_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "run_club_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_club_runs: {
+        Row: {
+          attendance_tracking_enabled: boolean | null
+          can_link_to_workout: boolean | null
+          created_at: string
+          day_of_week: number | null
+          description: string | null
+          difficulty: string | null
+          distances: string[] | null
+          end_time: string | null
+          ical_uid: string | null
+          id: string
+          is_active: boolean | null
+          is_recurring: boolean | null
+          meeting_point: string | null
+          meeting_point_coords: Json | null
+          notes: string | null
+          one_off_date: string | null
+          pace_groups: Json | null
+          recurrence_rule: string | null
+          route_description: string | null
+          run_club_id: string
+          start_time: string | null
+          sync_version: number | null
+          timezone: string | null
+          title: string
+          updated_at: string
+          workout_linkable: boolean | null
+        }
+        Insert: {
+          attendance_tracking_enabled?: boolean | null
+          can_link_to_workout?: boolean | null
+          created_at?: string
+          day_of_week?: number | null
+          description?: string | null
+          difficulty?: string | null
+          distances?: string[] | null
+          end_time?: string | null
+          ical_uid?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_recurring?: boolean | null
+          meeting_point?: string | null
+          meeting_point_coords?: Json | null
+          notes?: string | null
+          one_off_date?: string | null
+          pace_groups?: Json | null
+          recurrence_rule?: string | null
+          route_description?: string | null
+          run_club_id: string
+          start_time?: string | null
+          sync_version?: number | null
+          timezone?: string | null
+          title: string
+          updated_at?: string
+          workout_linkable?: boolean | null
+        }
+        Update: {
+          attendance_tracking_enabled?: boolean | null
+          can_link_to_workout?: boolean | null
+          created_at?: string
+          day_of_week?: number | null
+          description?: string | null
+          difficulty?: string | null
+          distances?: string[] | null
+          end_time?: string | null
+          ical_uid?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_recurring?: boolean | null
+          meeting_point?: string | null
+          meeting_point_coords?: Json | null
+          notes?: string | null
+          one_off_date?: string | null
+          pace_groups?: Json | null
+          recurrence_rule?: string | null
+          route_description?: string | null
+          run_club_id?: string
+          start_time?: string | null
+          sync_version?: number | null
+          timezone?: string | null
+          title?: string
+          updated_at?: string
+          workout_linkable?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "run_club_runs_run_club_id_fkey"
+            columns: ["run_club_id"]
+            isOneToOne: false
+            referencedRelation: "run_clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      run_clubs: {
+        Row: {
+          applications_enabled: boolean | null
+          auto_approve_applications: boolean | null
+          calendar_sync_enabled: boolean | null
+          club_style: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          cover_image_url: string | null
+          created_at: string
+          days_of_week: number[] | null
+          description: string | null
+          distances_offered: string[] | null
+          facebook_url: string | null
+          ical_uid: string | null
+          id: string
+          instagram_handle: string | null
+          logo_url: string | null
+          meeting_locations: Json | null
+          membership_benefits: string | null
+          membership_expectations: string | null
+          membership_fee: number | null
+          membership_fee_cadence: string | null
+          membership_type: string | null
+          name: string
+          owner_user_id: string
+          pace_groups: Json | null
+          primary_city: string | null
+          primary_country: string | null
+          primary_postcode: string | null
+          slug: string | null
+          status: string
+          strava_club_url: string | null
+          sync_version: number | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          applications_enabled?: boolean | null
+          auto_approve_applications?: boolean | null
+          calendar_sync_enabled?: boolean | null
+          club_style?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          days_of_week?: number[] | null
+          description?: string | null
+          distances_offered?: string[] | null
+          facebook_url?: string | null
+          ical_uid?: string | null
+          id?: string
+          instagram_handle?: string | null
+          logo_url?: string | null
+          meeting_locations?: Json | null
+          membership_benefits?: string | null
+          membership_expectations?: string | null
+          membership_fee?: number | null
+          membership_fee_cadence?: string | null
+          membership_type?: string | null
+          name: string
+          owner_user_id: string
+          pace_groups?: Json | null
+          primary_city?: string | null
+          primary_country?: string | null
+          primary_postcode?: string | null
+          slug?: string | null
+          status?: string
+          strava_club_url?: string | null
+          sync_version?: number | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          applications_enabled?: boolean | null
+          auto_approve_applications?: boolean | null
+          calendar_sync_enabled?: boolean | null
+          club_style?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          days_of_week?: number[] | null
+          description?: string | null
+          distances_offered?: string[] | null
+          facebook_url?: string | null
+          ical_uid?: string | null
+          id?: string
+          instagram_handle?: string | null
+          logo_url?: string | null
+          meeting_locations?: Json | null
+          membership_benefits?: string | null
+          membership_expectations?: string | null
+          membership_fee?: number | null
+          membership_fee_cadence?: string | null
+          membership_type?: string | null
+          name?: string
+          owner_user_id?: string
+          pace_groups?: Json | null
+          primary_city?: string | null
+          primary_country?: string | null
+          primary_postcode?: string | null
+          slug?: string | null
+          status?: string
+          strava_club_url?: string | null
+          sync_version?: number | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       saved_playlists: {
         Row: {
           cached_tracks_json: Json | null
@@ -6220,6 +6847,10 @@ export type Database = {
       }
     }
     Functions: {
+      approve_run_club_application: {
+        Args: { p_application_id: string }
+        Returns: string
+      }
       can_send_message_email: {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
@@ -6290,6 +6921,14 @@ export type Database = {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
       }
+      is_run_club_member: {
+        Args: { _run_club_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_run_club_organiser: {
+        Args: { _run_club_id: string; _user_id: string }
+        Returns: boolean
+      }
       log_audit_event: {
         Args: {
           _action: string
@@ -6301,6 +6940,10 @@ export type Database = {
           _severity?: string
         }
         Returns: string
+      }
+      reject_run_club_application: {
+        Args: { p_application_id: string; p_reason?: string }
+        Returns: undefined
       }
       should_send_notification_email: {
         Args: { p_notification_type: string; p_user_id: string }
@@ -6322,6 +6965,8 @@ export type Database = {
         | "coach_client"
         | "event_organiser"
         | "event_member"
+        | "run_club_organiser"
+        | "run_club_member"
       cardio_modality:
         | "run"
         | "bike"
@@ -6509,6 +7154,8 @@ export const Constants = {
         "coach_client",
         "event_organiser",
         "event_member",
+        "run_club_organiser",
+        "run_club_member",
       ],
       cardio_modality: [
         "run",

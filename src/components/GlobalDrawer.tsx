@@ -15,7 +15,8 @@ import {
   Flag,
   ShieldCheck,
   Music,
-  Inbox
+  Inbox,
+  Footprints
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,7 @@ import { useRoles } from "@/hooks/useRoles";
 import { useOwnedGyms } from "@/hooks/useOwnedGyms";
 import { useCoach } from "@/hooks/useCoach";
 import { useOwnedEvents } from "@/hooks/useOwnedEvents";
+import { useOwnedRunClubs } from "@/hooks/useRunClubs";
 
 interface DrawerItem {
   to: string;
@@ -32,6 +34,7 @@ interface DrawerItem {
   requiresGymAccess?: boolean;
   requiresCoachAccess?: boolean;
   requiresEventAccess?: boolean;
+  requiresRunClubAccess?: boolean;
   requiresAdmin?: boolean;
 }
 
@@ -40,9 +43,11 @@ const allDrawerItems: DrawerItem[] = [
   { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym", requiresGymAccess: true },
   { to: "/coach-portal", icon: GraduationCap, label: "Coach Portal", description: "Manage your coaching", requiresCoachAccess: true },
   { to: "/event-portal", icon: Flag, label: "Event Portal", description: "Manage your events", requiresEventAccess: true },
+  { to: "/run-club-portal", icon: Footprints, label: "Run Club Portal", description: "Manage your run clubs", requiresRunClubAccess: true },
   { to: "/inbox", icon: Inbox, label: "Inbox", description: "Messages & conversations" },
   { to: "/gym-membership", icon: CreditCard, label: "Gym Membership", description: "Manage your gym access" },
   { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
+  { to: "/run-clubs", icon: Footprints, label: "Run Clubs", description: "Find & join run clubs" },
   { to: "/social", icon: MessageCircle, label: "Social", description: "Community feed" },
   { to: "/events", icon: Trophy, label: "Events & Competitions", description: "Compete and track" },
   { to: "/playlists", icon: Music, label: "Playlists", description: "Workout music" },
@@ -62,6 +67,7 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
   const { hasGymAccess } = useOwnedGyms();
   const { isCoach, isLoading: isCoachLoading } = useCoach();
   const { hasEventAccess, isLoading: isEventLoading } = useOwnedEvents();
+  const { hasRunClubAccess, isLoading: isRunClubLoading } = useOwnedRunClubs();
 
   // Filter drawer items based on roles
   // Event Portal is always visible so users can create their first event
@@ -80,9 +86,13 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
         // Always show Event Portal - users can create events from there
         return true;
       }
+      if (item.requiresRunClubAccess) {
+        // Always show Run Club Portal - users can create clubs from there
+        return true;
+      }
       return true;
     });
-  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading]);
+  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading, hasRunClubAccess]);
 
   const handleNavigation = (to: string) => {
     navigate(to);

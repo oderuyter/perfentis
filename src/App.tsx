@@ -26,6 +26,7 @@ import GymMembership from "./pages/GymMembership";
 import FindCoach from "./pages/FindCoach";
 import Social from "./pages/Social";
 import Events from "./pages/Events";
+import RunClubs from "./pages/RunClubs";
 import Help from "./pages/Help";
 import Playlists from "./pages/Playlists";
 import Inbox from "./pages/Inbox";
@@ -81,6 +82,18 @@ import EventReports from "./pages/event-portal/EventReports";
 import EventSettings from "./pages/event-portal/EventSettings";
 import EventInbox from "./pages/event-portal/EventInbox";
 import EventCRM from "./pages/event-portal/EventCRM";
+import RunClubPortalLayout from "./pages/run-club-portal/RunClubPortalLayout";
+import RunClubDashboard from "./pages/run-club-portal/RunClubDashboard";
+import RunClubMembers from "./pages/run-club-portal/RunClubMembers";
+import RunClubRuns from "./pages/run-club-portal/RunClubRuns";
+import RunClubEvents from "./pages/run-club-portal/RunClubEvents";
+import RunClubAttendance from "./pages/run-club-portal/RunClubAttendance";
+import RunClubAnnouncements from "./pages/run-club-portal/RunClubAnnouncements";
+import RunClubFinancials from "./pages/run-club-portal/RunClubFinancials";
+import RunClubProfile from "./pages/run-club-portal/RunClubProfile";
+import RunClubSettings from "./pages/run-club-portal/RunClubSettings";
+import RunClubInbox from "./pages/run-club-portal/RunClubInbox";
+import RunClubCRM from "./pages/run-club-portal/RunClubCRM";
 import AcceptInvite from "./pages/AcceptInvite";
 import AdminPortalLayout from "./pages/admin-portal/AdminPortalLayout";
 import AdminDashboard from "./pages/admin-portal/AdminDashboard";
@@ -165,6 +178,7 @@ function AppRoutes() {
         <Route path="/find-coach" element={<FindCoach />} />
         <Route path="/social" element={<Social />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/run-clubs" element={<RunClubs />} />
         <Route path="/playlists" element={<Playlists />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/notifications" element={<Notifications />} />
@@ -224,6 +238,20 @@ function AppRoutes() {
         <Route path="settings" element={<EventSettings />} />
         <Route path="inbox" element={<EventInbox />} />
         <Route path="crm" element={<EventCRM />} />
+      </Route>
+      <Route path="/run-club-portal" element={<ProtectedRoute><RunClubPortalLayout /></ProtectedRoute>}>
+        <Route index element={<RunClubDashboard />} />
+        <Route path="dashboard" element={<RunClubDashboard />} />
+        <Route path="inbox" element={<RunClubInbox />} />
+        <Route path="crm" element={<RunClubCRM />} />
+        <Route path="members" element={<RunClubMembers />} />
+        <Route path="runs" element={<RunClubRuns />} />
+        <Route path="attendance" element={<RunClubAttendance />} />
+        <Route path="events" element={<RunClubEvents />} />
+        <Route path="announcements" element={<RunClubAnnouncements />} />
+        <Route path="financials" element={<RunClubFinancials />} />
+        <Route path="profile" element={<RunClubProfile />} />
+        <Route path="settings" element={<RunClubSettings />} />
       </Route>
       <Route path="/admin-portal" element={<ProtectedRoute><AdminPortalLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
