@@ -116,6 +116,7 @@ import AdminRegistrations from "./pages/admin-portal/AdminRegistrations";
 import AdminEmailDiagnostics from "./pages/admin-portal/AdminEmailDiagnostics";
 import AdminWorkoutModeration from "./pages/admin-portal/AdminWorkoutModeration";
 import AdminSplitModeration from "./pages/admin-portal/AdminSplitModeration";
+import AdminRunClubs from "./pages/admin-portal/AdminRunClubs";
 
 const queryClient = new QueryClient();
 
@@ -260,6 +261,7 @@ function AppRoutes() {
         <Route path="gyms" element={<AdminGyms />} />
         <Route path="coaches" element={<AdminCoaches />} />
         <Route path="events" element={<AdminEvents />} />
+        <Route path="run-clubs" element={<AdminRunClubs />} />
         <Route path="workouts" element={<AdminWorkouts />} />
         <Route path="workout-moderation" element={<AdminWorkoutModeration />} />
         <Route path="split-moderation" element={<AdminSplitModeration />} />

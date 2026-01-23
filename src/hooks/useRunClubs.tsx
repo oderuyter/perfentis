@@ -251,12 +251,13 @@ export function useUserRunClubs() {
   return { memberships, applications, isLoading, refetch: fetchData };
 }
 
-// Hook for owned/organised run clubs
+// Hook for owned/organised run clubs (also includes admin access)
 export function useOwnedRunClubs() {
   const { user } = useAuth();
   const [clubs, setClubs] = useState<RunClub[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const hasRunClubAccess = clubs.length > 0;
+  const [isAdmin, setIsAdmin] = useState(false);
+  const hasRunClubAccess = clubs.length > 0 || isAdmin;
 
   const fetchClubs = useCallback(async () => {
     if (!user) {
@@ -265,6 +266,30 @@ export function useOwnedRunClubs() {
     }
 
     try {
+      // Check if user is admin
+      const { data: adminRole } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      const userIsAdmin = !!adminRole;
+      setIsAdmin(userIsAdmin);
+
+      // If admin, fetch all clubs
+      if (userIsAdmin) {
+        const { data: allClubs } = await supabase
+          .from("run_clubs")
+          .select("*")
+          .order("name");
+        
+        setClubs((allClubs || []) as unknown as RunClub[]);
+        setIsLoading(false);
+        return;
+      }
+
       // Fetch clubs where user is owner
       const { data: ownedClubs } = await supabase
         .from("run_clubs")
@@ -309,7 +334,7 @@ export function useOwnedRunClubs() {
     fetchClubs();
   }, [fetchClubs]);
 
-  return { clubs, isLoading, hasRunClubAccess, refetch: fetchClubs };
+  return { clubs, isLoading, hasRunClubAccess, isAdmin, refetch: fetchClubs };
 }
 
 // Hook for run club management (organiser portal)
