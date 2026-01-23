@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save } from "lucide-react";
 
 import { useParams, useNavigate } from "react-router-dom";
-import { workouts } from "@/data/workouts";
+import { workouts, type Workout } from "@/data/workouts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useWorkoutState, loadSavedWorkout, clearSavedWorkout } from "@/hooks/useWorkoutState";
@@ -27,17 +27,23 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 }
 
-export default function ActiveWorkout() {
+interface ActiveWorkoutProps {
+  templateWorkout?: Workout | null;
+}
+
+export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = {}) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   
   const isFreeform = id === 'free';
-  const workout = isFreeform ? null : workouts.find(w => w.id === id);
+  // Use templateWorkout if provided, otherwise look up from static data
+  const workout = templateWorkout || (isFreeform ? null : workouts.find(w => w.id === id));
   const savedState = loadSavedWorkout();
+  const workoutId = templateWorkout?.id || id;
   const resumeState = isFreeform 
     ? (savedState?.workoutId === 'freeform' ? savedState : null)
-    : (savedState?.workoutId === id ? savedState : null);
+    : (savedState?.workoutId === workoutId ? savedState : null);
   
   const {
     state,
