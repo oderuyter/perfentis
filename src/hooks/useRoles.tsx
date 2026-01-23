@@ -11,7 +11,9 @@ export type AppRole =
   | 'coach'
   | 'coach_client'
   | 'event_organiser'
-  | 'event_member';
+  | 'event_member'
+  | 'run_club_organiser'
+  | 'run_club_member';
 
 export type RoleScope = 'global' | 'gym' | 'event';
 
