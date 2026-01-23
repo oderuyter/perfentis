@@ -1152,11 +1152,271 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Step 9: Create Demo Run Clubs
+    const runClubOrganiserId = userIdMap['event_organiser'] || userIdMap['coach'];
+    const runClubMemberId1 = userIdMap['oderuyter+aioathlete1@gmail.com'];
+    const runClubMemberId2 = userIdMap['oderuyter+aioathlete2@gmail.com'];
+
+    const runClubs = [
+      {
+        name: 'City Runners',
+        description: 'A friendly running club for all abilities. We meet weekly for social runs and host monthly events.',
+        primary_city: 'London',
+        primary_postcode: 'EC1A',
+        primary_country: 'United Kingdom',
+        club_style: 'social',
+        distances_offered: ['5K', '10K', 'Half Marathon'],
+        days_of_week: [2, 6],
+        pace_groups: ['Beginner (6:30+/km)', 'Intermediate (5:00-6:00/km)', 'Advanced (<5:00/km)'],
+        membership_type: 'free',
+        status: 'published'
+      },
+      {
+        name: 'Elite Track Club',
+        description: 'Competitive running club focused on performance and racing. Structured training programs with qualified coaches.',
+        primary_city: 'Manchester',
+        primary_postcode: 'M1',
+        primary_country: 'United Kingdom',
+        club_style: 'competitive',
+        distances_offered: ['800m', '1500m', '5K', '10K'],
+        days_of_week: [1, 3, 5],
+        pace_groups: ['Performance (<4:30/km)'],
+        membership_type: 'paid',
+        membership_fee: 25,
+        membership_fee_cadence: 'monthly',
+        status: 'published'
+      },
+      {
+        name: 'Trail Blazers',
+        description: 'Adventure running club exploring trails, parks, and countryside. Mixed abilities welcome.',
+        primary_city: 'Bristol',
+        primary_postcode: 'BS1',
+        primary_country: 'United Kingdom',
+        club_style: 'mixed',
+        distances_offered: ['10K', 'Half Marathon', 'Marathon', 'Ultra'],
+        days_of_week: [0, 3],
+        pace_groups: ['Trail Pace (varies)'],
+        membership_type: 'paid',
+        membership_fee: 5,
+        membership_fee_cadence: 'monthly',
+        status: 'published'
+      }
+    ];
+
+    let firstRunClubId: string | null = null;
+
+    for (const clubData of runClubs) {
+      if (!runClubOrganiserId) continue;
+
+      const { data: existingClub } = await supabaseAdmin
+        .from('run_clubs')
+        .select('id')
+        .eq('name', clubData.name)
+        .single();
+
+      if (existingClub) {
+        if (!firstRunClubId) firstRunClubId = existingClub.id;
+        continue;
+      }
+
+      const { data: newClub, error: clubError } = await supabaseAdmin.from('run_clubs').insert({
+        ...clubData,
+        owner_user_id: runClubOrganiserId,
+        applications_enabled: true,
+        auto_approve_applications: false
+      }).select().single();
+
+      if (newClub) {
+        if (!firstRunClubId) firstRunClubId = newClub.id;
+
+        await supabaseAdmin.from('demo_seed_registry').insert({
+          demo_seed_key: DEMO_SEED_KEY,
+          entity_type: 'run_club',
+          entity_id: newClub.id,
+          metadata: { name: clubData.name }
+        });
+
+        // Add run club organiser role
+        await supabaseAdmin.from('user_roles').upsert({
+          user_id: runClubOrganiserId,
+          role: 'run_club_organiser',
+          scope_type: 'global',
+          scope_id: newClub.id,
+          is_active: true
+        }, { onConflict: 'user_id,role,scope_type,scope_id' });
+
+        // Create runs for the club
+        const runs = [
+          {
+            title: 'Weekly Group Run',
+            description: 'Our main weekly group run. All paces welcome!',
+            is_recurring: true,
+            day_of_week: clubData.days_of_week[0],
+            start_time: '18:30:00',
+            meeting_point: 'Main entrance, City Park',
+            distances: clubData.distances_offered.slice(0, 2),
+            difficulty: 'all-levels',
+            attendance_tracking_enabled: true,
+            is_active: true
+          },
+          {
+            title: 'Weekend Long Run',
+            description: 'Longer runs for endurance building.',
+            is_recurring: true,
+            day_of_week: clubData.days_of_week[1] || 6,
+            start_time: '08:00:00',
+            meeting_point: 'Coffee shop on High Street',
+            distances: clubData.distances_offered,
+            difficulty: 'intermediate',
+            attendance_tracking_enabled: true,
+            is_active: true
+          }
+        ];
+
+        for (const runData of runs) {
+          const { data: run } = await supabaseAdmin.from('run_club_runs').insert({
+            ...runData,
+            run_club_id: newClub.id,
+            pace_groups: clubData.pace_groups
+          }).select().single();
+
+          if (run) {
+            await supabaseAdmin.from('demo_seed_registry').insert({
+              demo_seed_key: DEMO_SEED_KEY,
+              entity_type: 'run_club_run',
+              entity_id: run.id
+            });
+          }
+        }
+
+        // Create events for the club
+        const eventDate = new Date();
+        eventDate.setDate(eventDate.getDate() + 30);
+
+        const { data: clubEvent } = await supabaseAdmin.from('run_club_events').insert({
+          run_club_id: newClub.id,
+          title: `${clubData.name} Summer 5K`,
+          description: 'Annual club 5K race - members and guests welcome!',
+          event_type: 'race',
+          event_date: eventDate.toISOString().split('T')[0],
+          start_time: '09:00:00',
+          location: 'City Park',
+          distances: ['5K'],
+          capacity: 100,
+          registration_required: true,
+          status: 'upcoming'
+        }).select().single();
+
+        if (clubEvent) {
+          await supabaseAdmin.from('demo_seed_registry').insert({
+            demo_seed_key: DEMO_SEED_KEY,
+            entity_type: 'run_club_event',
+            entity_id: clubEvent.id
+          });
+        }
+      }
+    }
+
+    // Add members to the first run club
+    if (firstRunClubId) {
+      const memberIds = [runClubMemberId1, runClubMemberId2].filter(Boolean);
+      
+      for (const memberId of memberIds) {
+        if (!memberId) continue;
+
+        const { data: existingMember } = await supabaseAdmin
+          .from('run_club_members')
+          .select('id')
+          .eq('run_club_id', firstRunClubId)
+          .eq('user_id', memberId)
+          .single();
+
+        if (!existingMember) {
+          const { data: member } = await supabaseAdmin.from('run_club_members').insert({
+            run_club_id: firstRunClubId,
+            user_id: memberId,
+            status: 'active'
+          }).select().single();
+
+          if (member) {
+            await supabaseAdmin.from('demo_seed_registry').insert({
+              demo_seed_key: DEMO_SEED_KEY,
+              entity_type: 'run_club_member',
+              entity_id: member.id
+            });
+
+            // Add run club member role
+            await supabaseAdmin.from('user_roles').upsert({
+              user_id: memberId,
+              role: 'run_club_member',
+              scope_type: 'global',
+              scope_id: firstRunClubId,
+              is_active: true
+            }, { onConflict: 'user_id,role,scope_type,scope_id' });
+          }
+        }
+      }
+
+      // Create a pending application
+      const leadId = userIdMap['coaching_lead'];
+      if (leadId) {
+        const { data: existingApp } = await supabaseAdmin
+          .from('run_club_applications')
+          .select('id')
+          .eq('run_club_id', firstRunClubId)
+          .eq('user_id', leadId)
+          .single();
+
+        if (!existingApp) {
+          const { data: app } = await supabaseAdmin.from('run_club_applications').insert({
+            run_club_id: firstRunClubId,
+            user_id: leadId,
+            status: 'pending',
+            message: 'I would love to join your running club!'
+          }).select().single();
+
+          if (app) {
+            await supabaseAdmin.from('demo_seed_registry').insert({
+              demo_seed_key: DEMO_SEED_KEY,
+              entity_type: 'run_club_application',
+              entity_id: app.id
+            });
+          }
+        }
+      }
+
+      // Create an announcement
+      const { data: existingAnnouncement } = await supabaseAdmin
+        .from('run_club_announcements')
+        .select('id')
+        .eq('run_club_id', firstRunClubId)
+        .eq('title', 'Welcome to City Runners!')
+        .single();
+
+      if (!existingAnnouncement && runClubOrganiserId) {
+        const { data: announcement } = await supabaseAdmin.from('run_club_announcements').insert({
+          run_club_id: firstRunClubId,
+          author_user_id: runClubOrganiserId,
+          title: 'Welcome to City Runners!',
+          body: 'We are excited to have you as part of our running community. Check out our weekly runs and upcoming events!',
+          is_published: true
+        }).select().single();
+
+        if (announcement) {
+          await supabaseAdmin.from('demo_seed_registry').insert({
+            demo_seed_key: DEMO_SEED_KEY,
+            entity_type: 'run_club_announcement',
+            entity_id: announcement.id
+          });
+        }
+      }
+    }
+
     // Log the seed action
     await supabaseAdmin.from('audit_logs').insert({
       actor_id: callerUser.id,
       action: 'demo_data_seeded',
-      message: `Demo data seeded: ${result.summary.usersCreated} users created, ${result.summary.usersUpdated} updated`,
+      message: `Demo data seeded: ${result.summary.usersCreated} users created, ${result.summary.usersUpdated} updated, run clubs created`,
       category: 'admin',
       severity: 'info',
       metadata: result.summary

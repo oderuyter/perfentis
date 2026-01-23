@@ -39,6 +39,7 @@ import {
   Music,
   Inbox,
   Mail,
+  Footprints,
 } from "lucide-react";
 
 interface NavItem {
@@ -56,6 +57,7 @@ const navItems: NavItem[] = [
   { to: "/admin-portal/gyms", icon: Building2, label: "Gyms" },
   { to: "/admin-portal/coaches", icon: GraduationCap, label: "Coaches" },
   { to: "/admin-portal/events", icon: Flag, label: "Events" },
+  { to: "/admin-portal/run-clubs", icon: Footprints, label: "Run Clubs" },
   { to: "/admin-portal/workouts", icon: Dumbbell, label: "Workouts & Programs" },
   { to: "/admin-portal/exercises", icon: BookOpen, label: "Exercise Library" },
   { to: "/admin-portal/playlists", icon: Music, label: "Playlists" },
