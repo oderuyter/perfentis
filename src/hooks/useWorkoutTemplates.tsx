@@ -5,7 +5,7 @@ import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import type { 
   WorkoutTemplate, 
-  WorkoutTemplateExercise,
+  WorkoutStructureData,
   WorkoutFilters,
   LibraryTab,
   WorkoutTemplateStatus
@@ -47,7 +47,7 @@ export function useWorkoutTemplates() {
       return (data || []).map(t => ({
         ...t,
         exercise_data: Array.isArray(t.exercise_data) 
-          ? (t.exercise_data as unknown as WorkoutTemplateExercise[])
+          ? (t.exercise_data as unknown as WorkoutStructureData[])
           : [],
       })) as WorkoutTemplate[];
     },
@@ -116,7 +116,7 @@ export function useWorkoutTemplates() {
       workout_type: 'strength' | 'cardio' | 'mixed';
       estimated_duration_minutes?: number;
       difficulty_level?: string;
-      exercise_data: WorkoutTemplateExercise[];
+      exercise_data: WorkoutStructureData[];
       tags?: string[];
     }) => {
       if (!user) throw new Error('Must be logged in');
@@ -160,7 +160,7 @@ export function useWorkoutTemplates() {
       workout_type?: 'strength' | 'cardio' | 'mixed';
       estimated_duration_minutes?: number;
       difficulty_level?: string;
-      exercise_data?: WorkoutTemplateExercise[];
+      exercise_data?: WorkoutStructureData[];
       tags?: string[];
       status?: WorkoutTemplateStatus;
     }) => {
@@ -291,7 +291,7 @@ export function useWorkoutTemplate(templateId: string | undefined) {
       return {
         ...data,
         exercise_data: Array.isArray(data.exercise_data) 
-          ? (data.exercise_data as unknown as WorkoutTemplateExercise[])
+          ? (data.exercise_data as unknown as WorkoutStructureData[])
           : [],
       } as WorkoutTemplate;
     },

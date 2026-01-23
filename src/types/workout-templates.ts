@@ -5,7 +5,9 @@ export type WorkoutType = 'strength' | 'cardio' | 'mixed';
 export type DifficultyLevel = 'beginner' | 'intermediate' | 'advanced' | 'elite';
 export type TemplateSource = 'admin' | 'user';
 
+// Single exercise in a workout template
 export interface WorkoutTemplateExercise {
+  type?: 'exercise'; // Optional for backward compatibility
   exercise_id: string;
   name: string;
   sets: number;
@@ -21,6 +23,26 @@ export interface WorkoutTemplateExercise {
   exercise_type?: 'strength' | 'cardio';
 }
 
+// Superset block containing multiple exercises
+export interface WorkoutTemplateSupersetBlock {
+  type: 'superset';
+  id: string;
+  name?: string;
+  rounds?: number;
+  rest_after_round_seconds?: number;
+  rest_between_exercises_seconds?: number;
+  items: WorkoutTemplateExercise[];
+  order_index: number;
+}
+
+// Union type for workout structure items
+export type WorkoutStructureData = WorkoutTemplateExercise | WorkoutTemplateSupersetBlock;
+
+// Type guard for superset blocks
+export function isTemplateSupersetBlock(item: WorkoutStructureData): item is WorkoutTemplateSupersetBlock {
+  return item.type === 'superset';
+}
+
 export interface WorkoutTemplate {
   id: string;
   owner_user_id: string | null;
@@ -31,7 +53,7 @@ export interface WorkoutTemplate {
   equipment_needed: string[] | null;
   difficulty_level: DifficultyLevel | null;
   tags: string[] | null;
-  exercise_data: WorkoutTemplateExercise[];
+  exercise_data: WorkoutStructureData[];
   status: WorkoutTemplateStatus;
   rejection_reason: string | null;
   is_curated: boolean;
