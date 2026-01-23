@@ -7016,7 +7016,7 @@ export type Database = {
         | "adductors"
         | "abductors"
         | "full_body"
-      role_scope: "global" | "gym" | "event"
+      role_scope: "global" | "gym" | "event" | "run_club"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -7209,7 +7209,7 @@ export const Constants = {
         "abductors",
         "full_body",
       ],
-      role_scope: ["global", "gym", "event"],
+      role_scope: ["global", "gym", "event", "run_club"],
     },
   },
 } as const
