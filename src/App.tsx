@@ -11,11 +11,13 @@ import Train from "./pages/Train";
 import SplitDetail from "./pages/train/SplitDetail";
 import SplitBuilder from "./pages/train/SplitBuilder";
 import WorkoutBuilder from "./pages/train/WorkoutBuilder";
+import WorkoutTemplateDetail from "./pages/train/WorkoutTemplateDetail";
 import Exercises from "./pages/Exercises";
 import Progress from "./pages/Progress";
 import Profile from "./pages/Profile";
 import WorkoutDetail from "./pages/WorkoutDetail";
 import ActiveWorkout from "./pages/ActiveWorkout";
+import TemplateActiveWorkout from "./pages/TemplateActiveWorkout";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Nutrition from "./pages/Nutrition";
@@ -151,7 +153,9 @@ function AppRoutes() {
         <Route path="/train/split/:splitId" element={<SplitDetail />} />
         <Route path="/train/split/:splitId/edit" element={<SplitBuilder />} />
         <Route path="/train/workout/new" element={<WorkoutBuilder />} />
+        <Route path="/train/workout/:templateId" element={<WorkoutTemplateDetail />} />
         <Route path="/train/workout/:templateId/edit" element={<WorkoutBuilder />} />
+        <Route path="/workout/template/:templateId/active" element={<TemplateActiveWorkout />} />
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />

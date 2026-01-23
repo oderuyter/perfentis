@@ -43,8 +43,8 @@ export function WorkoutDirectory() {
     clearFilters 
   } = useWorkoutTemplates();
 
-  const handleStartWorkout = (template: WorkoutTemplate) => {
-    navigate(`/workout/template/${template.id}/active`);
+  const handleViewWorkout = (template: WorkoutTemplate) => {
+    navigate(`/train/workout/${template.id}`);
   };
 
   return (
@@ -152,7 +152,7 @@ export function WorkoutDirectory() {
               key={template.id} 
               template={template} 
               index={index}
-              onStart={() => handleStartWorkout(template)}
+              onStart={() => handleViewWorkout(template)}
             />
           ))}
         </div>
