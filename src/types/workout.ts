@@ -35,6 +35,22 @@ export interface ActiveExercise {
   addedMidWorkout: boolean;
   muscleGroup?: string;
   exerciseType?: ExerciseSetType; // 'strength' or 'cardio'
+  // Superset tracking
+  blockId?: string; // ID of parent superset block
+  blockType?: 'superset';
+  blockPosition?: number; // Position within superset (0, 1, 2...)
+}
+
+// Superset block for tracking in active workout
+export interface ActiveSupersetBlock {
+  id: string;
+  name?: string;
+  rounds: number;
+  currentRound: number;
+  restAfterRoundSeconds: number;
+  restBetweenExercisesSeconds: number;
+  exerciseIds: string[]; // IDs of exercises in this superset
+  completed: boolean;
 }
 
 // Unit conversion helpers
@@ -136,6 +152,10 @@ export interface ActiveWorkoutState {
   status: 'active' | 'completed' | 'abandoned';
   completedAt: string | null;
   lastSavedAt: string;
+  // Superset tracking
+  supersets?: ActiveSupersetBlock[];
+  currentSupersetId?: string | null;
+  currentSupersetRound?: number;
 }
 
 export interface ExerciseHistory {

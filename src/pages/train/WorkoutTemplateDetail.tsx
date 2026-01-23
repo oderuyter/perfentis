@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Play, Edit, Share, Trash2, MoreHorizontal, Clock, Dumbbell, Target, Users } from "lucide-react";
+import { ArrowLeft, Play, Edit, Share, Trash2, MoreHorizontal, Clock, Dumbbell, Target, Users, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useWorkoutTemplate, useWorkoutTemplates } from "@/hooks/useWorkoutTemplates";
 import { useAuth } from "@/hooks/useAuth";
-import { DIFFICULTY_LABELS, WORKOUT_TYPE_LABELS } from "@/types/workout-templates";
+import { DIFFICULTY_LABELS, WORKOUT_TYPE_LABELS, isTemplateSupersetBlock, type WorkoutStructureData, type WorkoutTemplateExercise } from "@/types/workout-templates";
 import { toast } from "sonner";
 
 export default function WorkoutTemplateDetail() {
@@ -38,6 +38,16 @@ export default function WorkoutTemplateDetail() {
       await deleteTemplate.mutateAsync(templateId);
       navigate("/train?tab=workouts");
     }
+  };
+
+  // Count total exercises (including inside supersets)
+  const getTotalExercises = () => {
+    return (template?.exercise_data || []).reduce((count, item) => {
+      if (isTemplateSupersetBlock(item)) {
+        return count + item.items.length;
+      }
+      return count + 1;
+    }, 0);
   };
 
   if (isLoading) {
@@ -68,6 +78,72 @@ export default function WorkoutTemplateDetail() {
       </div>
     );
   }
+
+  // Render a single exercise item
+  const renderExercise = (exercise: WorkoutTemplateExercise, index: number, isNested: boolean = false) => (
+    <div key={`${exercise.exercise_id}-${index}`} className={`flex items-center gap-3 ${isNested ? '' : 'p-4'}`}>
+      <div className={`h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 ${isNested ? 'h-8 w-8' : ''}`}>
+        <span className={`font-bold text-primary ${isNested ? 'text-xs' : 'text-sm'}`}>
+          {isNested ? String.fromCharCode(65 + index) : index + 1}
+        </span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className={`font-medium truncate ${isNested ? 'text-sm' : ''}`}>{exercise.name}</p>
+        <p className="text-sm text-muted-foreground">
+          {exercise.sets} sets × {exercise.reps_min && exercise.reps_max 
+            ? `${exercise.reps_min}-${exercise.reps_max}`
+            : exercise.reps} reps
+          {exercise.rest_seconds && ` • ${exercise.rest_seconds}s rest`}
+        </p>
+      </div>
+      {exercise.exercise_type && (
+        <Badge variant="outline" className="capitalize shrink-0">
+          {exercise.exercise_type}
+        </Badge>
+      )}
+    </div>
+  );
+
+  // Render workout item (exercise or superset)
+  const renderWorkoutItem = (item: WorkoutStructureData, index: number) => {
+    if (isTemplateSupersetBlock(item)) {
+      return (
+        <Card key={item.id} className="glass-card border-primary/20 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                <Layers className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium">{item.name || 'Superset'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {item.items.length} exercises
+                  {(item.rounds || 1) > 1 && ` • ${item.rounds} rounds`}
+                  {item.rest_after_round_seconds && ` • ${item.rest_after_round_seconds}s rest`}
+                </p>
+              </div>
+              <Badge variant="secondary" className="shrink-0">Superset</Badge>
+            </div>
+            <div className="space-y-2 pl-2 border-l-2 border-primary/20 ml-5">
+              {item.items.map((ex, i) => renderExercise(ex, i, true))}
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    // Regular exercise
+    return (
+      <Card key={`${item.exercise_id}-${index}`} className="glass-card">
+        <CardContent className="p-4">
+          {renderExercise(item, index)}
+          {item.notes && (
+            <p className="text-sm text-muted-foreground mt-2 pl-13">{item.notes}</p>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
@@ -128,7 +204,7 @@ export default function WorkoutTemplateDetail() {
           )}
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
             <Dumbbell className="h-4 w-4" />
-            {template.exercise_data?.length || 0} exercises
+            {getTotalExercises()} exercises
           </div>
           {template.use_count > 0 && (
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -168,34 +244,7 @@ export default function WorkoutTemplateDetail() {
             </CardContent>
           </Card>
         ) : (
-          template.exercise_data?.map((exercise, index) => (
-            <Card key={`${exercise.exercise_id}-${index}`} className="glass-card">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-bold text-primary">{index + 1}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{exercise.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {exercise.sets} sets × {exercise.reps_min && exercise.reps_max 
-                        ? `${exercise.reps_min}-${exercise.reps_max}`
-                        : exercise.reps} reps
-                      {exercise.rest_seconds && ` • ${exercise.rest_seconds}s rest`}
-                    </p>
-                  </div>
-                  {exercise.exercise_type && (
-                    <Badge variant="outline" className="capitalize shrink-0">
-                      {exercise.exercise_type}
-                    </Badge>
-                  )}
-                </div>
-                {exercise.notes && (
-                  <p className="text-sm text-muted-foreground mt-2 pl-13">{exercise.notes}</p>
-                )}
-              </CardContent>
-            </Card>
-          ))
+          template.exercise_data?.map((item, index) => renderWorkoutItem(item, index))
         )}
       </motion.div>
 

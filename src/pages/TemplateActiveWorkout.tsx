@@ -4,6 +4,7 @@ import { useWorkoutTemplate, useWorkoutTemplates } from "@/hooks/useWorkoutTempl
 import ActiveWorkout from "./ActiveWorkout";
 import type { Workout, Exercise } from "@/data/workouts";
 import { useEffect, useRef } from "react";
+import { isTemplateSupersetBlock, type WorkoutStructureData } from "@/types/workout-templates";
 
 /**
  * Wrapper component that loads a workout template from the database
@@ -46,34 +47,67 @@ export default function TemplateActiveWorkout() {
     );
   }
 
-  // Convert template data to Workout format
+  // Convert template data to Workout format, flattening supersets
+  const convertItemToExercises = (item: WorkoutStructureData, baseIndex: number): Exercise[] => {
+    if (isTemplateSupersetBlock(item)) {
+      // Flatten superset items into individual exercises
+      // For now we treat them as sequential exercises
+      // TODO: Add superset execution logic to ActiveWorkout
+      return item.items.map((ex, i) => {
+        const reps = ex.reps_min && ex.reps_max && ex.reps_min !== ex.reps_max
+          ? `${ex.reps_min}-${ex.reps_max}`
+          : String(ex.reps || ex.reps_min || 10);
+
+        return {
+          id: ex.exercise_id || `ex-${baseIndex}-${i}`,
+          name: `${item.name || 'Superset'}: ${ex.name}`,
+          sets: ex.sets,
+          reps,
+          notes: ex.notes,
+          exerciseType: ex.exercise_type || 'strength',
+          // Use between-exercise rest for superset items
+          restDuration: item.rest_between_exercises_seconds || 0,
+        } as Exercise;
+      });
+    }
+
+    // Regular exercise
+    const reps = item.reps_min && item.reps_max && item.reps_min !== item.reps_max
+      ? `${item.reps_min}-${item.reps_max}`
+      : String(item.reps || item.reps_min || 10);
+
+    const exercise: Exercise = {
+      id: item.exercise_id || `ex-${baseIndex}`,
+      name: item.name,
+      sets: item.sets,
+      reps,
+      notes: item.notes,
+      exerciseType: item.exercise_type || 'strength',
+    };
+
+    if (item.rest_seconds) {
+      (exercise as any).restDuration = item.rest_seconds;
+    }
+
+    return [exercise];
+  };
+
+  // Flatten all items into exercises
+  const exercises: Exercise[] = [];
+  let index = 0;
+  for (const item of template.exercise_data || []) {
+    const converted = convertItemToExercises(item, index);
+    exercises.push(...converted);
+    index += converted.length;
+  }
+
   const workout: Workout = {
     id: template.id,
     name: template.title,
     type: template.workout_type,
     duration: template.estimated_duration_minutes || 45,
     description: template.description || undefined,
-    exercises: (template.exercise_data || []).map((ex, index) => {
-      const reps = ex.reps_min && ex.reps_max && ex.reps_min !== ex.reps_max
-        ? `${ex.reps_min}-${ex.reps_max}`
-        : String(ex.reps || ex.reps_min || 10);
-      
-      const exercise: Exercise = {
-        id: ex.exercise_id || `ex-${index}`,
-        name: ex.name,
-        sets: ex.sets,
-        reps,
-        notes: ex.notes,
-        exerciseType: ex.exercise_type || 'strength',
-      };
-
-      // Add rest duration if specified
-      if (ex.rest_seconds) {
-        (exercise as any).restDuration = ex.rest_seconds;
-      }
-
-      return exercise;
-    }),
+    exercises,
   };
 
   // Pass the converted workout to ActiveWorkout via a special prop
