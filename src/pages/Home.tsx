@@ -9,13 +9,13 @@ export default function Home() {
   const greeting = getGreeting();
   
   return (
-    <div className="min-h-screen gradient-page pt-safe px-5 pb-28">
+    <div className="min-h-screen gradient-page px-5">
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       
       {/* Header */}
-      <header className="relative pt-14 pb-8">
-        <motion.p 
+      <header className="relative pt-6 pb-8">
+        <motion.p
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-muted-foreground text-sm font-medium"

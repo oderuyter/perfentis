@@ -169,6 +169,14 @@ export default {
         "18": "4.5rem",
         "22": "5.5rem",
       },
+      zIndex: {
+        // Layering system: drawers slide behind persistent header/footer
+        "sheet-overlay": "50",
+        "sheet": "60",
+        "drawer": "70",
+        "footer": "100",
+        "header": "100",
+      },
       transitionDuration: {
         fast: "150ms",
         standard: "250ms",
