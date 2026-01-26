@@ -47,7 +47,7 @@ export default function Train() {
   };
 
   return (
-    <div className="min-h-screen gradient-page pt-safe px-5 pb-28">
+    <div className="min-h-screen gradient-page px-5">
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       
@@ -55,7 +55,7 @@ export default function Train() {
       <WorkoutRecoveryPrompt />
       
       {/* Header */}
-      <header className="relative pt-14 pb-6">
+      <header className="relative pt-6 pb-6">
         <motion.h1 
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
