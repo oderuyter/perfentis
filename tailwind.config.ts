@@ -18,24 +18,25 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Outfit", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "-apple-system", "sans-serif"],
       },
       fontSize: {
-        // Confident typography scale
-        "display-xl": ["3rem", { lineHeight: "1.1", fontWeight: "700" }],
-        "display": ["2.25rem", { lineHeight: "1.15", fontWeight: "700" }],
-        "heading-lg": ["1.5rem", { lineHeight: "1.25", fontWeight: "600" }],
-        "heading": ["1.25rem", { lineHeight: "1.3", fontWeight: "600" }],
-        "heading-sm": ["1.125rem", { lineHeight: "1.35", fontWeight: "600" }],
-        "body-lg": ["1rem", { lineHeight: "1.6", fontWeight: "400" }],
-        "body": ["0.9375rem", { lineHeight: "1.6", fontWeight: "400" }],
-        "body-sm": ["0.875rem", { lineHeight: "1.5", fontWeight: "400" }],
+        // Premium typography scale with refined tracking
+        "display-xl": ["3rem", { lineHeight: "1.05", fontWeight: "700", letterSpacing: "-0.03em" }],
+        "display": ["2.25rem", { lineHeight: "1.1", fontWeight: "700", letterSpacing: "-0.025em" }],
+        "heading-lg": ["1.5rem", { lineHeight: "1.2", fontWeight: "600", letterSpacing: "-0.02em" }],
+        "heading": ["1.25rem", { lineHeight: "1.25", fontWeight: "600", letterSpacing: "-0.015em" }],
+        "heading-sm": ["1.125rem", { lineHeight: "1.3", fontWeight: "600", letterSpacing: "-0.01em" }],
+        "body-lg": ["1rem", { lineHeight: "1.6", fontWeight: "400", letterSpacing: "-0.01em" }],
+        "body": ["0.9375rem", { lineHeight: "1.6", fontWeight: "400", letterSpacing: "-0.005em" }],
+        "body-sm": ["0.875rem", { lineHeight: "1.55", fontWeight: "400" }],
         "caption": ["0.8125rem", { lineHeight: "1.4", fontWeight: "500" }],
-        "micro": ["0.75rem", { lineHeight: "1.4", fontWeight: "500" }],
-        // Metric display (large numbers)
-        "metric-xl": ["2.5rem", { lineHeight: "1", fontWeight: "700" }],
-        "metric-lg": ["2rem", { lineHeight: "1", fontWeight: "600" }],
-        "metric": ["1.5rem", { lineHeight: "1", fontWeight: "600" }],
+        "micro": ["0.75rem", { lineHeight: "1.35", fontWeight: "500" }],
+        "label": ["0.6875rem", { lineHeight: "1.3", fontWeight: "600", letterSpacing: "0.04em" }],
+        // Metric display (large numbers) with tabular figures feel
+        "metric-xl": ["2.75rem", { lineHeight: "1", fontWeight: "700", letterSpacing: "-0.03em" }],
+        "metric-lg": ["2rem", { lineHeight: "1", fontWeight: "700", letterSpacing: "-0.025em" }],
+        "metric": ["1.5rem", { lineHeight: "1", fontWeight: "600", letterSpacing: "-0.02em" }],
       },
       colors: {
         // Semantic surface colors

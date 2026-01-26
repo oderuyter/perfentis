@@ -133,30 +133,30 @@ export default function Progress() {
 
   if (loading || streakLoading) {
     return (
-      <div className="min-h-screen gradient-page pt-safe px-4 pb-4 flex items-center justify-center">
+      <div className="min-h-screen gradient-page pt-safe px-5 pb-4 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
+    <div className="min-h-screen gradient-page pt-safe px-5 pb-28">
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       
       {/* Header */}
-      <header className="relative pt-14 pb-4">
+      <header className="relative pt-14 pb-6">
         <motion.h1 
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-bold tracking-tight"
+          className="text-2xl font-semibold tracking-tight"
         >
           Progress
         </motion.h1>
         <motion.p 
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
+          transition={{ delay: 0.04 }}
           className="text-muted-foreground mt-1"
         >
           Track your journey
@@ -164,12 +164,12 @@ export default function Progress() {
       </header>
 
       {/* Overview Cards */}
-      <div className="relative space-y-4 mt-4">
+      <div className="relative space-y-5 mt-2">
         {/* Streak Card */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
+          transition={{ delay: 0.06 }}
         >
           <StreakCard
             currentStreak={currentStreak}
@@ -180,24 +180,24 @@ export default function Progress() {
 
         {/* Volume Trend Card */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="card-glass p-5"
+          transition={{ delay: 0.08 }}
+          className="card-glass p-6"
         >
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between mb-5">
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              <p className="section-label">
                 Weekly Volume
               </p>
-              <p className="text-2xl font-bold mt-1 text-foreground">
+              <p className="text-2xl font-bold mt-2 tracking-tight tabular-nums">
                 {currentWeekVolume > 0 
                   ? `${(currentWeekVolume / 1000).toFixed(1)}k kg`
                   : "No data"
                 }
               </p>
               {lastWeekVolume > 0 && (
-                <p className={`text-sm mt-0.5 flex items-center gap-1 font-medium ${volumeChange >= 0 ? 'text-status-success' : 'text-muted-foreground'}`}>
+                <p className={`text-sm mt-1 flex items-center gap-1 font-medium ${volumeChange >= 0 ? 'text-status-success' : 'text-muted-foreground'}`}>
                   {volumeChange >= 0 ? (
                     <TrendingUp className="h-3.5 w-3.5" />
                   ) : (
@@ -207,25 +207,25 @@ export default function Progress() {
                 </p>
               )}
             </div>
-            <div className="h-10 w-10 rounded-xl bg-primary/12 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
               <Dumbbell className="h-5 w-5 text-primary" />
             </div>
           </div>
           
           {/* Bar chart */}
-          <div className="flex items-end gap-2 h-16 mt-4">
+          <div className="flex items-end gap-2.5 h-16 mt-5">
             {weeklyData.length > 0 ? weeklyData.map((week, i) => {
               const maxVolume = Math.max(...weeklyData.map(w => w.volume), 1);
               const height = maxVolume > 0 ? (week.volume / maxVolume) * 100 : 0;
               const isLatest = i === weeklyData.length - 1;
               
               return (
-                <div key={week.week} className="flex-1 flex flex-col items-center gap-1.5">
+                <div key={week.week} className="flex-1 flex flex-col items-center gap-2">
                   <div 
                     className={`w-full rounded-md transition-all ${isLatest ? 'bg-primary' : 'bg-primary/20'}`}
                     style={{ height: `${Math.max(height, 4)}%` }}
                   />
-                  <span className="text-xs text-muted-foreground">{week.week}</span>
+                  <span className="text-xs text-muted-foreground/70">{week.week}</span>
                 </div>
               );
             }) : (
@@ -237,45 +237,45 @@ export default function Progress() {
         </motion.div>
 
         {/* Secondary Cards Grid */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {/* Sessions This Week */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="card-glass p-4"
+            transition={{ delay: 0.1 }}
+            className="card-glass p-5"
           >
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="flex items-center gap-2 mb-2.5">
+              <Calendar className="h-4 w-4 text-muted-foreground/70" />
+              <p className="section-label">
                 This Week
               </p>
             </div>
-            <p className="text-xl font-bold text-foreground">
+            <p className="text-xl font-bold tracking-tight tabular-nums">
               {currentWeekSessions}
-              <span className="text-muted-foreground text-base font-normal">
-                {" "}session{currentWeekSessions !== 1 ? 's' : ''}
+              <span className="text-muted-foreground text-sm font-normal ml-1">
+                session{currentWeekSessions !== 1 ? 's' : ''}
               </span>
             </p>
           </motion.div>
 
           {/* PRs This Month */}
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="card-glass p-4"
+            transition={{ delay: 0.12 }}
+            className="card-glass p-5"
           >
-            <div className="flex items-center gap-2 mb-2">
-              <Award className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="flex items-center gap-2 mb-2.5">
+              <Award className="h-4 w-4 text-muted-foreground/70" />
+              <p className="section-label">
                 PRs
               </p>
             </div>
-            <p className="text-xl font-bold text-foreground">
+            <p className="text-xl font-bold tracking-tight tabular-nums">
               {recentPRs.length}
             </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground/70 mt-0.5">
               Recent records
             </p>
           </motion.div>
@@ -283,33 +283,33 @@ export default function Progress() {
 
         {/* Workout Time */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.22 }}
-          className="card-glass p-4"
+          transition={{ delay: 0.14 }}
+          className="card-glass p-5"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <Timer className="h-4 w-4 text-muted-foreground" />
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <div className="flex items-center gap-2 mb-2.5">
+            <Timer className="h-4 w-4 text-muted-foreground/70" />
+            <p className="section-label">
               Total Training Time
             </p>
           </div>
-          <p className="text-xl font-bold text-foreground">
+          <p className="text-xl font-bold tracking-tight tabular-nums">
             {Math.round(totalMinutes)}
-            <span className="text-muted-foreground text-base font-normal"> minutes</span>
+            <span className="text-muted-foreground text-sm font-normal ml-1">minutes</span>
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-xs text-muted-foreground/70 mt-0.5">
             From {workouts.length} workout{workouts.length !== 1 ? 's' : ''}
           </p>
         </motion.div>
 
         {/* Workout Calendar */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.24 }}
+          transition={{ delay: 0.16 }}
         >
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+          <p className="section-label mb-3">
             Workout History
           </p>
           <WorkoutCalendar
@@ -320,12 +320,12 @@ export default function Progress() {
 
         {/* Recent PRs List */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.26 }}
-          className="card-glass p-4"
+          transition={{ delay: 0.18 }}
+          className="card-glass p-5"
         >
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">
+          <p className="section-label mb-4">
             Recent Personal Records
           </p>
           {recentPRs.length > 0 ? (
@@ -333,22 +333,22 @@ export default function Progress() {
               {recentPRs.map((pr, index) => (
                 <div 
                   key={index}
-                  className="flex items-center justify-between py-2 border-b border-border/30 last:border-0 last:pb-0"
+                  className="flex items-center justify-between py-2.5 border-b border-border/20 last:border-0 last:pb-0"
                 >
                   <div>
-                    <p className="font-medium text-sm text-foreground">{pr.exercise_name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-medium text-sm">{pr.exercise_name}</p>
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">
                       {format(new Date(pr.achieved_at), "MMM d, yyyy")}
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-primary">
+                  <p className="text-sm font-bold text-primary tabular-nums">
                     {pr.weight}kg × {pr.reps}
                   </p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-4 text-center">
+            <p className="text-sm text-muted-foreground py-6 text-center">
               No PRs yet. Keep training!
             </p>
           )}

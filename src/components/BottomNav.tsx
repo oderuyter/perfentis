@@ -15,9 +15,9 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-      {/* Glass background with subtle gradient */}
-      <div className="mx-3 mb-2 rounded-2xl border border-border/30 bg-card/85 backdrop-blur-xl shadow-lg dark:bg-surface-card/90 dark:border-border/20">
-        <div className="flex items-center justify-around h-16 px-1">
+      {/* Premium glass container */}
+      <div className="mx-4 mb-3 rounded-2xl border border-border/20 bg-card/90 backdrop-blur-2xl shadow-lg dark:bg-surface-card/95 dark:border-border/15">
+        <div className="flex items-center justify-around h-16 px-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
             return (
@@ -31,18 +31,18 @@ export function BottomNav() {
                   {isActive && (
                     <motion.div
                       layoutId="nav-active-bg"
-                      className="absolute -inset-x-2 -inset-y-1 rounded-xl bg-primary/12 dark:bg-primary/15"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      className="absolute -inset-x-3 -inset-y-1.5 rounded-xl bg-primary/10 dark:bg-primary/12"
+                      transition={{ type: "spring", stiffness: 350, damping: 28 }}
                     />
                   )}
                   
-                  {/* Icon with glow effect */}
+                  {/* Icon */}
                   <div className="relative">
                     {isActive && (
                       <motion.div
                         layoutId="nav-glow"
-                        className="absolute inset-0 rounded-full bg-primary/40 blur-lg scale-150"
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        className="absolute inset-0 rounded-full bg-primary/30 blur-md scale-150"
+                        transition={{ type: "spring", stiffness: 350, damping: 28 }}
                       />
                     )}
                     <item.icon
@@ -50,19 +50,19 @@ export function BottomNav() {
                         "relative h-5 w-5 transition-colors duration-200",
                         isActive
                           ? "text-primary"
-                          : "text-muted-foreground/70"
+                          : "text-muted-foreground/60"
                       )}
-                      strokeWidth={isActive ? 2.5 : 1.8}
+                      strokeWidth={isActive ? 2.25 : 1.75}
                     />
                   </div>
                   
                   {/* Label */}
                   <span
                     className={cn(
-                      "mt-1 text-[10px] font-medium transition-colors duration-200",
+                      "mt-1.5 text-[10px] font-medium transition-colors duration-200",
                       isActive
                         ? "text-primary"
-                        : "text-muted-foreground/70"
+                        : "text-muted-foreground/60"
                     )}
                   >
                     {item.label}

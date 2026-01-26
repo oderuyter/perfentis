@@ -4,20 +4,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
   Play, 
   Dumbbell, 
-  Heart, 
-  Zap, 
-  Clock, 
-  ChevronRight,
-  Library,
-  Layers,
-  Plus,
-  Search,
-  Filter
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { WorkoutRecoveryPrompt } from "@/components/train/WorkoutRecoveryPrompt";
 import { AssignedPlansSection } from "@/components/train/AssignedPlansSection";
 import { ActiveSplitCard } from "@/components/train/ActiveSplitCard";
@@ -57,7 +47,7 @@ export default function Train() {
   };
 
   return (
-    <div className="min-h-screen gradient-page pt-safe px-4 pb-28">
+    <div className="min-h-screen gradient-page pt-safe px-5 pb-28">
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       
@@ -65,18 +55,18 @@ export default function Train() {
       <WorkoutRecoveryPrompt />
       
       {/* Header */}
-      <header className="relative pt-14 pb-4">
+      <header className="relative pt-14 pb-6">
         <motion.h1 
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-bold tracking-tight"
+          className="text-2xl font-semibold tracking-tight"
         >
           Train
         </motion.h1>
         <motion.p 
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
+          transition={{ delay: 0.04 }}
           className="text-muted-foreground mt-1"
         >
           Build strength, track progress
@@ -85,20 +75,20 @@ export default function Train() {
 
       {/* Primary CTA: Just Train */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+        transition={{ delay: 0.08 }}
         className="mb-6"
       >
         <Button 
           onClick={handleJustTrain}
-          className="w-full h-16 text-lg font-semibold gap-3 bg-primary hover:bg-primary/90"
+          className="w-full h-14 text-base font-semibold gap-3 rounded-2xl"
           size="lg"
         >
-          <Play className="h-6 w-6" />
+          <Play className="h-5 w-5" />
           Just Train
         </Button>
-        <p className="text-xs text-muted-foreground text-center mt-2">
+        <p className="text-xs text-muted-foreground/70 text-center mt-2.5">
           Start a session and add exercises as you go
         </p>
       </motion.div>
@@ -106,9 +96,9 @@ export default function Train() {
       {/* Active Split Card (if user has one) */}
       {user && (
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+          transition={{ delay: 0.12 }}
           className="mb-6"
         >
           <ActiveSplitCard />
@@ -120,18 +110,18 @@ export default function Train() {
 
       {/* Directory Tabs */}
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
+        transition={{ delay: 0.16 }}
         className="mt-6"
       >
         <Tabs value={directoryTab} onValueChange={(v) => handleTabChange(v as "workouts" | "splits")}>
-          <TabsList className="grid w-full grid-cols-2 mb-4">
-            <TabsTrigger value="workouts" className="gap-2">
+          <TabsList className="grid w-full grid-cols-2 mb-5 h-11">
+            <TabsTrigger value="workouts" className="gap-2 text-sm">
               <Dumbbell className="h-4 w-4" />
               Workouts
             </TabsTrigger>
-            <TabsTrigger value="splits" className="gap-2">
+            <TabsTrigger value="splits" className="gap-2 text-sm">
               <Layers className="h-4 w-4" />
               Splits
             </TabsTrigger>
