@@ -31,13 +31,15 @@ const DrawerContent = React.forwardRef<
     <DrawerPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-sheet mt-24 flex h-auto flex-col rounded-t-[20px] border border-border/30 bg-card pb-footer-safe",
+        "fixed inset-x-0 bottom-0 z-sheet mt-24 flex h-auto flex-col rounded-t-[20px] border border-border/30 bg-card",
         className,
       )}
       {...props}
     >
       <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-muted-foreground/30" />
-      {children}
+      <div className="flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+6rem)]">
+        {children}
+      </div>
     </DrawerPrimitive.Content>
   </DrawerPortal>
 ));
