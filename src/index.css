@@ -403,11 +403,11 @@
   }
   
   .pb-footer-safe {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem);
   }
 
-  /* Bottom nav (legacy - for backward compat) */
-  .pb-bottom-nav { padding-bottom: calc(env(safe-area-inset-bottom) + 6rem); }
+  /* Bottom nav padding - unified value for all drawers/sheets */
+  .pb-bottom-nav { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 6rem); }
 
   /* Text utilities */
   .text-primary-content { color: hsl(var(--text-primary)); }
