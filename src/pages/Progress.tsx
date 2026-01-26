@@ -133,19 +133,19 @@ export default function Progress() {
 
   if (loading || streakLoading) {
     return (
-      <div className="min-h-screen gradient-page pt-safe px-5 pb-4 flex items-center justify-center">
+      <div className="min-h-screen gradient-page px-5 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen gradient-page pt-safe px-5 pb-28">
+    <div className="min-h-screen gradient-page px-5">
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       
       {/* Header */}
-      <header className="relative pt-14 pb-6">
+      <header className="relative pt-6 pb-6">
         <motion.h1 
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}

@@ -30,9 +30,12 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
 
   return (
     <div className="min-h-screen gradient-page">
-      {/* Persistent Header - Always on top (z-[100]) */}
+      {/* Persistent Header - Always on top (z-header) */}
       {!hideNav && (
-        <header className="fixed top-0 left-0 right-0 z-header pt-safe">
+        <header className="fixed top-0 left-0 right-0 z-header">
+          {/* Safe area spacer for notch/status bar */}
+          <div className="h-safe-top bg-background/95 dark:bg-surface-bg-primary/95" />
+          
           <div className="header-surface">
             <div className="flex items-center justify-between px-5 py-3">
               {/* Left: Hamburger */}
@@ -41,10 +44,10 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
               {/* Center: Logo/Brand - Clickable to go home */}
               <button
                 onClick={() => navigate("/")}
-                className="absolute left-1/2 -translate-x-1/2 p-2.5 -m-2.5 rounded-full hover:bg-white/8 transition-colors duration-200"
+                className="absolute left-1/2 -translate-x-1/2 p-2.5 -m-2.5 rounded-full hover:bg-muted/50 transition-colors duration-200"
                 aria-label="Go to home"
               >
-                <Dumbbell className="h-6 w-6 text-foreground/90" />
+                <Dumbbell className="h-6 w-6 text-foreground/80" />
               </button>
               
               {/* Right: QR Wallet + Notification Bell + Profile Avatar */}
@@ -53,7 +56,7 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
                 {totalPasses > 0 && (
                   <button
                     onClick={() => setQrWalletOpen(true)}
-                    className="relative p-2.5 rounded-full hover:bg-white/8 transition-colors duration-200"
+                    className="relative p-2.5 rounded-full hover:bg-muted/50 transition-colors duration-200"
                     aria-label="QR Wallet"
                   >
                     <QrCode className="h-5 w-5 text-foreground/80" />
@@ -69,7 +72,7 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
                       navigate("/notifications");
                     }
                   }}
-                  className="relative p-2.5 rounded-full hover:bg-white/8 transition-colors duration-200"
+                  className="relative p-2.5 rounded-full hover:bg-muted/50 transition-colors duration-200"
                   aria-label="Notifications"
                 >
                   <Bell className="h-5 w-5 text-foreground/80" />

@@ -36,26 +36,26 @@ export function BottomNav() {
                     />
                   )}
                   
-                  {/* Icon */}
+                  {/* Icon - matches header icon styling */}
                   <div className="relative">
                     <item.icon
                       className={cn(
                         "relative h-5 w-5 transition-colors duration-200",
                         isActive
                           ? "text-primary"
-                          : "text-muted-foreground/70"
+                          : "text-foreground/80"
                       )}
                       strokeWidth={isActive ? 2.25 : 1.75}
                     />
                   </div>
                   
-                  {/* Label */}
+                  {/* Label - matches header text styling */}
                   <span
                     className={cn(
                       "mt-1.5 text-[10px] font-medium transition-colors duration-200",
                       isActive
                         ? "text-primary"
-                        : "text-muted-foreground/70"
+                        : "text-foreground/60"
                     )}
                   >
                     {item.label}

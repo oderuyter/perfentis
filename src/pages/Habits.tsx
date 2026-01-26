@@ -231,14 +231,14 @@ export default function Habits() {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-safe px-4 pb-4 flex items-center justify-center">
+      <div className="min-h-screen px-4 flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pt-safe px-4 pb-24">
+    <div className="min-h-screen px-4">
       {/* Header */}
       <header className="pt-6 pb-4">
         <motion.h1

@@ -380,33 +380,30 @@
   /* Safe area utilities */
   .pb-safe { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
   .pt-safe { padding-top: max(0.75rem, env(safe-area-inset-top)); }
+  .h-safe-top { height: env(safe-area-inset-top, 0px); }
 
   /* ============================================
      LAYOUT SAFE AREA SYSTEM
-     Header height: 60px + safe area
-     Footer height: 80px + safe area
+     Header height: ~60px + safe area
+     Footer height: ~80px + safe area
      ============================================ */
-  
-  /* Header height (icon button + padding) */
-  --header-height: 60px;
-  --footer-height: 80px;
   
   /* Content padding to respect persistent layers */
   .pt-header {
-    padding-top: calc(env(safe-area-inset-top) + 60px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 64px);
   }
   
   .pb-footer {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 88px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
   }
   
-  /* Combined for main content */
+  /* For sheets/drawers that need to clear persistent layers */
   .pt-header-safe {
-    padding-top: calc(env(safe-area-inset-top) + 64px);
+    padding-top: calc(env(safe-area-inset-top, 0px) + 68px);
   }
   
   .pb-footer-safe {
-    padding-bottom: calc(env(safe-area-inset-bottom) + 88px);
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 92px);
   }
 
   /* Bottom nav (legacy - for backward compat) */
