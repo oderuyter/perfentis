@@ -84,24 +84,25 @@ export default function Auth() {
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
         className="relative w-full max-w-sm"
       >
         {/* Logo / Brand */}
         <div className="text-center mb-10">
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="h-20 w-20 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-glow border border-primary/30 bg-gradient-to-br from-primary/20 to-primary/5"
+            transition={{ delay: 0.08, duration: 0.35 }}
+            className="h-18 w-18 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-md border border-primary/20 bg-gradient-to-br from-primary/15 to-primary/5"
           >
-            <span className="text-3xl font-bold text-primary">F</span>
+            <span className="text-2xl font-bold text-primary">F</span>
           </motion.div>
-          <h1 className="text-3xl font-bold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             {isSignUp ? "Create Account" : "Welcome Back"}
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground text-sm mt-2">
             {isSignUp 
               ? "Start your fitness journey" 
               : "Sign in to continue training"}
@@ -117,7 +118,7 @@ export default function Auth() {
                   Display Name
                 </Label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                   <Input
                     id="displayName"
                     type="text"
@@ -135,7 +136,7 @@ export default function Auth() {
                 Email
               </Label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                 <Input
                   id="email"
                   type="email"
@@ -158,7 +159,7 @@ export default function Auth() {
                 Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                 <Input
                   id="password"
                   type="password"
@@ -180,7 +181,7 @@ export default function Auth() {
               type="submit"
               disabled={isLoading}
               variant="glow"
-              className="w-full h-12 rounded-xl font-semibold text-base"
+              className="w-full h-12 rounded-xl font-semibold text-sm"
             >
               {isLoading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -202,7 +203,7 @@ export default function Auth() {
               setIsSignUp(!isSignUp);
               setErrors({});
             }}
-            className="text-sm text-muted-foreground hover:text-primary transition-colors"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-200"
           >
             {isSignUp 
               ? "Already have an account? Sign in" 

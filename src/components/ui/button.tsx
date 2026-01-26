@@ -5,28 +5,28 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium ring-offset-background transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default: 
           "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-md active:scale-[0.98]",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+          "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 active:scale-[0.98]",
         outline:
-          "border border-border/60 bg-transparent hover:bg-accent/10 hover:border-accent/40 hover:text-accent-foreground",
+          "border border-border/50 bg-transparent hover:bg-accent/8 hover:border-border active:scale-[0.98]",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
+          "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 active:scale-[0.98]",
         ghost: 
-          "hover:bg-accent/10 hover:text-accent-foreground",
+          "hover:bg-accent/10 hover:text-foreground active:bg-accent/15",
         link: 
           "text-primary underline-offset-4 hover:underline",
         premium:
-          "bg-gradient-to-r from-primary to-[hsl(255_85%_63%)] text-primary-foreground shadow-glow hover:shadow-[0_0_48px_-8px_hsl(var(--accent-primary)/0.6)] hover:-translate-y-0.5 active:translate-y-0",
+          "bg-gradient-to-r from-primary to-[hsl(250_68%_58%)] text-primary-foreground shadow-glow hover:shadow-[0_0_36px_-6px_hsl(var(--accent-primary)/0.5)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
         success:
-          "bg-success text-success-foreground shadow-sm hover:bg-success/90",
+          "bg-success text-success-foreground shadow-sm hover:bg-success/90 active:scale-[0.98]",
         glow:
-          "bg-primary text-primary-foreground shadow-glow hover:shadow-[0_0_48px_-8px_hsl(var(--accent-primary)/0.6)] hover:-translate-y-0.5 active:translate-y-0",
+          "bg-primary text-primary-foreground shadow-glow hover:shadow-[0_0_36px_-6px_hsl(var(--accent-primary)/0.5)] hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm",
       },
       size: {
         default: "h-11 px-5 py-2.5 rounded-xl text-sm",
