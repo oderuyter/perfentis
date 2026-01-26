@@ -374,7 +374,7 @@ export default function Nutrition() {
                 </h2>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-4 py-6 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+              <div className="flex-1 overflow-y-auto px-4 py-6 pb-footer-safe">
                 {!addMode ? (
                   <div className="space-y-3">
                     <button
