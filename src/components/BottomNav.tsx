@@ -14,9 +14,9 @@ export function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 pb-safe">
-      {/* Premium glass container */}
-      <div className="mx-4 mb-3 rounded-2xl border border-border/20 bg-card/90 backdrop-blur-2xl shadow-lg dark:bg-surface-card/95 dark:border-border/15">
+    <nav className="fixed bottom-0 left-0 right-0 z-footer">
+      {/* Solid surface container - no excessive blur/glow */}
+      <div className="footer-surface pb-safe">
         <div className="flex items-center justify-around h-16 px-2">
           {navItems.map((item) => {
             const isActive = location.pathname === item.to;
@@ -27,30 +27,23 @@ export function BottomNav() {
                 className="relative flex flex-col items-center justify-center flex-1 h-full py-2"
               >
                 <div className="relative flex flex-col items-center">
-                  {/* Active background pill */}
+                  {/* Active background pill - subtle */}
                   {isActive && (
                     <motion.div
                       layoutId="nav-active-bg"
-                      className="absolute -inset-x-3 -inset-y-1.5 rounded-xl bg-primary/10 dark:bg-primary/12"
-                      transition={{ type: "spring", stiffness: 350, damping: 28 }}
+                      className="absolute -inset-x-3 -inset-y-1.5 rounded-xl bg-primary/10"
+                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
                     />
                   )}
                   
                   {/* Icon */}
                   <div className="relative">
-                    {isActive && (
-                      <motion.div
-                        layoutId="nav-glow"
-                        className="absolute inset-0 rounded-full bg-primary/30 blur-md scale-150"
-                        transition={{ type: "spring", stiffness: 350, damping: 28 }}
-                      />
-                    )}
                     <item.icon
                       className={cn(
                         "relative h-5 w-5 transition-colors duration-200",
                         isActive
                           ? "text-primary"
-                          : "text-muted-foreground/60"
+                          : "text-muted-foreground/70"
                       )}
                       strokeWidth={isActive ? 2.25 : 1.75}
                     />
@@ -62,7 +55,7 @@ export function BottomNav() {
                       "mt-1.5 text-[10px] font-medium transition-colors duration-200",
                       isActive
                         ? "text-primary"
-                        : "text-muted-foreground/60"
+                        : "text-muted-foreground/70"
                     )}
                   >
                     {item.label}

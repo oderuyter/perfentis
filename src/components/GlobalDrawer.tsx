@@ -103,26 +103,26 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - behind persistent layers */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-drawer"
             onClick={() => onOpenChange(false)}
           />
           
-          {/* Drawer */}
+          {/* Drawer - slides behind header/footer */}
           <motion.div
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-card z-[61] shadow-elevated flex flex-col"
+            className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-card z-drawer shadow-elevated flex flex-col pt-header-safe pb-footer-safe"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 pt-safe border-b border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border/50">
               <h2 className="text-lg font-semibold">Menu</h2>
               <button
                 onClick={() => onOpenChange(false)}
@@ -170,7 +170,7 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-border pb-safe">
+            <div className="p-4 border-t border-border/50">
               <p className="text-xs text-muted-foreground text-center">
                 Flow Fitness v1.0
               </p>
