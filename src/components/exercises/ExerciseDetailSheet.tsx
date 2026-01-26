@@ -85,7 +85,7 @@ export function ExerciseDetailSheet({
           </button>
         </div>
         
-        <div className="flex-1 overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+2rem)]"> 
+        <div className="flex-1 overflow-y-auto px-4 pb-footer-safe"> 
           <div className="pt-6 pb-6">
             {/* Header with Image */}
             <div className="flex items-start gap-4 mb-4">

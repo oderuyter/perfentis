@@ -293,7 +293,7 @@ export default function Social() {
                 <h2 className="text-lg font-semibold">Create Post</h2>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-4 py-6 pb-[calc(env(safe-area-inset-bottom)+2rem)]">
+              <div className="flex-1 overflow-y-auto px-4 py-6 pb-footer-safe">
                 <Textarea
                   placeholder="What's on your mind?"
                   value={newPostText}
