@@ -117,6 +117,7 @@ import AdminEmailDiagnostics from "./pages/admin-portal/AdminEmailDiagnostics";
 import AdminWorkoutModeration from "./pages/admin-portal/AdminWorkoutModeration";
 import AdminSplitModeration from "./pages/admin-portal/AdminSplitModeration";
 import AdminRunClubs from "./pages/admin-portal/AdminRunClubs";
+import AdminUserDetail from "./pages/admin-portal/AdminUserDetail";
 
 const queryClient = new QueryClient();
 
@@ -257,6 +258,7 @@ function AppRoutes() {
       <Route path="/admin-portal" element={<ProtectedRoute><AdminPortalLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="users" element={<AdminUsers />} />
+        <Route path="users/:userId" element={<AdminUserDetail />} />
         <Route path="uac" element={<AdminUAC />} />
         <Route path="gyms" element={<AdminGyms />} />
         <Route path="coaches" element={<AdminCoaches />} />
