@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -70,6 +70,7 @@ interface Client {
 
 export default function CoachCheckins() {
   const { coach } = useOutletContext<{ coach: Coach }>();
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<CheckinTemplate[]>([]);
   const [checkins, setCheckins] = useState<ClientCheckin[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -489,11 +490,7 @@ export default function CoachCheckins() {
                   </div>
                   <div className="flex items-center gap-3">
                     {getStatusBadge(checkin)}
-                    <Button variant="outline" size="sm" onClick={() => {
-                      setSelectedCheckin(checkin);
-                      setCoachComment(checkin.coach_comments || "");
-                      setReviewDialogOpen(true);
-                    }}>
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/coach-portal/checkins/${checkin.client_id}/${checkin.id}`)}>
                       <Eye className="w-4 h-4 mr-1" />Review
                     </Button>
                   </div>
@@ -513,7 +510,11 @@ export default function CoachCheckins() {
             </Card>
           ) : (
             reviewedCheckins.map(checkin => (
-              <Card key={checkin.id}>
+              <Card 
+                key={checkin.id} 
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => navigate(`/coach-portal/checkins/${checkin.client_id}/${checkin.id}`)}
+              >
                 <CardContent className="flex items-center justify-between py-4">
                   <div>
                     <p className="font-medium">{checkin.client?.profiles?.display_name || "Unknown Client"}</p>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Video, User, X, CheckCircle2 } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight, Clock, MapPin, Video, User, X, CheckCircle2, ExternalLink, ClipboardCheck } from "lucide-react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isToday, parseISO, setHours, setMinutes } from "date-fns";
 
@@ -31,6 +31,7 @@ interface Appointment {
   location: string | null;
   notes: string | null;
   status: string;
+  meeting_link: string | null;
   client?: {
     id: string;
     profiles?: {
@@ -52,6 +53,7 @@ type ViewType = "month" | "week" | "day";
 
 export default function CoachCalendar() {
   const { coach } = useOutletContext<{ coach: Coach }>();
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,7 +73,8 @@ export default function CoachCalendar() {
     time: "09:00",
     duration_minutes: "60",
     location: "",
-    notes: ""
+    notes: "",
+    meeting_link: ""
   });
 
   useEffect(() => {
@@ -162,6 +165,7 @@ export default function CoachCalendar() {
         duration_minutes: parseInt(form.duration_minutes),
         location: form.location || null,
         notes: form.notes || null,
+        meeting_link: form.meeting_link || null,
         status: "scheduled"
       });
 
@@ -206,7 +210,8 @@ export default function CoachCalendar() {
       time: "09:00",
       duration_minutes: "60",
       location: "",
-      notes: ""
+      notes: "",
+      meeting_link: ""
     });
   };
 
@@ -531,6 +536,12 @@ export default function CoachCalendar() {
                   </div>
                 )}
               </div>
+              {form.mode === "online" && (
+                <div className="space-y-2">
+                  <Label>Meeting Link (optional)</Label>
+                  <Input value={form.meeting_link} onChange={e => setForm(p => ({ ...p, meeting_link: e.target.value }))} placeholder="https://zoom.us/..." />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Notes (internal)</Label>
                 <Textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Internal notes..." />
@@ -619,6 +630,32 @@ export default function CoachCalendar() {
                   <p className="text-sm text-muted-foreground">{selectedAppointment.notes}</p>
                 </div>
               )}
+
+              {/* Meeting Link & Quick Actions */}
+              <div className="flex flex-wrap gap-2 pt-2 border-t">
+                {selectedAppointment.meeting_link && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => window.open(selectedAppointment.meeting_link!, "_blank")}
+                  >
+                    <Video className="w-4 h-4 mr-2" />Join Meeting
+                    <ExternalLink className="w-3 h-3 ml-1" />
+                  </Button>
+                )}
+                {selectedAppointment.appointment_type === "check_in" && selectedAppointment.client_id && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setDetailDialogOpen(false);
+                      navigate(`/coach-portal/checkins/${selectedAppointment.client_id}`);
+                    }}
+                  >
+                    <ClipboardCheck className="w-4 h-4 mr-2" />Review Check-in
+                  </Button>
+                )}
+              </div>
 
               <div className="flex gap-2 pt-2">
                 {selectedAppointment.status === "scheduled" && (

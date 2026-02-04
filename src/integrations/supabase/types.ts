@@ -484,6 +484,7 @@ export type Database = {
           duration_minutes: number
           id: string
           location: string | null
+          meeting_link: string | null
           mode: string
           notes: string | null
           start_time: string
@@ -499,6 +500,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           location?: string | null
+          meeting_link?: string | null
           mode?: string
           notes?: string | null
           start_time: string
@@ -514,6 +516,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           location?: string | null
+          meeting_link?: string | null
           mode?: string
           notes?: string | null
           start_time?: string
