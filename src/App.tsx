@@ -56,6 +56,7 @@ import CoachClients from "./pages/coach-portal/CoachClients";
 import CoachInvitations from "./pages/coach-portal/CoachInvitations";
 import CoachPlans from "./pages/coach-portal/CoachPlans";
 import CoachCheckins from "./pages/coach-portal/CoachCheckins";
+import CheckinReviewWorkspace from "./pages/coach-portal/CheckinReviewWorkspace";
 import CoachCalendar from "./pages/coach-portal/CoachCalendar";
 import CoachProgress from "./pages/coach-portal/CoachProgress";
 import CoachAffiliations from "./pages/coach-portal/CoachAffiliations";
@@ -213,6 +214,8 @@ function AppRoutes() {
         <Route path="invitations" element={<CoachInvitations />} />
         <Route path="plans" element={<CoachPlans />} />
         <Route path="checkins" element={<CoachCheckins />} />
+        <Route path="checkins/:clientId" element={<CheckinReviewWorkspace />} />
+        <Route path="checkins/:clientId/:checkinId" element={<CheckinReviewWorkspace />} />
         <Route path="calendar" element={<CoachCalendar />} />
         <Route path="progress" element={<CoachProgress />} />
         <Route path="affiliations" element={<CoachAffiliations />} />
