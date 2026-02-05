@@ -119,6 +119,10 @@ import AdminWorkoutModeration from "./pages/admin-portal/AdminWorkoutModeration"
 import AdminSplitModeration from "./pages/admin-portal/AdminSplitModeration";
 import AdminRunClubs from "./pages/admin-portal/AdminRunClubs";
 import AdminUserDetail from "./pages/admin-portal/AdminUserDetail";
+import AdminRewards from "./pages/admin-portal/AdminRewards";
+import AdminSupplierSubmissions from "./pages/admin-portal/AdminSupplierSubmissions";
+import GymOffers from "./pages/gym-portal/GymOffers";
+import Rewards from "./pages/Rewards";
 
 const queryClient = new QueryClient();
 
@@ -185,6 +189,7 @@ function AppRoutes() {
         <Route path="/playlists" element={<Playlists />} />
         <Route path="/inbox" element={<Inbox />} />
         <Route path="/notifications" element={<Notifications />} />
+        <Route path="/rewards" element={<Rewards />} />
         <Route path="/help" element={<Help />} />
       </Route>
       <Route path="/gym-portal" element={<ProtectedRoute><GymPortalLayout /></ProtectedRoute>}>
@@ -205,6 +210,7 @@ function AppRoutes() {
         <Route path="spaces" element={<GymSpaces />} />
         <Route path="inbox" element={<GymInbox />} />
         <Route path="crm" element={<GymCRM />} />
+        <Route path="offers" element={<GymOffers />} />
       </Route>
       <Route path="/coach-portal" element={<ProtectedRoute><CoachPortalLayout /></ProtectedRoute>}>
         <Route index element={<CoachDashboard />} />
@@ -281,6 +287,8 @@ function AppRoutes() {
         <Route path="inbox" element={<AdminInbox />} />
         <Route path="registrations" element={<AdminRegistrations />} />
         <Route path="email-diagnostics" element={<AdminEmailDiagnostics />} />
+        <Route path="rewards" element={<AdminRewards />} />
+        <Route path="supplier-submissions" element={<AdminSupplierSubmissions />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />

@@ -16,7 +16,8 @@ import {
   ShieldCheck,
   Music,
   Inbox,
-  Footprints
+  Footprints,
+  Gift
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,7 @@ const allDrawerItems: DrawerItem[] = [
   { to: "/event-portal", icon: Flag, label: "Event Portal", description: "Manage your events", requiresEventAccess: true },
   { to: "/run-club-portal", icon: Footprints, label: "Run Club Portal", description: "Manage your run clubs", requiresRunClubAccess: true },
   { to: "/inbox", icon: Inbox, label: "Inbox", description: "Messages & conversations" },
+  { to: "/rewards", icon: Gift, label: "Rewards & Discounts", description: "Exclusive member offers" },
   { to: "/gym-membership", icon: CreditCard, label: "Gym Membership", description: "Manage your gym access" },
   { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
   { to: "/run-clubs", icon: Footprints, label: "Run Clubs", description: "Find & join run clubs" },

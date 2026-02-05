@@ -4397,6 +4397,155 @@ export type Database = {
         }
         Relationships: []
       }
+      offer_categories: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      offer_events: {
+        Row: {
+          created_at: string
+          event_type: Database["public"]["Enums"]["offer_event_type"]
+          id: string
+          metadata: Json | null
+          offer_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: Database["public"]["Enums"]["offer_event_type"]
+          id?: string
+          metadata?: Json | null
+          offer_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["offer_event_type"]
+          id?: string
+          metadata?: Json | null
+          offer_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_events_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          affiliate_url: string | null
+          brand_name: string
+          category_id: string | null
+          created_at: string
+          created_by_user_id: string
+          description_full: string | null
+          description_short: string | null
+          discount_code: string | null
+          expires_at: string | null
+          featured: boolean | null
+          gym_id: string | null
+          id: string
+          media_cover_url: string | null
+          media_logo_url: string | null
+          offer_type: Database["public"]["Enums"]["offer_type"]
+          regions: string[] | null
+          scope: Database["public"]["Enums"]["offer_scope"]
+          starts_at: string | null
+          status: Database["public"]["Enums"]["offer_status"]
+          terms_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affiliate_url?: string | null
+          brand_name: string
+          category_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          description_full?: string | null
+          description_short?: string | null
+          discount_code?: string | null
+          expires_at?: string | null
+          featured?: boolean | null
+          gym_id?: string | null
+          id?: string
+          media_cover_url?: string | null
+          media_logo_url?: string | null
+          offer_type?: Database["public"]["Enums"]["offer_type"]
+          regions?: string[] | null
+          scope?: Database["public"]["Enums"]["offer_scope"]
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          terms_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affiliate_url?: string | null
+          brand_name?: string
+          category_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          description_full?: string | null
+          description_short?: string | null
+          discount_code?: string | null
+          expires_at?: string | null
+          featured?: boolean | null
+          gym_id?: string | null
+          id?: string
+          media_cover_url?: string | null
+          media_logo_url?: string | null
+          offer_type?: Database["public"]["Enums"]["offer_type"]
+          regions?: string[] | null
+          scope?: Database["public"]["Enums"]["offer_scope"]
+          starts_at?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          terms_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "offer_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personal_records: {
         Row: {
           achieved_at: string
@@ -6143,6 +6292,74 @@ export type Database = {
           },
         ]
       }
+      supplier_submissions: {
+        Row: {
+          admin_notes: string | null
+          category_id: string | null
+          company_name: string
+          contact_name: string
+          created_at: string
+          description: string
+          email: string
+          expires_at: string | null
+          id: string
+          phone: string | null
+          proposed_affiliate_url: string | null
+          proposed_code: string | null
+          regions: string[] | null
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          status: Database["public"]["Enums"]["submission_status"]
+          website: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          category_id?: string | null
+          company_name: string
+          contact_name: string
+          created_at?: string
+          description: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          phone?: string | null
+          proposed_affiliate_url?: string | null
+          proposed_code?: string | null
+          regions?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: Database["public"]["Enums"]["submission_status"]
+          website?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          category_id?: string | null
+          company_name?: string
+          contact_name?: string
+          created_at?: string
+          description?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          phone?: string | null
+          proposed_affiliate_url?: string | null
+          proposed_code?: string | null
+          regions?: string[] | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: Database["public"]["Enums"]["submission_status"]
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_submissions_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "offer_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_plans: {
         Row: {
           coach_id: string
@@ -6854,6 +7071,10 @@ export type Database = {
         Args: { p_application_id: string }
         Returns: string
       }
+      can_manage_gym_offers: {
+        Args: { _gym_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_send_message_email: {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
@@ -6906,6 +7127,10 @@ export type Database = {
         }[]
       }
       get_coach_id: { Args: { _user_id: string }; Returns: string }
+      has_active_gym_membership: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       has_capability: {
         Args: { _capability_name: string; _scope_id?: string; _user_id: string }
         Returns: boolean
@@ -7019,7 +7244,17 @@ export type Database = {
         | "adductors"
         | "abductors"
         | "full_body"
+      offer_event_type:
+        | "view"
+        | "affiliate_click"
+        | "code_copy"
+        | "unlock_click"
+        | "report_expired"
+      offer_scope: "global" | "gym"
+      offer_status: "active" | "archived" | "disabled"
+      offer_type: "code" | "affiliate" | "both"
       role_scope: "global" | "gym" | "event" | "run_club"
+      submission_status: "new" | "contacted" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -7212,7 +7447,18 @@ export const Constants = {
         "abductors",
         "full_body",
       ],
+      offer_event_type: [
+        "view",
+        "affiliate_click",
+        "code_copy",
+        "unlock_click",
+        "report_expired",
+      ],
+      offer_scope: ["global", "gym"],
+      offer_status: ["active", "archived", "disabled"],
+      offer_type: ["code", "affiliate", "both"],
       role_scope: ["global", "gym", "event", "run_club"],
+      submission_status: ["new", "contacted", "approved", "rejected"],
     },
   },
 } as const
