@@ -1,24 +1,6 @@
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Menu, 
-  X, 
-  CreditCard, 
-  Users, 
-  MessageCircle, 
-  Trophy, 
-  Settings, 
-  HelpCircle,
-  ChevronRight,
-  Building2,
-  GraduationCap,
-  Flag,
-  ShieldCheck,
-  Music,
-  Inbox,
-  Footprints,
-  Gift
-} from "lucide-react";
+import { Menu, X, CreditCard, Users, MessageCircle, Trophy, Settings, HelpCircle, ChevronRight, Building2, GraduationCap, Flag, ShieldCheck, Music, Inbox, Footprints, Gift } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
@@ -26,7 +8,6 @@ import { useOwnedGyms } from "@/hooks/useOwnedGyms";
 import { useCoach } from "@/hooks/useCoach";
 import { useOwnedEvents } from "@/hooks/useOwnedEvents";
 import { useOwnedRunClubs } from "@/hooks/useRunClubs";
-
 interface DrawerItem {
   to: string;
   icon: React.ElementType;
@@ -38,43 +19,121 @@ interface DrawerItem {
   requiresRunClubAccess?: boolean;
   requiresAdmin?: boolean;
 }
-
-const allDrawerItems: DrawerItem[] = [
-  { to: "/admin-portal", icon: ShieldCheck, label: "Admin Portal", description: "Platform administration", requiresAdmin: true },
-  { to: "/gym-portal", icon: Building2, label: "Gym Admin", description: "Manage your gym", requiresGymAccess: true },
-  { to: "/coach-portal", icon: GraduationCap, label: "Coach Portal", description: "Manage your coaching", requiresCoachAccess: true },
-  { to: "/event-portal", icon: Flag, label: "Event Portal", description: "Manage your events", requiresEventAccess: true },
-  { to: "/run-club-portal", icon: Footprints, label: "Run Club Portal", description: "Manage your run clubs", requiresRunClubAccess: true },
-  { to: "/inbox", icon: Inbox, label: "Inbox", description: "Messages & conversations" },
-  { to: "/rewards", icon: Gift, label: "Rewards & Discounts", description: "Exclusive member offers" },
-  { to: "/gym-membership", icon: CreditCard, label: "Gym Membership", description: "Manage your gym access" },
-  { to: "/find-coach", icon: Users, label: "Find a Coach", description: "Connect with coaches" },
-  { to: "/run-clubs", icon: Footprints, label: "Run Clubs", description: "Find & join run clubs" },
-  { to: "/social", icon: MessageCircle, label: "Social", description: "Community feed" },
-  { to: "/events", icon: Trophy, label: "Events & Competitions", description: "Compete and track" },
-  { to: "/playlists", icon: Music, label: "Playlists", description: "Workout music" },
-  { to: "/profile", icon: Settings, label: "Settings", description: "App preferences" },
-  { to: "/help", icon: HelpCircle, label: "Help & Support", description: "Get assistance" },
-];
-
+const allDrawerItems: DrawerItem[] = [{
+  to: "/admin-portal",
+  icon: ShieldCheck,
+  label: "Admin Portal",
+  description: "Platform administration",
+  requiresAdmin: true
+}, {
+  to: "/gym-portal",
+  icon: Building2,
+  label: "Gym Admin",
+  description: "Manage your gym",
+  requiresGymAccess: true
+}, {
+  to: "/coach-portal",
+  icon: GraduationCap,
+  label: "Coach Portal",
+  description: "Manage your coaching",
+  requiresCoachAccess: true
+}, {
+  to: "/event-portal",
+  icon: Flag,
+  label: "Event Portal",
+  description: "Manage your events",
+  requiresEventAccess: true
+}, {
+  to: "/run-club-portal",
+  icon: Footprints,
+  label: "Run Club Portal",
+  description: "Manage your run clubs",
+  requiresRunClubAccess: true
+}, {
+  to: "/inbox",
+  icon: Inbox,
+  label: "Inbox",
+  description: "Messages & conversations"
+}, {
+  to: "/rewards",
+  icon: Gift,
+  label: "Rewards & Discounts",
+  description: "Exclusive member offers"
+}, {
+  to: "/gym-membership",
+  icon: CreditCard,
+  label: "Gym Membership",
+  description: "Manage your gym access"
+}, {
+  to: "/find-coach",
+  icon: Users,
+  label: "Find a Coach",
+  description: "Connect with coaches"
+}, {
+  to: "/run-clubs",
+  icon: Footprints,
+  label: "Run Clubs",
+  description: "Find & join run clubs"
+}, {
+  to: "/social",
+  icon: MessageCircle,
+  label: "Social",
+  description: "Community feed"
+}, {
+  to: "/events",
+  icon: Trophy,
+  label: "Events & Competitions",
+  description: "Compete and track"
+}, {
+  to: "/playlists",
+  icon: Music,
+  label: "Playlists",
+  description: "Workout music"
+}, {
+  to: "/profile",
+  icon: Settings,
+  label: "Settings",
+  description: "App preferences"
+}, {
+  to: "/help",
+  icon: HelpCircle,
+  label: "Help & Support",
+  description: "Get assistance"
+}];
 interface GlobalDrawerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
+export function GlobalDrawer({
+  isOpen,
+  onOpenChange
+}: GlobalDrawerProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasAnyRole, isAdmin } = useRoles();
-  const { hasGymAccess } = useOwnedGyms();
-  const { isCoach, isLoading: isCoachLoading } = useCoach();
-  const { hasEventAccess, isLoading: isEventLoading } = useOwnedEvents();
-  const { hasRunClubAccess, isLoading: isRunClubLoading } = useOwnedRunClubs();
+  const {
+    hasAnyRole,
+    isAdmin
+  } = useRoles();
+  const {
+    hasGymAccess
+  } = useOwnedGyms();
+  const {
+    isCoach,
+    isLoading: isCoachLoading
+  } = useCoach();
+  const {
+    hasEventAccess,
+    isLoading: isEventLoading
+  } = useOwnedEvents();
+  const {
+    hasRunClubAccess,
+    isLoading: isRunClubLoading
+  } = useOwnedRunClubs();
 
   // Filter drawer items based on roles
   // Event Portal is always visible so users can create their first event
   const drawerItems = useMemo(() => {
-    return allDrawerItems.filter((item) => {
+    return allDrawerItems.filter(item => {
       if (item.requiresAdmin) {
         return isAdmin();
       }
@@ -95,41 +154,39 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
       return true;
     });
   }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading, hasRunClubAccess]);
-
   const handleNavigation = (to: string) => {
     navigate(to);
     onOpenChange(false);
   };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
+  return <AnimatePresence>
+      {isOpen && <>
           {/* Backdrop - behind persistent layers */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-drawer"
-            onClick={() => onOpenChange(false)}
-          />
+          <motion.div initial={{
+        opacity: 0
+      }} animate={{
+        opacity: 1
+      }} exit={{
+        opacity: 0
+      }} transition={{
+        duration: 0.2
+      }} className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-drawer" onClick={() => onOpenChange(false)} />
           
           {/* Drawer - slides behind header/footer */}
-          <motion.div
-            initial={{ x: "-100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "-100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-card z-drawer shadow-elevated flex flex-col pt-header-safe pb-footer-safe"
-          >
+          <motion.div initial={{
+        x: "-100%"
+      }} animate={{
+        x: 0
+      }} exit={{
+        x: "-100%"
+      }} transition={{
+        type: "spring",
+        damping: 25,
+        stiffness: 300
+      }} className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-card z-drawer shadow-elevated flex flex-col pt-header-safe pb-footer-safe">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border/50">
               <h2 className="text-lg font-semibold">Menu</h2>
-              <button
-                onClick={() => onOpenChange(false)}
-                className="p-2 -mr-2 rounded-full hover:bg-muted transition-colors"
-              >
+              <button onClick={() => onOpenChange(false)} className="p-2 -mr-2 rounded-full hover:bg-muted transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -137,61 +194,36 @@ export function GlobalDrawer({ isOpen, onOpenChange }: GlobalDrawerProps) {
             {/* Navigation Items */}
             <div className="flex-1 overflow-y-auto p-2">
               <nav className="space-y-1">
-                {drawerItems.map((item) => {
-                  const isActive = location.pathname === item.to;
-                  return (
-                    <button
-                      key={item.to}
-                      onClick={() => handleNavigation(item.to)}
-                      className={cn(
-                        "w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left",
-                        isActive 
-                          ? "bg-accent text-accent-foreground" 
-                          : "hover:bg-muted"
-                      )}
-                    >
-                      <div className={cn(
-                        "h-10 w-10 rounded-full flex items-center justify-center",
-                        isActive ? "bg-primary/20" : "bg-muted"
-                      )}>
+                {drawerItems.map(item => {
+              const isActive = location.pathname === item.to;
+              return <button key={item.to} onClick={() => handleNavigation(item.to)} className={cn("w-full flex items-center gap-3 p-3 rounded-xl transition-colors text-left", isActive ? "bg-accent text-accent-foreground" : "hover:bg-muted")}>
+                      <div className={cn("h-10 w-10 rounded-full flex items-center justify-center", isActive ? "bg-primary/20" : "bg-muted")}>
                         <item.icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm">{item.label}</p>
-                        {item.description && (
-                          <p className="text-xs text-muted-foreground truncate">
+                        {item.description && <p className="text-xs text-muted-foreground truncate">
                             {item.description}
-                          </p>
-                        )}
+                          </p>}
                       </div>
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  );
-                })}
+                    </button>;
+            })}
               </nav>
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-border/50">
-              <p className="text-xs text-muted-foreground text-center">
-                Flow Fitness v1.0
-              </p>
-            </div>
+            
           </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
+        </>}
+    </AnimatePresence>;
 }
-
-export function HamburgerButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
-      aria-label="Open menu"
-    >
+export function HamburgerButton({
+  onClick
+}: {
+  onClick: () => void;
+}) {
+  return <button onClick={onClick} className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors" aria-label="Open menu">
       <Menu className="h-5 w-5" />
-    </button>
-  );
+    </button>;
 }
