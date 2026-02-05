@@ -40,6 +40,8 @@ import {
   Inbox,
   Mail,
   Footprints,
+  Gift,
+  Package,
 } from "lucide-react";
 
 interface NavItem {
@@ -61,6 +63,8 @@ const navItems: NavItem[] = [
   { to: "/admin-portal/workouts", icon: Dumbbell, label: "Workouts & Programs" },
   { to: "/admin-portal/exercises", icon: BookOpen, label: "Exercise Library" },
   { to: "/admin-portal/playlists", icon: Music, label: "Playlists" },
+  { to: "/admin-portal/rewards", icon: Gift, label: "Rewards & Offers" },
+  { to: "/admin-portal/supplier-submissions", icon: Package, label: "Supplier Submissions" },
   { to: "/admin-portal/billing", icon: CreditCard, label: "Billing" },
   { to: "/admin-portal/social", icon: MessageCircle, label: "Social Moderation" },
   { to: "/admin-portal/notifications", icon: Bell, label: "Notifications" },

@@ -20,7 +20,8 @@ import {
   MapPin,
   ScanLine,
   Inbox,
-  UserPlus
+  UserPlus,
+  Gift
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
@@ -54,6 +55,7 @@ const navItems: NavItem[] = [
   { to: "/gym-portal/rotas", icon: Clock, label: "Rotas" },
   { to: "/gym-portal/payments", icon: Wallet, label: "Payments & Refunds" },
   { to: "/gym-portal/reports", icon: BarChart3, label: "Reports" },
+  { to: "/gym-portal/offers", icon: Gift, label: "Offers" },
   { to: "/gym-portal/profile", icon: Building2, label: "Gym Profile" },
   { to: "/gym-portal/settings", icon: Settings, label: "Settings" },
 ];
