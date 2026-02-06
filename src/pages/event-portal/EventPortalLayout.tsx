@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Outlet, NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoles } from "@/hooks/useRoles";
+import { useOwnedEvents } from "@/hooks/useOwnedEvents";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
@@ -24,6 +26,7 @@ import {
   UserPlus,
   ScanLine,
   QrCode,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -71,6 +74,8 @@ export default function EventPortalLayout() {
   const { profile } = useProfile();
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasAnyRole, isAdmin, isLoading: isRolesLoading } = useRoles();
+  const { hasEventAccess, isLoading: isEventAccessLoading } = useOwnedEvents();
   
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -78,11 +83,21 @@ export default function EventPortalLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  const hasAccess = isAdmin() || hasAnyRole(['event_organiser', 'gym_manager', 'gym_staff']) || hasEventAccess;
+  const isCheckingAccess = isRolesLoading || isEventAccessLoading;
+
   useEffect(() => {
     if (user) {
       fetchEvents();
     }
   }, [user]);
+
+  // Redirect unauthorized users
+  useEffect(() => {
+    if (!isCheckingAccess && !hasAccess) {
+      navigate("/", { replace: true });
+    }
+  }, [isCheckingAccess, hasAccess, navigate]);
 
   const fetchEvents = async () => {
     try {
@@ -103,6 +118,18 @@ export default function EventPortalLayout() {
       setLoading(false);
     }
   };
+
+  if (isCheckingAccess) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return null;
+  }
 
   const handleEventChange = (eventId: string) => {
     setSelectedEventId(eventId);
