@@ -131,7 +131,6 @@ export function GlobalDrawer({
   } = useOwnedRunClubs();
 
   // Filter drawer items based on roles
-  // Event Portal is always visible so users can create their first event
   const drawerItems = useMemo(() => {
     return allDrawerItems.filter(item => {
       if (item.requiresAdmin) {
@@ -144,15 +143,14 @@ export function GlobalDrawer({
         return isAdmin() || hasAnyRole(['coach']) || isCoach || isCoachLoading;
       }
       if (item.requiresEventAccess) {
-        // Always show Event Portal - users can create events from there
-        return true;
+        return isAdmin() || hasAnyRole(['event_organiser', 'gym_manager', 'gym_staff']) || hasEventAccess || isEventLoading;
       }
       if (item.requiresRunClubAccess) {
         return isAdmin() || hasAnyRole(['run_club_organiser']) || hasRunClubAccess || isRunClubLoading;
       }
       return true;
     });
-  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading, hasRunClubAccess]);
+  }, [isAdmin, hasAnyRole, hasGymAccess, isCoach, isCoachLoading, hasEventAccess, isEventLoading, hasRunClubAccess, isRunClubLoading]);
   const handleNavigation = (to: string) => {
     navigate(to);
     onOpenChange(false);

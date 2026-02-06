@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { useRoles } from "@/hooks/useRoles";
 import { useOwnedRunClubs, RunClub } from "@/hooks/useRunClubs";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,11 +57,15 @@ export default function RunClubPortalLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const { clubs, isLoading, refetch } = useOwnedRunClubs();
+  const { clubs, isLoading, hasRunClubAccess, refetch } = useOwnedRunClubs();
+  const { hasAnyRole, isAdmin, isLoading: isRolesLoading } = useRoles();
 
   const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  const hasAccess = isAdmin() || hasAnyRole(['run_club_organiser']) || hasRunClubAccess;
+  const isCheckingAccess = isLoading || isRolesLoading;
 
   // Set first club as selected when clubs load
   useEffect(() => {
@@ -69,16 +74,27 @@ export default function RunClubPortalLayout() {
     }
   }, [clubs, selectedClubId]);
 
+  // Redirect unauthorized users
+  useEffect(() => {
+    if (!isCheckingAccess && !hasAccess) {
+      navigate("/", { replace: true });
+    }
+  }, [isCheckingAccess, hasAccess, navigate]);
+
   const selectedClub = clubs.find((c) => c.id === selectedClubId) || null;
 
   const isActive = (path: string) => location.pathname === path;
 
-  if (isLoading) {
+  if (isCheckingAccess) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (!hasAccess) {
+    return null;
   }
 
   // No clubs - show create prompt
