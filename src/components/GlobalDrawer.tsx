@@ -148,8 +148,7 @@ export function GlobalDrawer({
         return true;
       }
       if (item.requiresRunClubAccess) {
-        // Always show Run Club Portal - users can create clubs from there
-        return true;
+        return isAdmin() || hasAnyRole(['run_club_organiser']) || hasRunClubAccess || isRunClubLoading;
       }
       return true;
     });
