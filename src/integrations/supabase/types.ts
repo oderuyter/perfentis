@@ -3082,6 +3082,63 @@ export type Database = {
           },
         ]
       }
+      exercise_submissions: {
+        Row: {
+          approved_exercise_id: string | null
+          created_at: string
+          equipment: string[] | null
+          id: string
+          instructions: string | null
+          modality: string | null
+          name: string
+          primary_muscle: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          secondary_muscles: string[] | null
+          status: string
+          submitted_by: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          approved_exercise_id?: string | null
+          created_at?: string
+          equipment?: string[] | null
+          id?: string
+          instructions?: string | null
+          modality?: string | null
+          name: string
+          primary_muscle?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          secondary_muscles?: string[] | null
+          status?: string
+          submitted_by: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          approved_exercise_id?: string | null
+          created_at?: string
+          equipment?: string[] | null
+          id?: string
+          instructions?: string | null
+          modality?: string | null
+          name?: string
+          primary_muscle?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          secondary_muscles?: string[] | null
+          status?: string
+          submitted_by?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exercises: {
         Row: {
           created_at: string
@@ -3912,6 +3969,69 @@ export type Database = {
           status?: string
           total_rows?: number | null
           updated_count?: number | null
+        }
+        Relationships: []
+      }
+      import_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_entity_id: string | null
+          created_entity_type: string | null
+          custom_exercises_created: number | null
+          detected_format: string | null
+          error_message: string | null
+          file_name: string
+          file_type: string
+          id: string
+          mapping_decisions: Json | null
+          matched_exercises: number | null
+          metadata: Json | null
+          parse_confidence: number | null
+          status: string
+          submissions_created: number | null
+          total_exercises: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_entity_id?: string | null
+          created_entity_type?: string | null
+          custom_exercises_created?: number | null
+          detected_format?: string | null
+          error_message?: string | null
+          file_name: string
+          file_type: string
+          id?: string
+          mapping_decisions?: Json | null
+          matched_exercises?: number | null
+          metadata?: Json | null
+          parse_confidence?: number | null
+          status?: string
+          submissions_created?: number | null
+          total_exercises?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_entity_id?: string | null
+          created_entity_type?: string | null
+          custom_exercises_created?: number | null
+          detected_format?: string | null
+          error_message?: string | null
+          file_name?: string
+          file_type?: string
+          id?: string
+          mapping_decisions?: Json | null
+          matched_exercises?: number | null
+          metadata?: Json | null
+          parse_confidence?: number | null
+          status?: string
+          submissions_created?: number | null
+          total_exercises?: number | null
+          user_id?: string
         }
         Relationships: []
       }
