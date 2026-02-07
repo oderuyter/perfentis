@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Import SheetJS for Excel/CSV parsing
-import * as XLSX from "https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs";
+import * as XLSX from "npm:xlsx@0.18.5";
 
 interface ParsedExercise {
   original_text: string;

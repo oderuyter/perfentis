@@ -4,7 +4,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { 
   Play, 
   Dumbbell, 
-  Layers
+  Layers,
+  FileUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -73,12 +74,12 @@ export default function Train() {
         </motion.p>
       </header>
 
-      {/* Primary CTA: Just Train */}
+      {/* Primary CTAs */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
-        className="mb-6"
+        className="mb-6 space-y-3"
       >
         <Button 
           onClick={handleJustTrain}
@@ -91,6 +92,14 @@ export default function Train() {
         <p className="text-xs text-muted-foreground/70 text-center mt-2.5">
           Start a session and add exercises as you go
         </p>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/import?returnTo=/train")}
+          className="w-full h-11 gap-2 rounded-2xl"
+        >
+          <FileUp className="h-4 w-4" />
+          Import Workout / Split / Plan
+        </Button>
       </motion.div>
 
       {/* Active Split Card (if user has one) */}
