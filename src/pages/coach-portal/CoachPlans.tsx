@@ -50,6 +50,7 @@ import {
   MoreVertical,
   UserPlus,
   Settings,
+  FileUp,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -58,6 +59,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useTrainingPlans, useCoachClients } from "@/hooks/useCoach";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -87,6 +89,7 @@ interface PlanWorkout {
 }
 
 export default function CoachPlans() {
+  const navigate = useNavigate();
   const { coach } = useOutletContext<{ coach: Coach }>();
   const { plans, isLoading, refetch } = useTrainingPlans(coach?.id);
   const { clients } = useCoachClients(coach?.id);
@@ -369,10 +372,16 @@ export default function CoachPlans() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-semibold">Plans & Programs</h2>
-        <Button onClick={() => setShowCreateSheet(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create Plan
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate(`/import?context=coach&coachId=${coach.id}&returnTo=/coach-portal/plans`)}>
+            <FileUp className="h-4 w-4 mr-2" />
+            Import Plan
+          </Button>
+          <Button onClick={() => setShowCreateSheet(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Plan
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>

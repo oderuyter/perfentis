@@ -347,11 +347,11 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
                     {state.exerciseMatches.map((match, idx) => (
                       <div key={idx} className={cn(
                         "p-3 rounded-lg border",
-                        match.decision === 'auto' ? "border-green-500/20 bg-green-500/5" :
-                        match.decision === 'manual' ? "border-blue-500/20 bg-blue-500/5" :
-                        match.decision === 'custom' || match.decision === 'submit' ? "border-purple-500/20 bg-purple-500/5" :
+                        match.decision === 'auto' ? "border-primary/20 bg-primary/5" :
+                        match.decision === 'manual' ? "border-accent/20 bg-accent/5" :
+                        match.decision === 'custom' || match.decision === 'submit' ? "border-secondary/30 bg-secondary/5" :
                         match.decision === 'skip' ? "border-muted bg-muted/30" :
-                        "border-orange-500/30 bg-orange-500/5"
+                        "border-destructive/30 bg-destructive/5"
                       )}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
@@ -433,9 +433,9 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   {state.validationErrors.length === 0 ? (
-                    <><CheckCircle2 className="h-5 w-5 text-green-500" /> No Issues Found</>
+                    <><CheckCircle2 className="h-5 w-5 text-primary" /> No Issues Found</>
                   ) : (
-                    <><AlertTriangle className="h-5 w-5 text-orange-500" /> {state.validationErrors.filter(e => !e.fixed && !e.skipped).length} Issue{state.validationErrors.filter(e => !e.fixed && !e.skipped).length !== 1 ? 's' : ''} to Resolve</>
+                    <><AlertTriangle className="h-5 w-5 text-destructive" /> {state.validationErrors.filter(e => !e.fixed && !e.skipped).length} Issue{state.validationErrors.filter(e => !e.fixed && !e.skipped).length !== 1 ? 's' : ''} to Resolve</>
                   )}
                 </CardTitle>
               </CardHeader>
@@ -447,9 +447,9 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
                     {state.validationErrors.map((err) => (
                       <div key={err.id} className={cn(
                         "p-3 rounded-lg border flex items-start gap-3",
-                        err.fixed ? "border-green-500/20 bg-green-500/5" :
+                        err.fixed ? "border-primary/20 bg-primary/5" :
                         err.skipped ? "border-muted bg-muted/30" :
-                        "border-orange-500/30 bg-orange-500/5"
+                        "border-destructive/30 bg-destructive/5"
                       )}>
                         <div className="flex-1">
                           <p className="text-sm font-medium">{err.message}</p>
@@ -519,13 +519,13 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
                     <p className="font-semibold">{autoMatched + manualMatched} / {totalExercises}</p>
                   </div>
                   {customCreated > 0 && (
-                    <div className="p-3 rounded-lg bg-purple-500/10">
+                    <div className="p-3 rounded-lg bg-secondary/10">
                       <p className="text-xs text-muted-foreground">Custom Exercises</p>
                       <p className="font-semibold">{customCreated} to create</p>
                     </div>
                   )}
                   {submitted > 0 && (
-                    <div className="p-3 rounded-lg bg-blue-500/10">
+                    <div className="p-3 rounded-lg bg-accent/10">
                       <p className="text-xs text-muted-foreground">Library Submissions</p>
                       <p className="font-semibold">{submitted} for approval</p>
                     </div>
