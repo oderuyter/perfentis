@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { format, isToday } from "date-fns";
-import { Settings2, ScanBarcode, Search, PenLine, BookTemplate } from "lucide-react";
+import { Settings2, ScanBarcode, Search, PenLine, BookTemplate, Library } from "lucide-react";
 import { useNutrition, MealType } from "@/hooks/useNutrition";
 import { MacroDial } from "@/components/nutrition/MacroDial";
 import { DateStrip } from "@/components/nutrition/DateStrip";
 import { MealCard } from "@/components/nutrition/MealCard";
 import { AddFoodSheet } from "@/components/nutrition/AddFoodSheet";
 import { GoalsSheet } from "@/components/nutrition/GoalsSheet";
+import { BarcodeScannerSheet } from "@/components/nutrition/BarcodeScannerSheet";
+import { MealTemplateBuilderSheet } from "@/components/nutrition/MealTemplateBuilderSheet";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function Nutrition() {
@@ -30,10 +33,15 @@ export default function Nutrition() {
     getEntriesForMeal,
   } = useNutrition();
 
+  const navigate = useNavigate();
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [addMealId, setAddMealId] = useState("");
   const [addMealType, setAddMealType] = useState<MealType>("snacks");
   const [goalsOpen, setGoalsOpen] = useState(false);
+  const [barcodeOpen, setBarcodeOpen] = useState(false);
+  const [barcodeMealId, setBarcodeMealId] = useState("");
+  const [barcodeMealType, setBarcodeMealType] = useState<MealType>("snacks");
+  const [templateBuilderOpen, setTemplateBuilderOpen] = useState(false);
 
   const totalCal = Number(day?.total_calories) || 0;
   const totalP = Number(day?.total_protein_g) || 0;
@@ -52,7 +60,19 @@ export default function Nutrition() {
   };
 
   const handleScanBarcode = () => {
-    toast.info("Barcode scanning coming soon!");
+    const snacksMeal = getMealByType("snacks");
+    if (snacksMeal) {
+      setBarcodeMealId(snacksMeal.id);
+      setBarcodeMealType("snacks");
+    }
+    setBarcodeOpen(true);
+  };
+
+  const handleScanBarcodeFromAddSheet = () => {
+    setAddSheetOpen(false);
+    setBarcodeMealId(addMealId);
+    setBarcodeMealType(addMealType);
+    setBarcodeOpen(true);
   };
 
   if (loading) {
@@ -88,12 +108,20 @@ export default function Nutrition() {
               : format(selectedDate, "EEE, MMM d")}
           </motion.p>
         </div>
-        <button
-          onClick={() => setGoalsOpen(true)}
-          className="p-2 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors"
-        >
-          <Settings2 className="h-4 w-4 text-muted-foreground" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => navigate("/nutrition/library")}
+            className="p-2 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors"
+          >
+            <Library className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <button
+            onClick={() => setGoalsOpen(true)}
+            className="p-2 rounded-xl bg-muted/40 hover:bg-muted/60 transition-colors"
+          >
+            <Settings2 className="h-4 w-4 text-muted-foreground" />
+          </button>
+        </div>
       </header>
 
       {/* Date Strip */}
@@ -120,37 +148,10 @@ export default function Nutrition() {
         transition={{ delay: 0.08 }}
         className="flex items-end justify-center gap-4 mt-5 mb-1"
       >
-        <MacroDial
-          label="Protein"
-          consumed={totalP}
-          goal={pGoal}
-          unit="g"
-          colorVar="--status-error"
-          size="sm"
-        />
-        <MacroDial
-          label="Calories"
-          consumed={totalCal}
-          goal={calGoal}
-          colorVar="--accent-primary"
-          size="lg"
-        />
-        <MacroDial
-          label="Carbs"
-          consumed={totalC}
-          goal={cGoal}
-          unit="g"
-          colorVar="--status-warning"
-          size="sm"
-        />
-        <MacroDial
-          label="Fat"
-          consumed={totalF}
-          goal={fGoal}
-          unit="g"
-          colorVar="--status-success"
-          size="sm"
-        />
+        <MacroDial label="Protein" consumed={totalP} goal={pGoal} unit="g" colorVar="--status-error" size="sm" />
+        <MacroDial label="Calories" consumed={totalCal} goal={calGoal} colorVar="--accent-primary" size="lg" />
+        <MacroDial label="Carbs" consumed={totalC} goal={cGoal} unit="g" colorVar="--status-warning" size="sm" />
+        <MacroDial label="Fat" consumed={totalF} goal={fGoal} unit="g" colorVar="--status-success" size="sm" />
       </motion.div>
 
       {/* Quick Actions */}
@@ -181,7 +182,7 @@ export default function Nutrition() {
           {
             icon: BookTemplate,
             label: "Template",
-            action: () => toast.info("Meal templates coming soon!"),
+            action: () => setTemplateBuilderOpen(true),
           },
         ].map(({ icon: Icon, label, action }) => (
           <button
@@ -230,7 +231,22 @@ export default function Nutrition() {
         onSearchFoods={searchFoods}
         onAddFood={addEntry}
         onAddManual={addManualEntry}
-        onScanBarcode={handleScanBarcode}
+        onScanBarcode={handleScanBarcodeFromAddSheet}
+      />
+
+      {/* Barcode Scanner Sheet */}
+      <BarcodeScannerSheet
+        open={barcodeOpen}
+        mealType={barcodeMealType}
+        mealId={barcodeMealId}
+        onClose={() => setBarcodeOpen(false)}
+        onAddFood={addEntry}
+      />
+
+      {/* Meal Template Builder */}
+      <MealTemplateBuilderSheet
+        open={templateBuilderOpen}
+        onClose={() => setTemplateBuilderOpen(false)}
       />
 
       {/* Goals Sheet */}

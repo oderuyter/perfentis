@@ -126,6 +126,7 @@ import Rewards from "./pages/Rewards";
 import ImportWizard from "./pages/ImportWizard";
 import AdminExerciseSubmissions from "./pages/admin-portal/AdminExerciseSubmissions";
 import AdminNutrition from "./pages/admin-portal/AdminNutrition";
+import NutritionLibrary from "./pages/NutritionLibrary";
 
 const queryClient = new QueryClient();
 
@@ -183,6 +184,7 @@ function AppRoutes() {
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/nutrition" element={<Nutrition />} />
+        <Route path="/nutrition/library" element={<NutritionLibrary />} />
         <Route path="/habits" element={<Habits />} />
         <Route path="/gym-membership" element={<GymMembership />} />
         <Route path="/find-coach" element={<FindCoach />} />
