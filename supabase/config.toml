@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.parse-import]
 verify_jwt = false
+
+[functions.nutrition-lookup]
+verify_jwt = false

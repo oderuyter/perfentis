@@ -125,6 +125,7 @@ import GymOffers from "./pages/gym-portal/GymOffers";
 import Rewards from "./pages/Rewards";
 import ImportWizard from "./pages/ImportWizard";
 import AdminExerciseSubmissions from "./pages/admin-portal/AdminExerciseSubmissions";
+import AdminNutrition from "./pages/admin-portal/AdminNutrition";
 
 const queryClient = new QueryClient();
 
@@ -293,6 +294,7 @@ function AppRoutes() {
         <Route path="rewards" element={<AdminRewards />} />
         <Route path="supplier-submissions" element={<AdminSupplierSubmissions />} />
         <Route path="exercise-submissions" element={<AdminExerciseSubmissions />} />
+        <Route path="nutrition" element={<AdminNutrition />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
