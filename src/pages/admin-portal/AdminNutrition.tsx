@@ -19,7 +19,9 @@ import {
   TestTube,
   Fingerprint,
   Shield,
+  Copy,
 } from "lucide-react";
+import { AdminDuplicateDetection } from "@/components/admin/AdminDuplicateDetection";
 
 interface ApiProvider {
   id: string;
@@ -226,7 +228,7 @@ export default function AdminNutrition() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-6 w-full max-w-3xl">
           <TabsTrigger value="providers" className="text-xs">
             <Globe className="h-3.5 w-3.5 mr-1" />
             APIs
@@ -242,6 +244,10 @@ export default function AdminNutrition() {
           <TabsTrigger value="fingerprint" className="text-xs">
             <Fingerprint className="h-3.5 w-3.5 mr-1" />
             Fingerprint
+          </TabsTrigger>
+          <TabsTrigger value="duplicates" className="text-xs">
+            <Copy className="h-3.5 w-3.5 mr-1" />
+            Duplicates
           </TabsTrigger>
           <TabsTrigger value="moderation" className="text-xs">
             <Shield className="h-3.5 w-3.5 mr-1" />
@@ -567,6 +573,11 @@ export default function AdminNutrition() {
               )}
             </Card>
           ))}
+        </TabsContent>
+
+        {/* Duplicates Tab */}
+        <TabsContent value="duplicates" className="mt-4">
+          <AdminDuplicateDetection />
         </TabsContent>
 
         {/* Moderation Tab */}
