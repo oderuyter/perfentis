@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Check, Loader2, Upload, FileSpreadsheet, FileText, Download, X, ChevronDown, Pencil, AlertTriangle, CheckCircle2, Search, Plus, Send } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Loader2, Upload, FileSpreadsheet, Download, X, AlertTriangle, CheckCircle2, Plus, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import ImportStructureEditor from '@/components/import/ImportStructureEditor';
+
 import { useImportWizard } from '@/hooks/useImportWizard';
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 import { findBestMatch } from '@/lib/exerciseMatching';
@@ -272,49 +272,11 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
               </CardContent>
             </Card>
 
-            {/* Parsed structure preview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  {state.parsedData.weeks.length} week{state.parsedData.weeks.length !== 1 ? 's' : ''}, {totalWorkouts} workout{totalWorkouts !== 1 ? 's' : ''}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="max-h-96">
-                  <Accordion type="multiple" className="w-full">
-                    {state.parsedData.weeks.map((week, wi) => (
-                      <AccordionItem key={wi} value={`week-${wi}`}>
-                        <AccordionTrigger className="py-2">
-                          <span className="flex items-center gap-2">
-                            <span className="font-medium">{week.name || `Week ${week.week_number}`}</span>
-                            <Badge variant="outline" className="text-xs">{week.workouts.length} workouts</Badge>
-                          </span>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-3 pl-4">
-                            {week.workouts.map((workout, woi) => (
-                              <div key={woi} className="space-y-1">
-                                <p className="font-medium text-sm">{workout.name}</p>
-                                <div className="space-y-0.5 pl-3">
-                                  {workout.exercises.map((ex, ei) => (
-                                    <p key={ei} className="text-xs text-muted-foreground">
-                                      {ex.name}
-                                      {ex.sets && ` — ${ex.sets} sets`}
-                                      {ex.reps && ` × ${ex.reps}`}
-                                      {ex.load && ` @ ${ex.load}`}
-                                    </p>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+            {/* Interactive structure editor */}
+            <ImportStructureEditor
+              parsedData={state.parsedData}
+              onUpdate={updateParsedData}
+            />
 
             <div className="flex justify-end">
               <Button onClick={() => setStep('matching')}>
