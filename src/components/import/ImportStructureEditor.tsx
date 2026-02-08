@@ -64,8 +64,7 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
   const [createWorkoutWeek, setCreateWorkoutWeek] = useState<number | null>(null);
   const [newWorkoutName, setNewWorkoutName] = useState('');
   const [bulkMoveOpen, setBulkMoveOpen] = useState(false);
-  const [moveTargetWeek, setMoveTargetWeek] = useState<string>('');
-  const [moveTargetWorkout, setMoveTargetWorkout] = useState<string>('');
+  const [moveTarget, setMoveTarget] = useState<string>(''); // "wi-woi" combined key
 
   // Drag state
   const [dragSource, setDragSource] = useState<ExerciseLocation | null>(null);
@@ -231,9 +230,8 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
 
   // Bulk move selected exercises
   const bulkMoveExercises = () => {
-    if (moveTargetWeek === '' || moveTargetWorkout === '') return;
-    const targetWi = parseInt(moveTargetWeek);
-    const targetWoi = parseInt(moveTargetWorkout);
+    if (!moveTarget) return;
+    const [targetWi, targetWoi] = moveTarget.split('-').map(Number);
 
     const toMove: ExerciseLocation[] = [];
     selected.forEach(key => {
@@ -438,8 +436,7 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
             size="sm"
             className="h-7 text-xs"
             onClick={() => {
-              setMoveTargetWeek('');
-              setMoveTargetWorkout('');
+              setMoveTarget('');
               setBulkMoveOpen(true);
             }}
           >
@@ -664,43 +661,45 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
         </DialogContent>
       </Dialog>
 
-      {/* Bulk move dialog */}
+      {/* Bulk move dialog — flat workout list */}
       <Dialog open={bulkMoveOpen} onOpenChange={setBulkMoveOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Move {selected.size} exercise{selected.size !== 1 ? 's' : ''}</DialogTitle>
+            <DialogTitle>Move {selected.size} exercise{selected.size !== 1 ? 's' : ''} to…</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Week</Label>
-              <Select value={moveTargetWeek} onValueChange={(v) => { setMoveTargetWeek(v); setMoveTargetWorkout(''); }}>
-                <SelectTrigger><SelectValue placeholder="Select week" /></SelectTrigger>
-                <SelectContent>
-                  {parsedData.weeks.map((w, i) => (
-                    <SelectItem key={i} value={String(i)}>
-                      {w.name || `Week ${w.week_number}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {moveTargetWeek !== '' && (
-              <div>
-                <Label>Workout</Label>
-                <Select value={moveTargetWorkout} onValueChange={setMoveTargetWorkout}>
-                  <SelectTrigger><SelectValue placeholder="Select workout" /></SelectTrigger>
-                  <SelectContent>
-                    {parsedData.weeks[parseInt(moveTargetWeek)]?.workouts.map((wo, i) => (
-                      <SelectItem key={i} value={String(i)}>{wo.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <div className="space-y-1 max-h-64 overflow-y-auto -mx-1 px-1">
+            {parsedData.weeks.map((week, wi) => (
+              <div key={wi}>
+                {parsedData.weeks.length > 1 && (
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide px-2 pt-2 pb-1">
+                    {week.name || `Week ${week.week_number}`}
+                  </p>
+                )}
+                {week.workouts.map((wo, woi) => {
+                  const targetKey = `${wi}-${woi}`;
+                  const isSelected = moveTarget === targetKey;
+                  return (
+                    <button
+                      key={woi}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors",
+                        isSelected
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "hover:bg-muted/50 text-foreground"
+                      )}
+                      onClick={() => setMoveTarget(targetKey)}
+                    >
+                      <span className="flex-1 truncate">{wo.name}</span>
+                      <span className="text-[10px] text-muted-foreground tabular-nums">{wo.exercises.length} ex</span>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            ))}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setBulkMoveOpen(false)}>Cancel</Button>
-            <Button onClick={bulkMoveExercises} disabled={moveTargetWorkout === ''}>Move</Button>
+            <Button onClick={bulkMoveExercises} disabled={!moveTarget}>Move</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
