@@ -343,7 +343,7 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
               </CardHeader>
               <CardContent>
                 <ScrollArea className="max-h-[60vh]">
-                  <div className="space-y-3">
+                  <div className="space-y-3 pr-2">
                     {state.exerciseMatches.map((match, idx) => (
                       <div key={idx} className={cn(
                         "p-3 rounded-lg border",
@@ -353,9 +353,10 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
                         match.decision === 'skip' ? "border-muted bg-muted/30" :
                         "border-destructive/30 bg-destructive/5"
                       )}>
-                        <div className="flex items-start justify-between gap-3">
+                        {/* Exercise name + status */}
+                        <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{match.original_text}</p>
+                            <p className="font-medium text-sm break-words">{match.original_text}</p>
                             {match.decision !== 'pending' && match.decision !== 'skip' && (
                               <p className="text-xs text-muted-foreground mt-0.5">
                                 → {match.decision === 'custom' || match.decision === 'submit'
@@ -367,47 +368,53 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
                               </p>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {/* Search library dropdown */}
-                            <Select
-                              value={match.matched_exercise_id || ''}
-                              onValueChange={(v) => {
-                                const ex = allExercises.find(e => e.exercise_id === v);
-                                if (ex) {
-                                  updateMatch(idx, {
-                                    matched_exercise_id: ex.exercise_id,
-                                    matched_exercise_name: ex.name,
-                                    confidence: 1,
-                                    decision: 'manual',
-                                  });
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="w-40 h-8 text-xs">
-                                <SelectValue placeholder="Match..." />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {/* Show best matches first */}
-                                {findBestMatch(match.original_text, allExercises, 8).map((r) => (
-                                  <SelectItem key={r.exercise.exercise_id} value={r.exercise.exercise_id}>
-                                    {r.exercise.name} ({Math.round(r.confidence * 100)}%)
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => openCustomDialog(idx)}>
-                              <Plus className="h-3 w-3 mr-1" /> Custom
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 text-xs text-muted-foreground"
-                              onClick={() => updateMatch(idx, { decision: 'skip' })}
-                            >
-                              Skip
-                            </Button>
-                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-muted-foreground shrink-0"
+                            onClick={() => updateMatch(idx, { decision: 'skip' })}
+                          >
+                            Skip
+                          </Button>
                         </div>
+
+                        {/* Match dropdown — full width, includes "Create custom" option */}
+                        <Select
+                          value={match.matched_exercise_id || ''}
+                          onValueChange={(v) => {
+                            if (v === '__create_custom__') {
+                              openCustomDialog(idx);
+                              return;
+                            }
+                            const ex = allExercises.find(e => e.exercise_id === v);
+                            if (ex) {
+                              updateMatch(idx, {
+                                matched_exercise_id: ex.exercise_id,
+                                matched_exercise_name: ex.name,
+                                confidence: 1,
+                                decision: 'manual',
+                              });
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="w-full h-9 text-sm">
+                            <SelectValue placeholder="Select exercise…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* Best fuzzy matches using parsed name, not full original text */}
+                            {findBestMatch(match.parsed_exercise.name, allExercises, 10).map((r) => (
+                              <SelectItem key={r.exercise.exercise_id} value={r.exercise.exercise_id}>
+                                {r.exercise.name} ({Math.round(r.confidence * 100)}%)
+                              </SelectItem>
+                            ))}
+                            {/* Divider + create custom option */}
+                            <SelectItem value="__create_custom__" className="text-primary font-medium">
+                              <span className="flex items-center gap-1.5">
+                                <Plus className="h-3.5 w-3.5" /> Create custom exercise
+                              </span>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     ))}
                   </div>
