@@ -290,14 +290,33 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
         {state.step === 'matching' && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             {/* Summary bar */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="text-base font-semibold">Exercise Matching</h2>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <Badge variant="default">{autoMatched + manualMatched} matched</Badge>
                 {state.exerciseMatches.filter(m => m.decision === 'pending').length > 0 && (
-                  <Badge variant="destructive">
-                    {state.exerciseMatches.filter(m => m.decision === 'pending').length} need review
-                  </Badge>
+                  <>
+                    <Badge variant="destructive">
+                      {state.exerciseMatches.filter(m => m.decision === 'pending').length} need review
+                    </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        state.exerciseMatches.forEach((match, idx) => {
+                          if (match.decision === 'pending' && match.matched_exercise_id && match.confidence > 0) {
+                            updateMatch(idx, {
+                              decision: 'manual',
+                              confidence: match.confidence,
+                            });
+                          }
+                        });
+                      }}
+                    >
+                      <Check className="h-3 w-3 mr-1" /> Accept all suggestions
+                    </Button>
+                  </>
                 )}
               </div>
             </div>

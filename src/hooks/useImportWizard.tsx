@@ -371,44 +371,81 @@ export function useImportWizard(isCoach = false, coachId?: string) {
         }
       }
 
-      // Helper to convert parsed exercises to template format
-      const toTemplateExercises = (exercises: typeof parsedData.weeks[0]['workouts'][0]['exercises']): WorkoutTemplateExercise[] => {
-        return exercises
-          .filter(ex => {
-            const key = ex.name.toLowerCase().trim();
-            return exerciseLookup.has(key);
-          })
-          .map((ex, idx) => {
-            const key = ex.name.toLowerCase().trim();
-            const setsStr = String(ex.sets || '3');
-            const repsStr = String(ex.reps || '10');
+      // Helper to build a single exercise template entry
+      const buildExerciseEntry = (ex: typeof parsedData.weeks[0]['workouts'][0]['exercises'][0], idx: number) => {
+        const key = ex.name.toLowerCase().trim();
+        const setsStr = String(ex.sets || '3');
+        const repsStr = String(ex.reps || '10');
+        const setsParts = setsStr.split('-').map(s => parseInt(s));
+        const sets = setsParts[0] || 3;
+        const setsMax = setsParts.length > 1 ? setsParts[1] : undefined;
+        const repsParts = repsStr.split('-').map(s => parseInt(s));
+        const reps = repsParts[0] || 10;
+        const repsMax = repsParts.length > 1 ? repsParts[1] : undefined;
 
-            // Parse sets (handle ranges like "3-5")
-            const setsParts = setsStr.split('-').map(s => parseInt(s));
-            const sets = setsParts[0] || 3;
-            const setsMax = setsParts.length > 1 ? setsParts[1] : undefined;
+        return {
+          exercise_id: exerciseLookup.get(key) || '',
+          name: exerciseNameLookup.get(key) || ex.name,
+          sets,
+          reps,
+          sets_min: setsMax ? sets : undefined,
+          sets_max: setsMax,
+          reps_min: repsMax ? reps : undefined,
+          reps_max: repsMax,
+          load_guidance: ex.load || undefined,
+          rest_seconds: ex.rest_seconds,
+          notes: ex.notes || undefined,
+          order_index: idx,
+          exercise_type: ex.category as 'strength' | 'cardio' | undefined,
+        };
+      };
 
-            // Parse reps (handle ranges like "8-12")
-            const repsParts = repsStr.split('-').map(s => parseInt(s));
-            const reps = repsParts[0] || 10;
-            const repsMax = repsParts.length > 1 ? repsParts[1] : undefined;
+      // Helper to convert parsed exercises to template format, grouping supersets
+      const toTemplateExercises = (exercises: typeof parsedData.weeks[0]['workouts'][0]['exercises']): any[] => {
+        const validExercises = exercises.filter(ex => {
+          const key = ex.name.toLowerCase().trim();
+          return exerciseLookup.has(key);
+        });
 
-            return {
-              exercise_id: exerciseLookup.get(key) || '',
-              name: exerciseNameLookup.get(key) || ex.name,
-              sets,
-              reps,
-              sets_min: setsMax ? sets : undefined,
-              sets_max: setsMax,
-              reps_min: repsMax ? reps : undefined,
-              reps_max: repsMax,
-              load_guidance: ex.load || undefined,
-              rest_seconds: ex.rest_seconds,
-              notes: ex.notes || undefined,
-              order_index: idx,
-              exercise_type: ex.category as 'strength' | 'cardio' | undefined,
-            };
-          });
+        // Group by superset_group while preserving order
+        const result: any[] = [];
+        let orderIdx = 0;
+        let currentSupersetGroup: string | null = null;
+        let supersetItems: any[] = [];
+
+        const flushSuperset = () => {
+          if (supersetItems.length > 0 && currentSupersetGroup) {
+            result.push({
+              type: 'superset',
+              id: `ss_import_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+              name: `Superset ${currentSupersetGroup}`,
+              rounds: 1,
+              rest_after_round_seconds: 90,
+              rest_between_exercises_seconds: 0,
+              items: supersetItems.map((item, i) => ({ ...item, type: 'exercise', order_index: i })),
+              order_index: orderIdx++,
+            });
+            supersetItems = [];
+          }
+        };
+
+        for (const ex of validExercises) {
+          if (ex.superset_group) {
+            if (currentSupersetGroup && currentSupersetGroup !== ex.superset_group) {
+              flushSuperset();
+            }
+            currentSupersetGroup = ex.superset_group;
+            supersetItems.push(buildExerciseEntry(ex, supersetItems.length));
+          } else {
+            flushSuperset();
+            currentSupersetGroup = null;
+            const entry = buildExerciseEntry(ex, orderIdx);
+            result.push({ ...entry, type: 'exercise', order_index: orderIdx++ });
+          }
+        }
+        flushSuperset();
+
+        return result;
       };
 
       const planName = metadata.name_override || parsedData.plan_name || state.file?.name.replace(/\.[^.]+$/, '') || 'Imported';

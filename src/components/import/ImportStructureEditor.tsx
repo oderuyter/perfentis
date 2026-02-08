@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react';
-import { Plus, Trash2, GripVertical, Pencil, ArrowRightLeft, ChevronDown, ChevronRight, Check, X } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Trash2, GripVertical, Pencil, ArrowRightLeft, ChevronDown, ChevronRight, X, Link2, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,34 @@ interface ImportStructureEditorProps {
 
 type ExerciseLocation = { weekIndex: number; workoutIndex: number; exerciseIndex: number };
 
+// Group consecutive exercises by superset_group
+interface ExerciseGroup {
+  type: 'standalone' | 'superset';
+  supersetGroup?: string;
+  exercises: { exercise: ParsedExercise; index: number }[];
+}
+
+function groupExercises(exercises: ParsedExercise[]): ExerciseGroup[] {
+  const groups: ExerciseGroup[] = [];
+  let currentGroup: ExerciseGroup | null = null;
+
+  exercises.forEach((ex, idx) => {
+    if (ex.superset_group) {
+      if (currentGroup?.type === 'superset' && currentGroup.supersetGroup === ex.superset_group) {
+        currentGroup.exercises.push({ exercise: ex, index: idx });
+      } else {
+        if (currentGroup) groups.push(currentGroup);
+        currentGroup = { type: 'superset', supersetGroup: ex.superset_group, exercises: [{ exercise: ex, index: idx }] };
+      }
+    } else {
+      if (currentGroup) groups.push(currentGroup);
+      currentGroup = { type: 'standalone', exercises: [{ exercise: ex, index: idx }] };
+    }
+  });
+  if (currentGroup) groups.push(currentGroup);
+  return groups;
+}
+
 export default function ImportStructureEditor({ parsedData, onUpdate }: ImportStructureEditorProps) {
   const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(
     () => new Set(parsedData.weeks.map((_, i) => i))
@@ -29,7 +57,6 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
     return keys;
   });
 
-  // Selection state for bulk move
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [editingWorkout, setEditingWorkout] = useState<{ weekIndex: number; workoutIndex: number } | null>(null);
   const [editingWeek, setEditingWeek] = useState<number | null>(null);
@@ -129,13 +156,85 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
     });
   };
 
+  // --- Superset grouping ---
+
+  const getNextSupersetLabel = (exercises: ParsedExercise[]): string => {
+    const usedLabels = new Set(exercises.map(e => e.superset_group).filter(Boolean));
+    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    for (const letter of letters) {
+      if (!usedLabels.has(letter)) return letter;
+    }
+    return `SS${usedLabels.size + 1}`;
+  };
+
+  // Check if all selected exercises are in the same workout
+  const getSelectedWorkoutContext = (): { weekIndex: number; workoutIndex: number } | null => {
+    if (selected.size < 2) return null;
+    let targetWi: number | null = null;
+    let targetWoi: number | null = null;
+    for (const key of selected) {
+      const [wi, woi] = key.split('-').map(Number);
+      if (targetWi === null) { targetWi = wi; targetWoi = woi; }
+      else if (wi !== targetWi || woi !== targetWoi) return null;
+    }
+    return targetWi !== null && targetWoi !== null ? { weekIndex: targetWi, workoutIndex: targetWoi } : null;
+  };
+
+  const groupAsSuperset = () => {
+    const ctx = getSelectedWorkoutContext();
+    if (!ctx) return;
+
+    const { weekIndex, workoutIndex } = ctx;
+    const workout = parsedData.weeks[weekIndex].workouts[workoutIndex];
+    const label = getNextSupersetLabel(workout.exercises);
+
+    const selectedIndices = new Set<number>();
+    selected.forEach(key => {
+      const [wi, woi, ei] = key.split('-').map(Number);
+      if (wi === weekIndex && woi === workoutIndex) selectedIndices.add(ei);
+    });
+
+    // Re-order: move selected exercises to be consecutive, starting at the lowest selected index
+    const sortedIndices = [...selectedIndices].sort((a, b) => a - b);
+    const insertAt = sortedIndices[0];
+    const selectedExercises = sortedIndices.map(i => ({
+      ...workout.exercises[i],
+      superset_group: label,
+    }));
+    const otherExercises = workout.exercises.filter((_, i) => !selectedIndices.has(i));
+    const newExercises = [
+      ...otherExercises.slice(0, insertAt),
+      ...selectedExercises,
+      ...otherExercises.slice(insertAt),
+    ];
+
+    onUpdate({ ...parsedData, weeks: parsedData.weeks.map((w, wi) =>
+      wi === weekIndex ? { ...w, workouts: w.workouts.map((wo, woi) =>
+        woi === workoutIndex ? { ...wo, exercises: newExercises } : wo
+      )} : w
+    )});
+    clearSelection();
+  };
+
+  const ungroupSuperset = (weekIndex: number, workoutIndex: number, supersetGroup: string) => {
+    onUpdate({ ...parsedData, weeks: parsedData.weeks.map((w, wi) =>
+      wi === weekIndex ? { ...w, workouts: w.workouts.map((wo, woi) =>
+        woi === workoutIndex ? {
+          ...wo,
+          exercises: wo.exercises.map(ex =>
+            ex.superset_group === supersetGroup ? { ...ex, superset_group: undefined } : ex
+          ),
+        } : wo
+      )} : w
+    )});
+  };
+
   // Bulk move selected exercises
   const bulkMoveExercises = () => {
     if (moveTargetWeek === '' || moveTargetWorkout === '') return;
     const targetWi = parseInt(moveTargetWeek);
     const targetWoi = parseInt(moveTargetWorkout);
 
-    // Parse selected keys
     const toMove: ExerciseLocation[] = [];
     selected.forEach(key => {
       const [wi, woi, ei] = key.split('-').map(Number);
@@ -144,12 +243,10 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
 
     if (toMove.length === 0) return;
 
-    // Collect exercises to move
     const exercisesToMove: ParsedExercise[] = toMove.map(loc =>
       parsedData.weeks[loc.weekIndex].workouts[loc.workoutIndex].exercises[loc.exerciseIndex]
     );
 
-    // Build removal set
     const removeSet = new Set(Array.from(selected));
 
     const updated = { ...parsedData, weeks: parsedData.weeks.map((w, wi) => ({
@@ -168,11 +265,11 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
     setBulkMoveOpen(false);
   };
 
-  // Drag and drop handlers
+  // Drag and drop
   const handleDragStart = (e: React.DragEvent, loc: ExerciseLocation) => {
     setDragSource(loc);
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', ''); // Required for Firefox
+    e.dataTransfer.setData('text/plain', '');
   };
 
   const handleDragOver = (e: React.DragEvent, wi: number, woi: number, position: number) => {
@@ -198,29 +295,22 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
 
     const { weekIndex: srcWi, workoutIndex: srcWoi, exerciseIndex: srcEi } = dragSource;
     const { weekIndex: tgtWi, workoutIndex: tgtWoi, position: tgtPos } = dragOverTarget;
-
     const exercise = parsedData.weeks[srcWi].workouts[srcWoi].exercises[srcEi];
 
     const updated = { ...parsedData, weeks: parsedData.weeks.map((w, wi) => ({
       ...w,
       workouts: w.workouts.map((wo, woi) => {
         let exercises = [...wo.exercises];
-
-        // Remove from source
         if (wi === srcWi && woi === srcWoi) {
           exercises = exercises.filter((_, ei) => ei !== srcEi);
         }
-
-        // Insert at target position
         if (wi === tgtWi && woi === tgtWoi) {
-          // Adjust position if removing from same workout before the target
           let insertAt = tgtPos;
           if (srcWi === tgtWi && srcWoi === tgtWoi && srcEi < tgtPos) {
             insertAt = Math.max(0, insertAt - 1);
           }
           exercises.splice(insertAt, 0, exercise);
         }
-
         return { ...wo, exercises };
       }),
     }))};
@@ -269,6 +359,62 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
 
   const totalWorkouts = parsedData.weeks.reduce((sum, w) => sum + w.workouts.length, 0);
   const hasSelection = selected.size > 0;
+  const supersetContext = getSelectedWorkoutContext();
+  const canGroupSuperset = supersetContext !== null && selected.size >= 2;
+
+  // Render an exercise row
+  const renderExerciseRow = (ex: ParsedExercise, ei: number, wi: number, woi: number, inSuperset: boolean) => {
+    const key = selectionKey(wi, woi, ei);
+    const isSelected = selected.has(key);
+    const isDragging = dragSource?.weekIndex === wi && dragSource?.workoutIndex === woi && dragSource?.exerciseIndex === ei;
+    const isDropTarget = dragOverTarget?.weekIndex === wi && dragOverTarget?.workoutIndex === woi && dragOverTarget?.position === ei;
+
+    return (
+      <div key={ei}>
+        {isDropTarget && (
+          <div className="h-0.5 mx-2 my-0.5 rounded-full bg-primary" />
+        )}
+        <div
+          className={cn(
+            "flex items-center gap-2 py-1.5 px-2 rounded-md transition-all group",
+            isDragging ? "opacity-30" : "",
+            isSelected ? "bg-primary/8" : "hover:bg-muted/40",
+          )}
+          draggable
+          onDragStart={(e) => handleDragStart(e, { weekIndex: wi, workoutIndex: woi, exerciseIndex: ei })}
+          onDragOver={(e) => handleDragOver(e, wi, woi, ei)}
+          onDragEnd={handleDragEnd}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => toggleSelect(key)}
+            className="h-3.5 w-3.5 shrink-0"
+          />
+          <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0 cursor-grab active:cursor-grabbing" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium truncate">{ex.name}</p>
+            {(ex.sets || ex.reps || ex.load) && (
+              <p className="text-[10px] text-muted-foreground/70">
+                {[
+                  ex.sets && `${ex.sets}s`,
+                  ex.reps && `${ex.reps}r`,
+                  ex.load,
+                ].filter(Boolean).join(' · ')}
+              </p>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 w-5 p-0 shrink-0 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:text-destructive"
+            onClick={() => removeExercise(wi, woi, ei)}
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -277,6 +423,16 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
         <div className="sticky top-0 z-10 flex items-center gap-2 p-2.5 rounded-lg bg-primary/10 backdrop-blur-sm mb-3">
           <Badge variant="default" className="text-xs">{selected.size} selected</Badge>
           <div className="flex-1" />
+          {canGroupSuperset && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={groupAsSuperset}
+            >
+              <Link2 className="h-3 w-3 mr-1" /> Superset
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -306,7 +462,6 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
           const weekExpanded = expandedWeeks.has(wi);
           return (
             <div key={wi} className="rounded-xl bg-muted/20 overflow-hidden">
-              {/* Week header */}
               <button
                 className="w-full flex items-center gap-2.5 px-3.5 py-3 hover:bg-muted/30 transition-colors text-left"
                 onClick={() => toggleWeek(wi)}
@@ -332,6 +487,8 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
                   {week.workouts.map((workout, woi) => {
                     const woKey = `${wi}-${woi}`;
                     const woExpanded = expandedWorkouts.has(woKey);
+                    const exerciseGroups = groupExercises(workout.exercises);
+
                     return (
                       <div
                         key={woi}
@@ -380,7 +537,7 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
                           </Button>
                         </div>
 
-                        {/* Exercises */}
+                        {/* Exercises with superset grouping */}
                         {woExpanded && (
                           <div className="px-1.5 pb-1.5">
                             {workout.exercises.length === 0 && (
@@ -388,57 +545,45 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
                                 Drop exercises here or add a workout
                               </p>
                             )}
-                            {workout.exercises.map((ex, ei) => {
-                              const key = selectionKey(wi, woi, ei);
-                              const isSelected = selected.has(key);
-                              const isDragging = dragSource?.weekIndex === wi && dragSource?.workoutIndex === woi && dragSource?.exerciseIndex === ei;
-                              const isDropTarget = dragOverTarget?.weekIndex === wi && dragOverTarget?.workoutIndex === woi && dragOverTarget?.position === ei;
-
-                              return (
-                                <div key={ei}>
-                                  {/* Drop indicator line */}
-                                  {isDropTarget && (
-                                    <div className="h-0.5 mx-2 my-0.5 rounded-full bg-primary" />
-                                  )}
+                            {exerciseGroups.map((group, gi) => {
+                              if (group.type === 'superset' && group.supersetGroup) {
+                                return (
                                   <div
-                                    className={cn(
-                                      "flex items-center gap-2 py-1.5 px-2 rounded-md transition-all group",
-                                      isDragging ? "opacity-30" : "",
-                                      isSelected ? "bg-primary/8" : "hover:bg-muted/40",
-                                    )}
-                                    draggable
-                                    onDragStart={(e) => handleDragStart(e, { weekIndex: wi, workoutIndex: woi, exerciseIndex: ei })}
-                                    onDragOver={(e) => handleDragOver(e, wi, woi, ei)}
-                                    onDragEnd={handleDragEnd}
+                                    key={`ss-${gi}`}
+                                    className="my-1 rounded-md bg-primary/5 relative"
                                   >
-                                    <Checkbox
-                                      checked={isSelected}
-                                      onCheckedChange={() => toggleSelect(key)}
-                                      className="h-3.5 w-3.5 shrink-0"
-                                    />
-                                    <GripVertical className="h-3.5 w-3.5 text-muted-foreground/30 shrink-0 cursor-grab active:cursor-grabbing" />
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-xs font-medium truncate">{ex.name}</p>
-                                      {(ex.sets || ex.reps || ex.load) && (
-                                        <p className="text-[10px] text-muted-foreground/70">
-                                          {[
-                                            ex.sets && `${ex.sets}s`,
-                                            ex.reps && `${ex.reps}r`,
-                                            ex.load,
-                                          ].filter(Boolean).join(' · ')}
-                                        </p>
+                                    {/* Superset header */}
+                                    <div className="flex items-center gap-1.5 px-2 py-1">
+                                      <Link2 className="h-3 w-3 text-primary/70" />
+                                      <span className="text-[10px] font-semibold text-primary/80 uppercase tracking-wide">
+                                        Superset {group.supersetGroup}
+                                      </span>
+                                      <span className="text-[10px] text-muted-foreground">
+                                        {group.exercises.length} exercises
+                                      </span>
+                                      <div className="flex-1" />
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-5 px-1 text-[10px] text-muted-foreground opacity-60 hover:opacity-100"
+                                        onClick={() => ungroupSuperset(wi, woi, group.supersetGroup!)}
+                                      >
+                                        <Unlink className="h-2.5 w-2.5 mr-0.5" /> Ungroup
+                                      </Button>
+                                    </div>
+                                    {/* Superset left accent */}
+                                    <div className="absolute left-0 top-0 bottom-0 w-0.5 rounded-l-md bg-primary/40" />
+                                    <div className="pl-1">
+                                      {group.exercises.map(({ exercise, index }) =>
+                                        renderExerciseRow(exercise, index, wi, woi, true)
                                       )}
                                     </div>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-5 w-5 p-0 shrink-0 opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:text-destructive"
-                                      onClick={() => removeExercise(wi, woi, ei)}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
                                   </div>
-                                </div>
+                                );
+                              }
+                              // Standalone exercises
+                              return group.exercises.map(({ exercise, index }) =>
+                                renderExerciseRow(exercise, index, wi, woi, false)
                               );
                             })}
                             {/* Drop indicator at end */}
@@ -451,7 +596,6 @@ export default function ImportStructureEditor({ parsedData, onUpdate }: ImportSt
                     );
                   })}
 
-                  {/* Add workout button */}
                   <button
                     className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground/60 hover:text-muted-foreground rounded-lg hover:bg-muted/20 transition-colors"
                     onClick={() => openCreateWorkout(wi)}
