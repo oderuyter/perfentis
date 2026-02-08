@@ -327,100 +327,95 @@ Plan,My Training Plan,2,Push Day,Bench Press,Strength,Barbell,4,6-8,RPE 8,120,In
         {/* Step 4: Exercise Matching */}
         {state.step === 'matching' && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Exercise Matching</CardTitle>
-                  <div className="flex gap-2">
-                    <Badge variant="default">{autoMatched + manualMatched} matched</Badge>
-                    {state.exerciseMatches.filter(m => m.decision === 'pending').length > 0 && (
-                      <Badge variant="destructive">
-                        {state.exerciseMatches.filter(m => m.decision === 'pending').length} need review
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="max-h-[60vh]">
-                  <div className="space-y-3 pr-2">
-                    {state.exerciseMatches.map((match, idx) => (
-                      <div key={idx} className={cn(
-                        "p-3 rounded-lg border",
-                        match.decision === 'auto' ? "border-primary/20 bg-primary/5" :
-                        match.decision === 'manual' ? "border-accent/20 bg-accent/5" :
-                        match.decision === 'custom' || match.decision === 'submit' ? "border-secondary/30 bg-secondary/5" :
-                        match.decision === 'skip' ? "border-muted bg-muted/30" :
-                        "border-destructive/30 bg-destructive/5"
-                      )}>
-                        {/* Exercise name + status */}
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm break-words">{match.original_text}</p>
-                            {match.decision !== 'pending' && match.decision !== 'skip' && (
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                → {match.decision === 'custom' || match.decision === 'submit'
-                                  ? match.custom_exercise_name
-                                  : match.matched_exercise_name}
-                                <Badge variant="outline" className="ml-2 text-[10px]">
-                                  {match.decision === 'auto' ? `${Math.round(match.confidence * 100)}%` : match.decision}
-                                </Badge>
-                              </p>
-                            )}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs text-muted-foreground shrink-0"
-                            onClick={() => updateMatch(idx, { decision: 'skip' })}
-                          >
-                            Skip
-                          </Button>
-                        </div>
+            {/* Summary bar */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-semibold">Exercise Matching</h2>
+              <div className="flex gap-2">
+                <Badge variant="default">{autoMatched + manualMatched} matched</Badge>
+                {state.exerciseMatches.filter(m => m.decision === 'pending').length > 0 && (
+                  <Badge variant="destructive">
+                    {state.exerciseMatches.filter(m => m.decision === 'pending').length} need review
+                  </Badge>
+                )}
+              </div>
+            </div>
 
-                        {/* Match dropdown — full width, includes "Create custom" option */}
-                        <Select
-                          value={match.matched_exercise_id || ''}
-                          onValueChange={(v) => {
-                            if (v === '__create_custom__') {
-                              openCustomDialog(idx);
-                              return;
-                            }
-                            const ex = allExercises.find(e => e.exercise_id === v);
-                            if (ex) {
-                              updateMatch(idx, {
-                                matched_exercise_id: ex.exercise_id,
-                                matched_exercise_name: ex.name,
-                                confidence: 1,
-                                decision: 'manual',
-                              });
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="w-full h-9 text-sm">
-                            <SelectValue placeholder="Select exercise…" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {/* Best fuzzy matches using parsed name, not full original text */}
-                            {findBestMatch(match.parsed_exercise.name, allExercises, 10).map((r) => (
-                              <SelectItem key={r.exercise.exercise_id} value={r.exercise.exercise_id}>
-                                {r.exercise.name} ({Math.round(r.confidence * 100)}%)
-                              </SelectItem>
-                            ))}
-                            {/* Divider + create custom option */}
-                            <SelectItem value="__create_custom__" className="text-primary font-medium">
-                              <span className="flex items-center gap-1.5">
-                                <Plus className="h-3.5 w-3.5" /> Create custom exercise
-                              </span>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ))}
+            {/* Exercise cards — no wrapper Card, native page scroll */}
+            <div className="space-y-3">
+              {state.exerciseMatches.map((match, idx) => (
+                <div key={idx} className={cn(
+                  "p-3 rounded-lg border",
+                  match.decision === 'auto' ? "border-primary/20 bg-primary/5" :
+                  match.decision === 'manual' ? "border-accent/20 bg-accent/5" :
+                  match.decision === 'custom' || match.decision === 'submit' ? "border-secondary/30 bg-secondary/5" :
+                  match.decision === 'skip' ? "border-muted bg-muted/30" :
+                  "border-destructive/30 bg-destructive/5"
+                )}>
+                  {/* Exercise name + status */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm break-words">{match.original_text}</p>
+                      {match.decision !== 'pending' && match.decision !== 'skip' && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          → {match.decision === 'custom' || match.decision === 'submit'
+                            ? match.custom_exercise_name
+                            : match.matched_exercise_name}
+                          <Badge variant="outline" className="ml-2 text-[10px]">
+                            {match.decision === 'auto' ? `${Math.round(match.confidence * 100)}%` : match.decision}
+                          </Badge>
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs text-muted-foreground shrink-0"
+                      onClick={() => updateMatch(idx, { decision: 'skip' })}
+                    >
+                      Skip
+                    </Button>
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+
+                  {/* Match dropdown — full width, includes "Create custom" option */}
+                  <Select
+                    value={match.matched_exercise_id || ''}
+                    onValueChange={(v) => {
+                      if (v === '__create_custom__') {
+                        openCustomDialog(idx);
+                        return;
+                      }
+                      const ex = allExercises.find(e => e.exercise_id === v);
+                      if (ex) {
+                        updateMatch(idx, {
+                          matched_exercise_id: ex.exercise_id,
+                          matched_exercise_name: ex.name,
+                          confidence: 1,
+                          decision: 'manual',
+                        });
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full h-9 text-sm">
+                      <SelectValue placeholder="Select exercise…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {/* Best fuzzy matches using parsed name, not full original text */}
+                      {findBestMatch(match.parsed_exercise.name, allExercises, 10).map((r) => (
+                        <SelectItem key={r.exercise.exercise_id} value={r.exercise.exercise_id}>
+                          {r.exercise.name} ({Math.round(r.confidence * 100)}%)
+                        </SelectItem>
+                      ))}
+                      {/* Divider + create custom option */}
+                      <SelectItem value="__create_custom__" className="text-primary font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <Plus className="h-3.5 w-3.5" /> Create custom exercise
+                        </span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              ))}
+            </div>
 
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep('review')}>
