@@ -42,6 +42,7 @@ import {
   Footprints,
   Gift,
   Package,
+  Apple,
 } from "lucide-react";
 
 interface NavItem {
@@ -66,6 +67,7 @@ const navItems: NavItem[] = [
   { to: "/admin-portal/rewards", icon: Gift, label: "Rewards & Offers" },
   { to: "/admin-portal/exercise-submissions", icon: Dumbbell, label: "Exercise Submissions" },
   { to: "/admin-portal/supplier-submissions", icon: Package, label: "Supplier Submissions" },
+  { to: "/admin-portal/nutrition", icon: Apple, label: "Nutrition" },
   { to: "/admin-portal/billing", icon: CreditCard, label: "Billing" },
   { to: "/admin-portal/social", icon: MessageCircle, label: "Social Moderation" },
   { to: "/admin-portal/notifications", icon: Bell, label: "Notifications" },
