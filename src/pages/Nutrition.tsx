@@ -146,7 +146,7 @@ export default function Nutrition() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
-        className="flex items-end justify-center gap-4 mt-5 mb-1"
+        className="flex items-end justify-center gap-2 sm:gap-4 mt-5 mb-1"
       >
         <MacroDial label="Protein" consumed={totalP} goal={pGoal} unit="g" colorVar="--status-error" size="sm" />
         <MacroDial label="Calories" consumed={totalCal} goal={calGoal} colorVar="--accent-primary" size="lg" />
