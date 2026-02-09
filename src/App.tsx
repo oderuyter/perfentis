@@ -128,6 +128,7 @@ import AdminExerciseSubmissions from "./pages/admin-portal/AdminExerciseSubmissi
 import AdminNutrition from "./pages/admin-portal/AdminNutrition";
 import AdminExternalGymSubmissions from "./pages/admin-portal/AdminExternalGymSubmissions";
 import NutritionLibrary from "./pages/NutritionLibrary";
+import RunTracker from "./pages/RunTracker";
 
 const queryClient = new QueryClient();
 
@@ -198,6 +199,7 @@ function AppRoutes() {
         <Route path="/rewards" element={<Rewards />} />
         <Route path="/import" element={<ImportWizard />} />
         <Route path="/help" element={<Help />} />
+        <Route path="/run" element={<RunTracker />} />
       </Route>
       <Route path="/gym-portal" element={<ProtectedRoute><GymPortalLayout /></ProtectedRoute>}>
         <Route index element={<GymDashboard />} />

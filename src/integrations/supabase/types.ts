@@ -14,6 +14,167 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_laps: {
+        Row: {
+          created_at: string
+          distance_meters_at_mark: number | null
+          elapsed_seconds_at_mark: number | null
+          id: string
+          lap_number: number
+          marked_at: string
+          moving_seconds_at_mark: number | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          distance_meters_at_mark?: number | null
+          elapsed_seconds_at_mark?: number | null
+          id?: string
+          lap_number: number
+          marked_at: string
+          moving_seconds_at_mark?: number | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          distance_meters_at_mark?: number | null
+          elapsed_seconds_at_mark?: number | null
+          id?: string
+          lap_number?: number
+          marked_at?: string
+          moving_seconds_at_mark?: number | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_laps_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_pauses: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          paused_at: string
+          resumed_at: string | null
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          paused_at: string
+          resumed_at?: string | null
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          paused_at?: string
+          resumed_at?: string | null
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_pauses_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_route_points: {
+        Row: {
+          accuracy_m: number | null
+          altitude_m: number | null
+          created_at: string
+          id: string
+          idx: number
+          lat: number
+          lng: number
+          session_id: string
+          source: string | null
+          speed_mps: number | null
+          timestamp: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          altitude_m?: number | null
+          created_at?: string
+          id?: string
+          idx: number
+          lat: number
+          lng: number
+          session_id: string
+          source?: string | null
+          speed_mps?: number | null
+          timestamp: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          altitude_m?: number | null
+          created_at?: string
+          id?: string
+          idx?: number
+          lat?: number
+          lng?: number
+          session_id?: string
+          source?: string | null
+          speed_mps?: number | null
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_route_points_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_routes: {
+        Row: {
+          bbox: Json | null
+          created_at: string
+          id: string
+          polyline_simplified: string | null
+          session_id: string
+          total_points: number | null
+        }
+        Insert: {
+          bbox?: Json | null
+          created_at?: string
+          id?: string
+          polyline_simplified?: string | null
+          session_id: string
+          total_points?: number | null
+        }
+        Update: {
+          bbox?: Json | null
+          created_at?: string
+          id?: string
+          polyline_simplified?: string | null
+          session_id?: string
+          total_points?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_routes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_notifications: {
         Row: {
           body: string
@@ -7394,17 +7555,25 @@ export type Database = {
       workout_sessions: {
         Row: {
           avg_hr: number | null
+          avg_pace_sec_per_km: number | null
           created_at: string
+          distance_meters: number | null
           duration_seconds: number | null
+          elevation_gain_m: number | null
+          elevation_loss_m: number | null
           ended_at: string | null
           id: string
           is_demo: boolean | null
           max_hr: number | null
+          modality: string
+          moving_seconds: number | null
           notes: string | null
           operation_id: string | null
           plan_assignment_id: string | null
           plan_week_number: number | null
           plan_workout_id: string | null
+          privacy_level: string
+          route_summary: Json | null
           session_type: string | null
           split_id: string | null
           split_week_id: string | null
@@ -7420,17 +7589,25 @@ export type Database = {
         }
         Insert: {
           avg_hr?: number | null
+          avg_pace_sec_per_km?: number | null
           created_at?: string
+          distance_meters?: number | null
           duration_seconds?: number | null
+          elevation_gain_m?: number | null
+          elevation_loss_m?: number | null
           ended_at?: string | null
           id?: string
           is_demo?: boolean | null
           max_hr?: number | null
+          modality?: string
+          moving_seconds?: number | null
           notes?: string | null
           operation_id?: string | null
           plan_assignment_id?: string | null
           plan_week_number?: number | null
           plan_workout_id?: string | null
+          privacy_level?: string
+          route_summary?: Json | null
           session_type?: string | null
           split_id?: string | null
           split_week_id?: string | null
@@ -7446,17 +7623,25 @@ export type Database = {
         }
         Update: {
           avg_hr?: number | null
+          avg_pace_sec_per_km?: number | null
           created_at?: string
+          distance_meters?: number | null
           duration_seconds?: number | null
+          elevation_gain_m?: number | null
+          elevation_loss_m?: number | null
           ended_at?: string | null
           id?: string
           is_demo?: boolean | null
           max_hr?: number | null
+          modality?: string
+          moving_seconds?: number | null
           notes?: string | null
           operation_id?: string | null
           plan_assignment_id?: string | null
           plan_week_number?: number | null
           plan_workout_id?: string | null
+          privacy_level?: string
+          route_summary?: Json | null
           session_type?: string | null
           split_id?: string | null
           split_week_id?: string | null

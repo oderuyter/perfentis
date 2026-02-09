@@ -6,10 +6,12 @@ import {
   Dumbbell, 
   Layers,
   FileUp,
+  MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WorkoutRecoveryPrompt } from "@/components/train/WorkoutRecoveryPrompt";
+import { RunRecoveryPrompt } from "@/components/run/RunRecoveryPrompt";
 import { AssignedPlansSection } from "@/components/train/AssignedPlansSection";
 import { ActiveSplitCard } from "@/components/train/ActiveSplitCard";
 import { WorkoutDirectory } from "@/components/train/WorkoutDirectory";
@@ -52,8 +54,9 @@ export default function Train() {
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       
-      {/* Workout Recovery Prompt */}
+      {/* Recovery Prompts */}
       <WorkoutRecoveryPrompt />
+      <RunRecoveryPrompt />
       
       {/* Header */}
       <header className="relative pt-6 pb-6">
@@ -92,14 +95,24 @@ export default function Train() {
         <p className="text-xs text-muted-foreground/70 text-center mt-2.5">
           Start a session and add exercises as you go
         </p>
-        <Button
-          variant="outline"
-          onClick={() => navigate("/import?returnTo=/train")}
-          className="w-full h-11 gap-2 rounded-2xl"
-        >
-          <FileUp className="h-4 w-4" />
-          Import Workout / Split / Plan
-        </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/run")}
+            className="h-11 gap-2 rounded-2xl"
+          >
+            <MapPin className="h-4 w-4" />
+            Run / Walk
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => navigate("/import?returnTo=/train")}
+            className="h-11 gap-2 rounded-2xl"
+          >
+            <FileUp className="h-4 w-4" />
+            Import
+          </Button>
+        </div>
       </motion.div>
 
       {/* Active Split Card (if user has one) */}
