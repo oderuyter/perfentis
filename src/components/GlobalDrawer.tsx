@@ -179,7 +179,7 @@ export function GlobalDrawer({
         type: "spring",
         damping: 25,
         stiffness: 300
-      }} className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-card z-drawer shadow-elevated flex flex-col pt-header-safe pb-footer-safe">
+      }} className="fixed left-0 top-0 bottom-0 w-[85%] max-w-sm bg-card z-drawer shadow-elevated flex flex-col pt-safe pb-safe">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border/50">
               <h2 className="text-lg font-semibold">Menu</h2>
