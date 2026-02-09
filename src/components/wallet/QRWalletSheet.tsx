@@ -5,7 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useQRWallet, GymPass, EventPass } from "@/hooks/useQRWallet";
+import { useExternalGymCards, ExternalGymCard } from "@/hooks/useExternalGymCards";
+import { ExternalCardQRView } from "@/components/gym/ExternalCardQRView";
+import { AddExternalCardSheet } from "@/components/gym/AddExternalCardSheet";
 import { QRCodeSVG } from "qrcode.react";
+import { toast } from "sonner";
 import { 
   Building2, 
   Trophy, 
@@ -13,7 +17,11 @@ import {
   ChevronRight,
   CheckCircle2,
   Clock,
-  Calendar
+  Calendar,
+  Plus,
+  CreditCard,
+  AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -24,137 +32,237 @@ interface QRWalletSheetProps {
 
 export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
   const { gymPasses, eventPasses, isLoading, totalPasses, hasOnlyOnePass, singlePass } = useQRWallet();
+  const { cards: externalCards, isLoading: externalLoading, deleteCard } = useExternalGymCards();
   const [selectedPass, setSelectedPass] = useState<GymPass | EventPass | null>(null);
+  const [selectedExternalCard, setSelectedExternalCard] = useState<ExternalGymCard | null>(null);
+  const [showAddExternal, setShowAddExternal] = useState(false);
 
   const isGymPass = (pass: GymPass | EventPass): pass is GymPass => {
     return "gymName" in pass;
   };
 
+  const maskNumber = (num: string) => {
+    if (num.length <= 4) return num;
+    return "••••" + num.slice(-4);
+  };
+
+  const handleDeleteExternalCard = async (cardId: string) => {
+    try {
+      await deleteCard(cardId);
+      setSelectedExternalCard(null);
+      toast.success("External card removed");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete");
+    }
+  };
+
+  const allLoading = isLoading || externalLoading;
+  const totalAll = totalPasses + externalCards.length;
+
+  const getDefaultTab = () => {
+    if (gymPasses.length > 0) return "gym";
+    if (externalCards.length > 0) return "external";
+    return "event";
+  };
+
   const renderPassList = () => {
-    if (totalPasses === 0) {
+    if (totalAll === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
             <Trophy className="h-8 w-8 text-muted-foreground" />
           </div>
           <h3 className="font-medium text-lg mb-2">No Active Passes</h3>
-          <p className="text-muted-foreground text-sm max-w-xs">
+          <p className="text-muted-foreground text-sm max-w-xs mb-4">
             Your gym memberships and event passes will appear here when available.
           </p>
+          <Button variant="outline" onClick={() => setShowAddExternal(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add External Gym Card
+          </Button>
         </div>
       );
     }
 
     return (
-      <Tabs defaultValue={gymPasses.length > 0 ? "gym" : "event"} className="w-full">
-        <TabsList className="w-full grid grid-cols-2 mb-4">
-          <TabsTrigger value="gym" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            Gym ({gymPasses.length})
-          </TabsTrigger>
-          <TabsTrigger value="event" className="gap-2">
-            <Trophy className="h-4 w-4" />
-            Events ({eventPasses.length})
-          </TabsTrigger>
-        </TabsList>
+      <>
+        <Tabs defaultValue={getDefaultTab()} className="w-full">
+          <TabsList className="w-full grid grid-cols-3 mb-4">
+            <TabsTrigger value="gym" className="gap-1.5 text-xs">
+              <Building2 className="h-3.5 w-3.5" />
+              Gym ({gymPasses.length})
+            </TabsTrigger>
+            <TabsTrigger value="external" className="gap-1.5 text-xs">
+              <CreditCard className="h-3.5 w-3.5" />
+              External ({externalCards.length})
+            </TabsTrigger>
+            <TabsTrigger value="event" className="gap-1.5 text-xs">
+              <Trophy className="h-3.5 w-3.5" />
+              Events ({eventPasses.length})
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="gym">
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-3">
-              {gymPasses.map((pass) => (
-                <button
-                  key={pass.id}
-                  onClick={() => setSelectedPass(pass)}
-                  className="w-full p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-left"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Building2 className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{pass.gymName}</p>
-                        <p className="text-sm text-muted-foreground">{pass.membershipLevel}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={pass.status === "active" ? "default" : "secondary"}>
-                        {pass.status}
-                      </Badge>
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
-                  </div>
-                </button>
-              ))}
-              {gymPasses.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No gym passes available
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="event">
-          <ScrollArea className="h-[400px]">
-            <div className="space-y-3">
-              {eventPasses.map((pass) => (
-                <button
-                  key={pass.id}
-                  onClick={() => setSelectedPass(pass)}
-                  className="w-full p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-left"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Trophy className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="font-medium">{pass.eventName}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          {pass.divisionName && <span>{pass.divisionName}</span>}
-                          {pass.teamName && <span>• {pass.teamName}</span>}
+          {/* Enrolled Gym Passes */}
+          <TabsContent value="gym">
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-3">
+                {gymPasses.map((pass) => (
+                  <button
+                    key={pass.id}
+                    onClick={() => setSelectedPass(pass)}
+                    className="w-full p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Building2 className="h-5 w-5 text-primary" />
                         </div>
-                        {pass.eventStartDate && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(parseISO(pass.eventStartDate), "MMM d, yyyy")}
-                          </div>
-                        )}
+                        <div>
+                          <p className="font-medium">{pass.gymName}</p>
+                          <p className="text-sm text-muted-foreground">{pass.membershipLevel}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={pass.status === "active" ? "default" : "secondary"}>
+                          {pass.status}
+                        </Badge>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {pass.isCheckedIn ? (
-                        <Badge variant="default" className="gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Checked In
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">
-                          <Clock className="h-3 w-3 mr-1" />
-                          Pending
-                        </Badge>
-                      )}
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
+                  </button>
+                ))}
+                {gymPasses.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No enrolled gym passes
                   </div>
-                </button>
-              ))}
-              {eventPasses.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  No event passes available
-                </div>
-              )}
-            </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          {/* External Gym Cards */}
+          <TabsContent value="external">
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2"
+                  onClick={() => setShowAddExternal(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add External Gym Card
+                </Button>
+
+                {externalCards.map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={() => setSelectedExternalCard(card)}
+                    className="w-full p-4 rounded-xl bg-card border border-dashed border-border hover:border-primary/50 transition-all text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center border border-dashed border-border">
+                          <CreditCard className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{card.gym_name}</p>
+                          <p className="text-sm font-mono text-muted-foreground">
+                            {maskNumber(card.membership_number)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">External</Badge>
+                        {card.submission_status === "pending" && (
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            Unverified
+                          </Badge>
+                        )}
+                        {card.submission_status === "rejected" && (
+                          <Badge variant="destructive" className="text-xs gap-1">
+                            <ShieldAlert className="h-3 w-3" />
+                            Unverified
+                          </Badge>
+                        )}
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+
+                {externalCards.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No external gym cards yet</p>
+                    <p className="text-xs mt-1">Add a card for a gym not on the platform</p>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+
+          {/* Event Passes */}
+          <TabsContent value="event">
+            <ScrollArea className="h-[400px]">
+              <div className="space-y-3">
+                {eventPasses.map((pass) => (
+                  <button
+                    key={pass.id}
+                    onClick={() => setSelectedPass(pass)}
+                    className="w-full p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-left"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Trophy className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{pass.eventName}</p>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            {pass.divisionName && <span>{pass.divisionName}</span>}
+                            {pass.teamName && <span>• {pass.teamName}</span>}
+                          </div>
+                          {pass.eventStartDate && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                              <Calendar className="h-3 w-3" />
+                              {format(parseISO(pass.eventStartDate), "MMM d, yyyy")}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {pass.isCheckedIn ? (
+                          <Badge variant="default" className="gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Checked In
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <Clock className="h-3 w-3 mr-1" />
+                            Pending
+                          </Badge>
+                        )}
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </button>
+                ))}
+                {eventPasses.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No event passes available
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
+      </>
     );
   };
 
   const renderQRView = (pass: GymPass | EventPass) => {
     const isGym = isGymPass(pass);
-    // For gym passes, use membership number; for event passes, use secure token
     const qrValue = isGym ? pass.membershipNumber : pass.passToken;
 
     return (
@@ -195,7 +303,6 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
           />
         </div>
 
-        {/* Display the member ID below QR for gym passes */}
         {isGym && (
           <p className="font-mono text-sm font-medium text-foreground mb-4">
             {pass.membershipNumber}
@@ -216,32 +323,45 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
     );
   };
 
-  // Auto-select single pass
-  const displayPass = selectedPass || (hasOnlyOnePass ? singlePass : null);
+  const displayPass = selectedPass || (hasOnlyOnePass && externalCards.length === 0 ? singlePass : null);
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
-        <SheetHeader className="mb-4">
-          <SheetTitle className="flex items-center gap-2">
-            {displayPass ? (
-              isGymPass(displayPass) ? "Gym Pass" : "Event Pass"
-            ) : (
-              "QR Wallet"
-            )}
-          </SheetTitle>
-        </SheetHeader>
+    <>
+      <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
+          <SheetHeader className="mb-4">
+            <SheetTitle className="flex items-center gap-2">
+              {selectedExternalCard
+                ? "External Gym Card"
+                : displayPass
+                  ? isGymPass(displayPass) ? "Gym Pass" : "Event Pass"
+                  : "QR Wallet"
+              }
+            </SheetTitle>
+          </SheetHeader>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : displayPass ? (
-          renderQRView(displayPass)
-        ) : (
-          renderPassList()
-        )}
-      </SheetContent>
-    </Sheet>
+          {allLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : selectedExternalCard ? (
+            <ExternalCardQRView
+              card={selectedExternalCard}
+              onBack={() => setSelectedExternalCard(null)}
+              onDelete={handleDeleteExternalCard}
+            />
+          ) : displayPass ? (
+            renderQRView(displayPass)
+          ) : (
+            renderPassList()
+          )}
+        </SheetContent>
+      </Sheet>
+
+      <AddExternalCardSheet
+        open={showAddExternal}
+        onOpenChange={setShowAddExternal}
+      />
+    </>
   );
 }

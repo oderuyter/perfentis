@@ -3226,6 +3226,100 @@ export type Database = {
         }
         Relationships: []
       }
+      external_gym_membership_cards: {
+        Row: {
+          created_at: string
+          gym_directory_id: string | null
+          gym_name: string
+          id: string
+          membership_number: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          gym_directory_id?: string | null
+          gym_name: string
+          id?: string
+          membership_number: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          gym_directory_id?: string | null
+          gym_name?: string
+          id?: string
+          membership_number?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_gym_membership_cards_gym_directory_id_fkey"
+            columns: ["gym_directory_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_gym_submissions: {
+        Row: {
+          address: string | null
+          admin_reason: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          gym_directory_id: string | null
+          gym_name: string
+          id: string
+          status: string
+          submitted_by_user_id: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          admin_reason?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          gym_directory_id?: string | null
+          gym_name: string
+          id?: string
+          status?: string
+          submitted_by_user_id: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          admin_reason?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          gym_directory_id?: string | null
+          gym_name?: string
+          id?: string
+          status?: string
+          submitted_by_user_id?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_gym_submissions_gym_directory_id_fkey"
+            columns: ["gym_directory_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       foods: {
         Row: {
           barcode: string | null
@@ -3841,6 +3935,7 @@ export type Database = {
           email: string | null
           id: string
           is_demo: boolean | null
+          is_enrolled: boolean
           is_owner_submission: boolean | null
           logo_url: string | null
           name: string
@@ -3871,6 +3966,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_demo?: boolean | null
+          is_enrolled?: boolean
           is_owner_submission?: boolean | null
           logo_url?: string | null
           name: string
@@ -3901,6 +3997,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_demo?: boolean | null
+          is_enrolled?: boolean
           is_owner_submission?: boolean | null
           logo_url?: string | null
           name?: string

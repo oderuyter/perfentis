@@ -15,12 +15,15 @@ import {
   Dumbbell,
   Filter,
   Check,
-  Plus
+  Plus,
+  ScanLine,
 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { GymDetailSheet } from "@/components/gym/GymDetailSheet";
 import { MembershipDetailSheet } from "@/components/gym/MembershipDetailSheet";
 import { RegisterGymDialog } from "@/components/registration/RegisterGymDialog";
+import { AddExternalCardSheet } from "@/components/gym/AddExternalCardSheet";
+import { useExternalGymCards } from "@/hooks/useExternalGymCards";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,7 +88,8 @@ export default function GymMembership() {
   const [selectedMembership, setSelectedMembership] = useState<typeof memberships[0] | null>(null);
   const [pastMembershipsOpen, setPastMembershipsOpen] = useState(false);
   const [showRegisterGymDialog, setShowRegisterGymDialog] = useState(false);
-
+  const [showAddExternalCard, setShowAddExternalCard] = useState(false);
+  const { cards: externalCards } = useExternalGymCards();
   const activeMembership = memberships.find((m) => m.status === "active");
   const activeMemberships = memberships.filter((m) => m.status === "active");
   const inactiveMemberships = memberships.filter((m) => m.status !== "active");
@@ -302,6 +306,54 @@ export default function GymMembership() {
                 Join a gym to get started with your fitness journey
               </p>
             </motion.div>
+          )}
+
+          {/* Add External Card Button */}
+          <Button
+            variant="outline"
+            className="w-full gap-2"
+            onClick={() => setShowAddExternalCard(true)}
+          >
+            <ScanLine className="h-4 w-4" />
+            Add External Gym Card
+          </Button>
+
+          {/* External Cards Section */}
+          {externalCards.length > 0 && (
+            <div className="mt-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
+                External Gym Cards ({externalCards.length})
+              </p>
+              <div className="space-y-2">
+                {externalCards.map((card) => (
+                  <div
+                    key={card.id}
+                    onClick={() => setShowQR({ memberId: card.membership_number })}
+                    className="bg-card rounded-xl p-4 shadow-card border border-dashed border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center border border-dashed border-border">
+                          <CreditCard className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{card.gym_name}</p>
+                          <p className="text-sm font-mono text-muted-foreground">
+                            {"••••" + card.membership_number.slice(-4)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                          External
+                        </span>
+                        <QrCode className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
           {/* Recent Check-ins (for first active membership) */}
@@ -612,6 +664,12 @@ export default function GymMembership() {
       <RegisterGymDialog
         open={showRegisterGymDialog}
         onOpenChange={setShowRegisterGymDialog}
+      />
+
+      {/* Add External Card Sheet */}
+      <AddExternalCardSheet
+        open={showAddExternalCard}
+        onOpenChange={setShowAddExternalCard}
       />
     </div>
   );
