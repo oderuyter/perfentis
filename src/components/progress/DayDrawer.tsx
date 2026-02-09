@@ -16,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
+  ArrowLeft,
+  Tag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,15 +28,12 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { RunRouteMap } from "@/components/run/RunRouteMap";
+import { RunCharts } from "@/components/run/RunCharts";
+import { GpsPoint } from "@/types/run";
 
 interface DayDrawerProps {
   open: boolean;
@@ -78,6 +77,11 @@ interface DayPhoto {
   created_at: string;
 }
 
+interface RunDetail {
+  points: GpsPoint[];
+  laps: any[];
+}
+
 const PRESET_CATEGORIES = ["Front", "Back", "Right", "Left"];
 
 export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) => {
@@ -95,16 +99,21 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  // Upload category dialog
+  // Category dialog (for upload and re-categorise)
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [editingPhotoId, setEditingPhotoId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [customLabel, setCustomLabel] = useState("");
   const [customCategories, setCustomCategories] = useState<string[]>([]);
 
+  // Run detail view
+  const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
+  const [runDetail, setRunDetail] = useState<RunDetail | null>(null);
+  const [runDetailLoading, setRunDetailLoading] = useState(false);
+
   const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
 
-  // Fetch user's custom categories
   const fetchCustomCategories = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
@@ -168,7 +177,7 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
       const gymWorkouts = allSessions.filter(
         (w) => w.modality !== "run" && w.modality !== "walk"
       );
-      const runs = allSessions.filter(
+      const runsList = allSessions.filter(
         (w) => w.modality === "run" || w.modality === "walk"
       );
       setWorkouts(allSessions);
@@ -223,7 +232,7 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
 
       setCounts({
         workouts: gymWorkouts.length,
-        runs: runs.length,
+        runs: runsList.length,
         habits: dayHabits.filter((h: DayHabit) => h.completed).length,
         food: nutritionRes.data && (nutritionRes.data as any).total_calories > 0 ? 1 : 0,
         photos: (photosRes.data || []).length,
@@ -236,33 +245,103 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
   }, [user, selectedDate, dateStr]);
 
   useEffect(() => {
-    if (open && selectedDate) fetchDayData();
+    if (open && selectedDate) {
+      fetchDayData();
+      setExpandedRunId(null);
+      setRunDetail(null);
+    }
   }, [open, selectedDate, fetchDayData]);
 
-  // When user picks a file, open category dialog
+  // Fetch run route detail
+  const fetchRunDetail = useCallback(async (sessionId: string) => {
+    setRunDetailLoading(true);
+    try {
+      const { data: routePoints } = await supabase
+        .from("activity_route_points")
+        .select("lat, lng, altitude_m, speed_mps, accuracy_m, timestamp")
+        .eq("session_id", sessionId)
+        .order("idx", { ascending: true });
+
+      const { data: laps } = await supabase
+        .from("activity_laps")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("lap_number", { ascending: true });
+
+      const points: GpsPoint[] = (routePoints || []).map((rp: any) => ({
+        lat: rp.lat,
+        lng: rp.lng,
+        timestamp: new Date(rp.timestamp).getTime(),
+        accuracy: rp.accuracy_m || 10,
+        altitude: rp.altitude_m,
+        speed: rp.speed_mps,
+      }));
+
+      setRunDetail({ points, laps: laps || [] });
+    } catch (err) {
+      console.error("Error fetching run detail:", err);
+    } finally {
+      setRunDetailLoading(false);
+    }
+  }, []);
+
+  const handleExpandRun = (sessionId: string) => {
+    setExpandedRunId(sessionId);
+    fetchRunDetail(sessionId);
+  };
+
+  // File selected → open category dialog
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setPendingFile(file);
+    setEditingPhotoId(null);
     setSelectedCategory("");
     setCustomLabel("");
     setCategoryDialogOpen(true);
-    // Reset input so same file can be re-selected
     e.target.value = "";
   };
 
-  const handleConfirmUpload = async () => {
-    if (!pendingFile || !user) return;
+  // Open category dialog for existing photo
+  const handleRecategorise = (photo: DayPhoto) => {
+    setPendingFile(null);
+    setEditingPhotoId(photo.id);
+    setSelectedCategory(photo.category || "");
+    setCustomLabel("");
+    setCategoryDialogOpen(true);
+  };
+
+  const handleConfirmCategoryAction = async () => {
+    if (!user) return;
 
     let finalCategory = selectedCategory;
     if (selectedCategory === "__custom" && customLabel.trim()) {
       finalCategory = customLabel.trim();
-      // Save custom category for reuse
       await supabase
         .from("progress_photo_categories")
-        .upsert({ user_id: user.id, label: finalCategory }, { onConflict: "user_id,label" });
+        .upsert({ user_id: user.id, label: finalCategory } as any, { onConflict: "user_id,label" });
       fetchCustomCategories();
     }
+
+    // Re-categorise existing photo
+    if (editingPhotoId) {
+      const { error } = await supabase
+        .from("progress_photos")
+        .update({ category: finalCategory || null } as any)
+        .eq("id", editingPhotoId);
+      if (error) {
+        toast.error("Failed to update category");
+      } else {
+        toast.success("Category updated");
+        fetchDayData();
+      }
+      setCategoryDialogOpen(false);
+      setEditingPhotoId(null);
+      return;
+    }
+
+    // Upload new photo
+    if (!pendingFile) return;
 
     const ext = pendingFile.name.split(".").pop();
     const path = `${user.id}/${Date.now()}.${ext}`;
@@ -283,7 +362,7 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
       image_url: urlData.publicUrl,
       category: finalCategory || null,
       created_at: selectedDate?.toISOString() || new Date().toISOString(),
-    });
+    } as any);
 
     if (insertError) {
       toast.error("Failed to save photo");
@@ -332,6 +411,8 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
 
   const allCategories = [...PRESET_CATEGORIES, ...customCategories.filter(c => !PRESET_CATEGORIES.includes(c))];
 
+  const expandedRun = expandedRunId ? runs.find(r => r.id === expandedRunId) : null;
+
   return (
     <>
       <Drawer open={open} onOpenChange={onOpenChange}>
@@ -342,7 +423,7 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
             </DrawerTitle>
           </DrawerHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4">
+          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setExpandedRunId(null); }} className="px-4 flex flex-col flex-1 min-h-0">
             <TabsList className="w-full">
               <TabsTrigger value="workouts" className="flex-1 text-xs">
                 <Dumbbell className="h-3.5 w-3.5 mr-1" />
@@ -403,12 +484,92 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
 
                   {/* Runs Tab */}
                   <TabsContent value="runs" className="mt-0">
-                    {runs.length === 0 ? (
+                    {expandedRunId && expandedRun ? (
+                      /* Expanded run detail view */
+                      <div className="space-y-4">
+                        <button
+                          onClick={() => { setExpandedRunId(null); setRunDetail(null); }}
+                          className="flex items-center gap-1 text-sm text-primary"
+                        >
+                          <ArrowLeft className="h-4 w-4" /> Back to runs
+                        </button>
+
+                        {/* Run header */}
+                        <div className="card-glass p-4 rounded-xl">
+                          <h4 className="font-semibold text-foreground text-sm capitalize mb-2">
+                            {expandedRun.modality} — {formatDistance(expandedRun.distance_meters)}
+                          </h4>
+                          <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div>
+                              <span className="text-muted-foreground">Moving Time</span>
+                              <p className="font-semibold text-foreground">{formatDuration(expandedRun.moving_seconds)}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Avg Pace</span>
+                              <p className="font-semibold text-foreground">{formatPace(expandedRun.avg_pace_sec_per_km)}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Elevation ↑</span>
+                              <p className="font-semibold text-foreground">{expandedRun.elevation_gain_m ? `${Math.round(expandedRun.elevation_gain_m)}m` : "—"}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Elevation ↓</span>
+                              <p className="font-semibold text-foreground">{expandedRun.elevation_loss_m ? `${Math.round(expandedRun.elevation_loss_m)}m` : "—"}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {runDetailLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                          </div>
+                        ) : runDetail ? (
+                          <>
+                            {/* Route Map */}
+                            {runDetail.points.length > 1 && (
+                              <div className="rounded-xl overflow-hidden h-48">
+                                <RunRouteMap points={runDetail.points} />
+                              </div>
+                            )}
+
+                            {/* Charts */}
+                            {runDetail.points.length > 2 && (
+                              <RunCharts points={runDetail.points} />
+                            )}
+
+                            {/* Splits / Laps */}
+                            {runDetail.laps.length > 0 && (
+                              <div className="card-glass p-4 rounded-xl">
+                                <p className="text-xs font-semibold text-muted-foreground mb-2">LAPS</p>
+                                <div className="space-y-1">
+                                  {runDetail.laps.map((lap: any) => (
+                                    <div key={lap.id} className="flex justify-between text-xs py-1 border-b border-border/20 last:border-0">
+                                      <span className="text-foreground">Lap {lap.lap_number}</span>
+                                      <span className="text-muted-foreground tabular-nums">
+                                        {lap.distance_meters_at_mark ? formatDistance(lap.distance_meters_at_mark) : "—"}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {runDetail.points.length <= 1 && (
+                              <EmptyState text="No route data recorded for this run" />
+                            )}
+                          </>
+                        ) : null}
+                      </div>
+                    ) : runs.length === 0 ? (
                       <EmptyState text="No runs this day" />
                     ) : (
                       <div className="space-y-3">
                         {runs.map((r) => (
-                          <div key={r.id} className="card-glass p-4 rounded-xl">
+                          <button
+                            key={r.id}
+                            onClick={() => handleExpandRun(r.id)}
+                            className="w-full text-left card-glass p-4 rounded-xl hover:ring-1 hover:ring-primary/30 transition-all"
+                          >
                             <div className="flex items-start justify-between mb-2">
                               <h4 className="font-semibold text-foreground text-sm capitalize">
                                 {r.modality} — {formatDistance(r.distance_meters)}
@@ -430,7 +591,8 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
                                 </span>
                               )}
                             </div>
-                          </div>
+                            <p className="text-[10px] text-primary mt-2">Tap for map & details →</p>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -527,27 +689,35 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
                     ) : (
                       <div className="grid grid-cols-2 gap-2">
                         {photos.map((p, idx) => (
-                          <button
-                            key={p.id}
-                            onClick={() => {
-                              setLightboxIndex(idx);
-                              setLightboxOpen(true);
-                            }}
-                            className="relative aspect-square rounded-xl overflow-hidden bg-muted cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
-                          >
-                            <img
-                              src={p.image_url}
-                              alt={p.category || p.note || "Progress photo"}
-                              className="w-full h-full object-cover"
-                            />
+                          <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden bg-muted group">
+                            <button
+                              onClick={() => {
+                                setLightboxIndex(idx);
+                                setLightboxOpen(true);
+                              }}
+                              className="w-full h-full"
+                            >
+                              <img
+                                src={p.image_url}
+                                alt={p.category || p.note || "Progress photo"}
+                                className="w-full h-full object-cover"
+                              />
+                            </button>
                             {p.category && (
-                              <div className="absolute top-1.5 left-1.5">
+                              <div className="absolute top-1.5 left-1.5 pointer-events-none">
                                 <Badge variant="secondary" className="text-[9px] px-1.5 py-0.5 bg-black/60 text-white border-0">
                                   {p.category}
                                 </Badge>
                               </div>
                             )}
-                          </button>
+                            {/* Re-categorise button */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleRecategorise(p); }}
+                              className="absolute bottom-1.5 right-1.5 bg-black/60 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Tag className="h-3 w-3" />
+                            </button>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -565,7 +735,6 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
           className="fixed inset-0 z-[300] bg-black flex items-center justify-center"
           onClick={() => setLightboxOpen(false)}
         >
-          {/* Close */}
           <button
             onClick={() => setLightboxOpen(false)}
             className="absolute top-4 right-4 z-10 text-white/80 hover:text-white p-2"
@@ -573,12 +742,10 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
             <X className="h-6 w-6" />
           </button>
 
-          {/* Counter */}
           <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm tabular-nums">
             {lightboxIndex + 1} / {photos.length}
           </div>
 
-          {/* Category label */}
           {photos[lightboxIndex]?.category && (
             <div className="absolute top-12 left-1/2 -translate-x-1/2">
               <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
@@ -587,7 +754,6 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
             </div>
           )}
 
-          {/* Image */}
           <img
             src={photos[lightboxIndex]?.image_url}
             alt="Progress photo"
@@ -595,7 +761,17 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
             onClick={(e) => e.stopPropagation()}
           />
 
-          {/* Prev */}
+          {/* Re-categorise in lightbox */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleRecategorise(photos[lightboxIndex]);
+            }}
+            className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/20 text-white rounded-full px-4 py-2 text-xs flex items-center gap-1.5 hover:bg-white/30"
+          >
+            <Tag className="h-3.5 w-3.5" /> {photos[lightboxIndex]?.category || "Categorise"}
+          </button>
+
           {photos.length > 1 && (
             <button
               onClick={(e) => {
@@ -608,7 +784,6 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
             </button>
           )}
 
-          {/* Next */}
           {photos.length > 1 && (
             <button
               onClick={(e) => {
@@ -623,11 +798,14 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
         </div>
       )}
 
-      {/* Upload Category Dialog */}
+      {/* Category Dialog */}
       <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm z-[400]">
           <DialogHeader>
-            <DialogTitle>Categorise Photo</DialogTitle>
+            <DialogTitle>{editingPhotoId ? "Update Category" : "Categorise Photo"}</DialogTitle>
+            <DialogDescription>
+              {editingPhotoId ? "Choose a new category for this photo." : "Select a category before uploading."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-2">
@@ -663,22 +841,24 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
               />
             )}
             <div className="flex gap-2">
+              {!editingPhotoId && (
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setSelectedCategory("");
+                    handleConfirmCategoryAction();
+                  }}
+                >
+                  Skip
+                </Button>
+              )}
               <Button
-                variant="outline"
                 className="flex-1"
-                onClick={() => {
-                  setSelectedCategory("");
-                  handleConfirmUpload();
-                }}
-              >
-                Skip
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={handleConfirmUpload}
+                onClick={handleConfirmCategoryAction}
                 disabled={selectedCategory === "__custom" && !customLabel.trim()}
               >
-                Upload
+                {editingPhotoId ? "Save" : "Upload"}
               </Button>
             </div>
           </div>
