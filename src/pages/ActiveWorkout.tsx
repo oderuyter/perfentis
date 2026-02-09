@@ -10,6 +10,7 @@ import { useWorkoutState, loadSavedWorkout, clearSavedWorkout } from "@/hooks/us
 import { useWorkoutHistory } from "@/hooks/useWorkoutHistory";
 import { usePersonalRecords, type PersonalRecord } from "@/hooks/usePersonalRecords";
 import { useAuth } from "@/hooks/useAuth";
+import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { SetEditor } from "@/components/workout/SetEditor";
 import { ExerciseHistorySheet } from "@/components/workout/ExerciseHistorySheet";
 import { SwapExerciseSheet } from "@/components/workout/SwapExerciseSheet";
@@ -18,6 +19,7 @@ import { RestTimerEdit } from "@/components/workout/RestTimerEdit";
 import { ExerciseNav } from "@/components/workout/ExerciseNav";
 import { AdvancedMetrics } from "@/components/workout/AdvancedMetrics";
 import { SaveAsTemplateDialog } from "@/components/workout/SaveAsTemplateDialog";
+import { HRPanel } from "@/components/workout/HRPanel";
 import { toast } from "sonner";
 import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
 
@@ -35,7 +37,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+  const hr = useHeartRateMonitor();
   const isFreeform = id === 'free';
   // Use templateWorkout if provided, otherwise look up from static data
   const workout = templateWorkout || (isFreeform ? null : workouts.find(w => w.id === id));
@@ -266,9 +268,12 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
           <p className="text-xs text-muted-foreground">{state.currentExerciseIndex + 1} of {state.exercises.filter(e => !e.skipped).length}</p>
           <p className="font-medium text-sm">{formatTime(state.elapsedTime)}</p>
         </button>
-        <button onClick={() => setShowHROverlay(true)} className="h-10 px-3 rounded-full bg-accent-subtle flex items-center gap-1.5">
-          <Heart className="h-4 w-4 text-hr-zone2" />
-          <span className="text-sm font-medium">{state.hrData.currentHR || '—'}</span>
+        <button onClick={() => setShowHROverlay(true)} className={cn(
+          "h-10 px-3 rounded-full flex items-center gap-1.5",
+          hr.status === "connected" ? "bg-green-500/10" : "bg-accent-subtle"
+        )}>
+          <Heart className={cn("h-4 w-4", hr.status === "connected" ? "text-red-500" : "text-muted-foreground")} />
+          <span className="text-sm font-medium tabular-nums">{hr.status === "connected" && hr.currentBPM > 0 ? hr.currentBPM : '—'}</span>
         </button>
       </header>
 
@@ -425,24 +430,22 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
 
       {/* Overlays */}
       <AnimatePresence>
-        {showHROverlay && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-40" onClick={() => setShowHROverlay(false)} />
-            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} transition={{ type: "spring", damping: 25, stiffness: 300 }} className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 p-6 pb-safe shadow-elevated">
-              <button onClick={() => setShowHROverlay(false)} className="absolute top-3 left-1/2 -translate-x-1/2 p-1"><ChevronUp className="h-5 w-5 text-muted-foreground" /></button>
-              <div className="pt-4">
-                <div className="flex items-center justify-between mb-6">
-                  <div><p className="text-4xl font-bold">{state.hrData.currentHR || '—'}</p><p className="text-sm text-muted-foreground">bpm</p></div>
-                  <div className={cn("px-4 py-2 rounded-full text-sm font-medium", state.hrData.zone === 1 && "bg-hr-zone1/20 text-hr-zone1", state.hrData.zone === 2 && "bg-hr-zone2/20 text-hr-zone2", state.hrData.zone === 3 && "bg-hr-zone3/20 text-hr-zone3", state.hrData.zone === 4 && "bg-hr-zone4/20 text-hr-zone4", state.hrData.zone === 5 && "bg-hr-zone5/20 text-hr-zone5")}>Zone {state.hrData.zone}</div>
-                </div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Time in Zone</p>
-                <div className="space-y-2">
-                  {[5, 4, 3, 2, 1].map(zone => (<div key={zone} className="flex items-center gap-3"><span className="text-xs w-6 text-muted-foreground">Z{zone}</span><div className="flex-1 h-2 bg-muted rounded-full overflow-hidden"><div className={cn("h-full rounded-full", zone === 1 && "bg-hr-zone1", zone === 2 && "bg-hr-zone2", zone === 3 && "bg-hr-zone3", zone === 4 && "bg-hr-zone4", zone === 5 && "bg-hr-zone5")} style={{ width: `${Math.min(100, (state.hrData.timeInZones[zone] || 0) / 60 * 10)}%` }} /></div><span className="text-xs w-10 text-right text-muted-foreground">{formatTime(state.hrData.timeInZones[zone] || 0)}</span></div>))}
-                </div>
-              </div>
-            </motion.div>
-          </>
-        )}
+        <HRPanel
+          isOpen={showHROverlay}
+          onClose={() => setShowHROverlay(false)}
+          currentBPM={hr.currentBPM}
+          zone={hr.zone}
+          status={hr.status}
+          activeDevice={hr.activeDevice}
+          devices={hr.devices}
+          timeInZones={hr.timeInZones}
+          isSupported={hr.isSupported}
+          onConnect={(dev) => hr.connectBLE(dev)}
+          onDisconnect={() => hr.disconnect()}
+          onRemoveDevice={(id) => hr.removeDevice(id)}
+          onSetPreferred={(id) => hr.setPreferred(id)}
+          maxHR={190}
+        />
         {showHistory && <ExerciseHistorySheet exerciseName={currentExercise.name} currentWeight={currentSet?.completedWeight ?? currentSet?.targetWeight ?? null} currentReps={currentSet?.completedReps ?? parseInt(currentSet?.targetReps?.match(/\d+/)?.[0] || '0')} onClose={() => setShowHistory(false)} />}
         {showSwap && <SwapExerciseSheet currentExercise={currentExercise.name} currentMuscleGroup={currentExercise.muscleGroup} onSwap={(ex) => { swapExercise(state.currentExerciseIndex, ex); setShowSwap(false); }} onClose={() => setShowSwap(false)} />}
         {showAdd && <AddExerciseSheet onAdd={addExercise} onClose={() => setShowAdd(false)} />}

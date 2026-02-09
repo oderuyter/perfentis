@@ -187,45 +187,8 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
     return () => clearInterval(timer);
   }, [state?.phase, state?.restTimerStartedAt]);
 
-  // Simulated HR updates (would connect to real device)
-  useEffect(() => {
-    if (!state || state.phase === 'complete') return;
-    
-    const timer = setInterval(() => {
-      setState(prev => {
-        if (!prev) return null;
-        
-        // Simulate HR (in real app, this would come from device)
-        const baseHR = prev.phase === 'rest' ? 100 : 130;
-        const variation = Math.floor(Math.random() * 20) - 10;
-        const newHR = Math.max(60, Math.min(190, baseHR + variation));
-        const zone = getHRZone(newHR, 190); // Using 190 as default max HR
-        
-        const newSamples = [...prev.hrData.samples, { timestamp: Date.now(), hr: newHR }].slice(-100);
-        const avgHR = newSamples.length > 0 
-          ? Math.round(newSamples.reduce((sum, s) => sum + s.hr, 0) / newSamples.length)
-          : newHR;
-        
-        return {
-          ...prev,
-          hrData: {
-            ...prev.hrData,
-            currentHR: newHR,
-            zone,
-            avgHR,
-            maxHR: Math.max(prev.hrData.maxHR, newHR),
-            samples: newSamples,
-            timeInZones: {
-              ...prev.hrData.timeInZones,
-              [zone]: (prev.hrData.timeInZones[zone] || 0) + (HR_UPDATE_INTERVAL / 1000),
-            },
-          },
-        };
-      });
-    }, HR_UPDATE_INTERVAL);
-    
-    return () => clearInterval(timer);
-  }, [state?.phase]);
+  // HR data is now provided externally via useHeartRateMonitor hook
+  // Demo HR simulation has been removed
 
   // Complete current set
   const completeSet = useCallback(() => {
