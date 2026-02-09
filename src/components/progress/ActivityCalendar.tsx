@@ -32,13 +32,13 @@ const SEGMENTS = [
   { key: "hasPhoto", color: "hsl(340 65% 55%)" },
 ] as const;
 
-const SegmentedRing = ({ flags, size = 36 }: { flags: DayFlags | undefined; size?: number }) => {
+const SegmentedRing = ({ flags, size = 36, strokeWidth = 3 }: { flags: DayFlags | undefined; size?: number; strokeWidth?: number }) => {
   if (!flags) return null;
 
   const activeSegments = SEGMENTS.filter((s) => flags[s.key as keyof DayFlags]);
   if (activeSegments.length === 0) return null;
 
-  const r = (size - 4) / 2;
+  const r = (size - strokeWidth - 2) / 2;
   const cx = size / 2;
   const cy = size / 2;
   const circumference = 2 * Math.PI * r;
@@ -63,7 +63,7 @@ const SegmentedRing = ({ flags, size = 36 }: { flags: DayFlags | undefined; size
             r={r}
             fill="none"
             stroke={seg.color}
-            strokeWidth={2.5}
+            strokeWidth={strokeWidth}
             strokeDasharray={`${segmentLength} ${circumference - segmentLength}`}
             strokeDashoffset={-offset}
             strokeLinecap="round"
@@ -152,7 +152,7 @@ export const ActivityCalendar = ({
                 today && "font-bold"
               )}
             >
-              <SegmentedRing flags={flags} size={36} />
+              <SegmentedRing flags={flags} size={36} strokeWidth={3.5} />
               <span
                 className={cn(
                   "relative z-10",
