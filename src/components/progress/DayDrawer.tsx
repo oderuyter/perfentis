@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,13 +13,28 @@ import {
   MapPin,
   Check,
   Plus,
-  ImageIcon,
-  Heart,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 interface DayDrawerProps {
   open: boolean;
@@ -60,8 +74,11 @@ interface DayPhoto {
   id: string;
   image_url: string;
   note: string | null;
+  category: string | null;
   created_at: string;
 }
+
+const PRESET_CATEGORIES = ["Front", "Back", "Right", "Left"];
 
 export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) => {
   const { user } = useAuth();
@@ -74,7 +91,33 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
   const [counts, setCounts] = useState({ workouts: 0, runs: 0, habits: 0, food: 0, photos: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+
+  // Upload category dialog
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [customLabel, setCustomLabel] = useState("");
+  const [customCategories, setCustomCategories] = useState<string[]>([]);
+
   const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
+
+  // Fetch user's custom categories
+  const fetchCustomCategories = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("progress_photo_categories")
+      .select("label")
+      .eq("user_id", user.id)
+      .order("label");
+    setCustomCategories((data || []).map((c: any) => c.label));
+  }, [user]);
+
+  useEffect(() => {
+    if (open) fetchCustomCategories();
+  }, [open, fetchCustomCategories]);
 
   const fetchDayData = useCallback(async () => {
     if (!user || !selectedDate) return;
@@ -139,10 +182,8 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
       }));
       setHabits(dayHabits);
 
-      // Nutrition
       if (nutritionRes.data && (nutritionRes.data as any).total_calories > 0) {
         const nd = nutritionRes.data as any;
-        // Fetch meals for this day
         const { data: mealsData } = await supabase
           .from("nutrition_meals")
           .select("id, meal_type, total_calories")
@@ -172,12 +213,18 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
         setNutrition(null);
       }
 
-      setPhotos((photosRes.data || []) as DayPhoto[]);
+      setPhotos((photosRes.data || []).map((p: any) => ({
+        id: p.id,
+        image_url: p.image_url,
+        note: p.note,
+        category: p.category || null,
+        created_at: p.created_at,
+      })));
 
       setCounts({
         workouts: gymWorkouts.length,
         runs: runs.length,
-        habits: dayHabits.filter((h) => h.completed).length,
+        habits: dayHabits.filter((h: DayHabit) => h.completed).length,
         food: nutritionRes.data && (nutritionRes.data as any).total_calories > 0 ? 1 : 0,
         photos: (photosRes.data || []).length,
       });
@@ -192,16 +239,37 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
     if (open && selectedDate) fetchDayData();
   }, [open, selectedDate, fetchDayData]);
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // When user picks a file, open category dialog
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
+    setPendingFile(file);
+    setSelectedCategory("");
+    setCustomLabel("");
+    setCategoryDialogOpen(true);
+    // Reset input so same file can be re-selected
+    e.target.value = "";
+  };
 
-    const ext = file.name.split(".").pop();
+  const handleConfirmUpload = async () => {
+    if (!pendingFile || !user) return;
+
+    let finalCategory = selectedCategory;
+    if (selectedCategory === "__custom" && customLabel.trim()) {
+      finalCategory = customLabel.trim();
+      // Save custom category for reuse
+      await supabase
+        .from("progress_photo_categories")
+        .upsert({ user_id: user.id, label: finalCategory }, { onConflict: "user_id,label" });
+      fetchCustomCategories();
+    }
+
+    const ext = pendingFile.name.split(".").pop();
     const path = `${user.id}/${Date.now()}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
       .from("progress-photos")
-      .upload(path, file);
+      .upload(path, pendingFile);
 
     if (uploadError) {
       toast.error("Failed to upload photo");
@@ -213,6 +281,7 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
     const { error: insertError } = await supabase.from("progress_photos").insert({
       user_id: user.id,
       image_url: urlData.publicUrl,
+      category: finalCategory || null,
       created_at: selectedDate?.toISOString() || new Date().toISOString(),
     });
 
@@ -222,6 +291,8 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
     }
 
     toast.success("Photo added");
+    setCategoryDialogOpen(false);
+    setPendingFile(null);
     fetchDayData();
   };
 
@@ -259,223 +330,361 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
       </Badge>
     ) : null;
 
+  const allCategories = [...PRESET_CATEGORIES, ...customCategories.filter(c => !PRESET_CATEGORIES.includes(c))];
+
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="h-[66vh]">
-        <DrawerHeader className="pb-2">
-          <DrawerTitle>
-            {selectedDate ? format(selectedDate, "EEEE, MMMM d") : "Day Details"}
-          </DrawerTitle>
-        </DrawerHeader>
+    <>
+      <Drawer open={open} onOpenChange={onOpenChange}>
+        <DrawerContent className="h-[66vh]">
+          <DrawerHeader className="pb-2">
+            <DrawerTitle>
+              {selectedDate ? format(selectedDate, "EEEE, MMMM d") : "Day Details"}
+            </DrawerTitle>
+          </DrawerHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4">
-          <TabsList className="w-full">
-            <TabsTrigger value="workouts" className="flex-1 text-xs">
-              <Dumbbell className="h-3.5 w-3.5 mr-1" />
-              Gym{tabBadge(counts.workouts)}
-            </TabsTrigger>
-            <TabsTrigger value="runs" className="flex-1 text-xs">
-              <Route className="h-3.5 w-3.5 mr-1" />
-              Runs{tabBadge(counts.runs)}
-            </TabsTrigger>
-            <TabsTrigger value="habits" className="flex-1 text-xs">
-              <Check className="h-3.5 w-3.5 mr-1" />
-              Habits{tabBadge(counts.habits)}
-            </TabsTrigger>
-            <TabsTrigger value="food" className="flex-1 text-xs">
-              <Salad className="h-3.5 w-3.5 mr-1" />
-              Food{tabBadge(counts.food)}
-            </TabsTrigger>
-            <TabsTrigger value="photos" className="flex-1 text-xs">
-              <Camera className="h-3.5 w-3.5 mr-1" />
-              Photos{tabBadge(counts.photos)}
-            </TabsTrigger>
-          </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4">
+            <TabsList className="w-full">
+              <TabsTrigger value="workouts" className="flex-1 text-xs">
+                <Dumbbell className="h-3.5 w-3.5 mr-1" />
+                Gym{tabBadge(counts.workouts)}
+              </TabsTrigger>
+              <TabsTrigger value="runs" className="flex-1 text-xs">
+                <Route className="h-3.5 w-3.5 mr-1" />
+                Runs{tabBadge(counts.runs)}
+              </TabsTrigger>
+              <TabsTrigger value="habits" className="flex-1 text-xs">
+                <Check className="h-3.5 w-3.5 mr-1" />
+                Habits{tabBadge(counts.habits)}
+              </TabsTrigger>
+              <TabsTrigger value="food" className="flex-1 text-xs">
+                <Salad className="h-3.5 w-3.5 mr-1" />
+                Food{tabBadge(counts.food)}
+              </TabsTrigger>
+              <TabsTrigger value="photos" className="flex-1 text-xs">
+                <Camera className="h-3.5 w-3.5 mr-1" />
+                Photos{tabBadge(counts.photos)}
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="mt-3 pb-[env(safe-area-inset-bottom,16px)] flex-1 overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
-              </div>
-            ) : (
-              <>
-                {/* Workouts Tab */}
-                <TabsContent value="workouts" className="mt-0">
-                  {gymWorkouts.length === 0 ? (
-                    <EmptyState text="No gym workouts this day" />
-                  ) : (
-                    <div className="space-y-3">
-                      {gymWorkouts.map((w) => (
-                        <div key={w.id} className="card-glass p-4 rounded-xl">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold text-foreground text-sm">{w.workout_name}</h4>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(w.started_at), "h:mm a")}
-                            </span>
-                          </div>
-                          <div className="flex gap-4 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" /> {formatDuration(w.duration_seconds)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Dumbbell className="h-3 w-3" /> {formatVolume(w.total_volume)}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Runs Tab */}
-                <TabsContent value="runs" className="mt-0">
-                  {runs.length === 0 ? (
-                    <EmptyState text="No runs this day" />
-                  ) : (
-                    <div className="space-y-3">
-                      {runs.map((r) => (
-                        <div key={r.id} className="card-glass p-4 rounded-xl">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold text-foreground text-sm capitalize">
-                              {r.modality} — {formatDistance(r.distance_meters)}
-                            </h4>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(r.started_at), "h:mm a")}
-                            </span>
-                          </div>
-                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" /> {formatDuration(r.moving_seconds)}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Route className="h-3 w-3" /> {formatPace(r.avg_pace_sec_per_km)}
-                            </span>
-                            {(r.elevation_gain_m ?? 0) > 0 && (
+            <div className="mt-3 pb-[env(safe-area-inset-bottom,16px)] flex-1 overflow-y-auto">
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                </div>
+              ) : (
+                <>
+                  {/* Workouts Tab */}
+                  <TabsContent value="workouts" className="mt-0">
+                    {gymWorkouts.length === 0 ? (
+                      <EmptyState text="No gym workouts this day" />
+                    ) : (
+                      <div className="space-y-3">
+                        {gymWorkouts.map((w) => (
+                          <div key={w.id} className="card-glass p-4 rounded-xl">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-foreground text-sm">{w.workout_name}</h4>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(w.started_at), "h:mm a")}
+                              </span>
+                            </div>
+                            <div className="flex gap-4 text-xs text-muted-foreground">
                               <span className="flex items-center gap-1">
-                                <MapPin className="h-3 w-3" /> ↑{Math.round(r.elevation_gain_m!)}m ↓{Math.round(r.elevation_loss_m || 0)}m
+                                <Clock className="h-3 w-3" /> {formatDuration(w.duration_seconds)}
                               </span>
-                            )}
+                              <span className="flex items-center gap-1">
+                                <Dumbbell className="h-3 w-3" /> {formatVolume(w.total_volume)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Habits Tab */}
-                <TabsContent value="habits" className="mt-0">
-                  {habits.length === 0 ? (
-                    <EmptyState text="No habits tracked" />
-                  ) : (
-                    <div className="space-y-2">
-                      {habits.map((h) => (
-                        <div
-                          key={h.id}
-                          className={cn(
-                            "flex items-center gap-3 p-3 rounded-xl",
-                            h.completed ? "card-glass" : "bg-muted/30"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "h-5 w-5 rounded-full border-2 flex items-center justify-center",
-                              h.completed ? "bg-primary border-primary" : "border-border"
-                            )}
-                          >
-                            {h.completed && <Check className="h-3 w-3 text-primary-foreground" />}
-                          </div>
-                          <span
-                            className={cn(
-                              "text-sm",
-                              h.completed ? "text-foreground" : "text-muted-foreground line-through"
-                            )}
-                          >
-                            {h.title}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Food Tab */}
-                <TabsContent value="food" className="mt-0">
-                  {!nutrition ? (
-                    <EmptyState text="No food logged this day" />
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Macro summary */}
-                      <div className="grid grid-cols-4 gap-2">
-                        <MacroTile label="Cals" value={`${Math.round(nutrition.total_calories)}`} />
-                        <MacroTile label="Protein" value={`${Math.round(nutrition.total_protein_g)}g`} />
-                        <MacroTile label="Carbs" value={`${Math.round(nutrition.total_carbs_g)}g`} />
-                        <MacroTile label="Fat" value={`${Math.round(nutrition.total_fat_g)}g`} />
+                        ))}
                       </div>
-                      {nutrition.meals.map((meal, i) => (
-                        <div key={i} className="card-glass p-3 rounded-xl">
-                          <p className="text-xs font-semibold uppercase text-muted-foreground mb-2 capitalize">
-                            {meal.meal_type}
-                          </p>
-                          {meal.entries.map((e, j) => (
-                            <div key={j} className="flex justify-between text-sm py-0.5">
-                              <span className="text-foreground">{e.food_name || "Unknown"}</span>
-                              <span className="text-muted-foreground tabular-nums">
-                                {Math.round(e.computed_calories)} cal
+                    )}
+                  </TabsContent>
+
+                  {/* Runs Tab */}
+                  <TabsContent value="runs" className="mt-0">
+                    {runs.length === 0 ? (
+                      <EmptyState text="No runs this day" />
+                    ) : (
+                      <div className="space-y-3">
+                        {runs.map((r) => (
+                          <div key={r.id} className="card-glass p-4 rounded-xl">
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-semibold text-foreground text-sm capitalize">
+                                {r.modality} — {formatDistance(r.distance_meters)}
+                              </h4>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(r.started_at), "h:mm a")}
                               </span>
                             </div>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                {/* Photos Tab */}
-                <TabsContent value="photos" className="mt-0">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePhotoUpload}
-                  />
-                  <div className="mb-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-2" /> Add Progress Photo
-                    </Button>
-                  </div>
-                  {photos.length === 0 ? (
-                    <EmptyState text="No photos this day" />
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      {photos.map((p) => (
-                        <div key={p.id} className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-                          <img
-                            src={p.image_url}
-                            alt={p.note || "Progress photo"}
-                            className="w-full h-full object-cover"
-                          />
-                          {p.note && (
-                            <div className="absolute bottom-0 inset-x-0 bg-black/50 px-2 py-1">
-                              <p className="text-[10px] text-white truncate">{p.note}</p>
+                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> {formatDuration(r.moving_seconds)}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Route className="h-3 w-3" /> {formatPace(r.avg_pace_sec_per_km)}
+                              </span>
+                              {(r.elevation_gain_m ?? 0) > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" /> ↑{Math.round(r.elevation_gain_m!)}m ↓{Math.round(r.elevation_loss_m || 0)}m
+                                </span>
+                              )}
                             </div>
-                          )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Habits Tab */}
+                  <TabsContent value="habits" className="mt-0">
+                    {habits.length === 0 ? (
+                      <EmptyState text="No habits tracked" />
+                    ) : (
+                      <div className="space-y-2">
+                        {habits.map((h) => (
+                          <div
+                            key={h.id}
+                            className={cn(
+                              "flex items-center gap-3 p-3 rounded-xl",
+                              h.completed ? "card-glass" : "bg-muted/30"
+                            )}
+                          >
+                            <div
+                              className={cn(
+                                "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                                h.completed ? "bg-primary border-primary" : "border-border"
+                              )}
+                            >
+                              {h.completed && <Check className="h-3 w-3 text-primary-foreground" />}
+                            </div>
+                            <span
+                              className={cn(
+                                "text-sm",
+                                h.completed ? "text-foreground" : "text-muted-foreground line-through"
+                              )}
+                            >
+                              {h.title}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Food Tab */}
+                  <TabsContent value="food" className="mt-0">
+                    {!nutrition ? (
+                      <EmptyState text="No food logged this day" />
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-4 gap-2">
+                          <MacroTile label="Cals" value={`${Math.round(nutrition.total_calories)}`} />
+                          <MacroTile label="Protein" value={`${Math.round(nutrition.total_protein_g)}g`} />
+                          <MacroTile label="Carbs" value={`${Math.round(nutrition.total_carbs_g)}g`} />
+                          <MacroTile label="Fat" value={`${Math.round(nutrition.total_fat_g)}g`} />
                         </div>
-                      ))}
+                        {nutrition.meals.map((meal, i) => (
+                          <div key={i} className="card-glass p-3 rounded-xl">
+                            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2 capitalize">
+                              {meal.meal_type}
+                            </p>
+                            {meal.entries.map((e, j) => (
+                              <div key={j} className="flex justify-between text-sm py-0.5">
+                                <span className="text-foreground">{e.food_name || "Unknown"}</span>
+                                <span className="text-muted-foreground tabular-nums">
+                                  {Math.round(e.computed_calories)} cal
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* Photos Tab */}
+                  <TabsContent value="photos" className="mt-0">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileSelected}
+                    />
+                    <div className="mb-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full"
+                      >
+                        <Plus className="h-4 w-4 mr-2" /> Add Progress Photo
+                      </Button>
                     </div>
-                  )}
-                </TabsContent>
-              </>
-            )}
+                    {photos.length === 0 ? (
+                      <EmptyState text="No photos this day" />
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {photos.map((p, idx) => (
+                          <button
+                            key={p.id}
+                            onClick={() => {
+                              setLightboxIndex(idx);
+                              setLightboxOpen(true);
+                            }}
+                            className="relative aspect-square rounded-xl overflow-hidden bg-muted cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+                          >
+                            <img
+                              src={p.image_url}
+                              alt={p.category || p.note || "Progress photo"}
+                              className="w-full h-full object-cover"
+                            />
+                            {p.category && (
+                              <div className="absolute top-1.5 left-1.5">
+                                <Badge variant="secondary" className="text-[9px] px-1.5 py-0.5 bg-black/60 text-white border-0">
+                                  {p.category}
+                                </Badge>
+                              </div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+                </>
+              )}
+            </div>
+          </Tabs>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Lightbox */}
+      {lightboxOpen && photos.length > 0 && (
+        <div
+          className="fixed inset-0 z-[300] bg-black flex items-center justify-center"
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Close */}
+          <button
+            onClick={() => setLightboxOpen(false)}
+            className="absolute top-4 right-4 z-10 text-white/80 hover:text-white p-2"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          {/* Counter */}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 text-white/70 text-sm tabular-nums">
+            {lightboxIndex + 1} / {photos.length}
           </div>
-        </Tabs>
-      </DrawerContent>
-    </Drawer>
+
+          {/* Category label */}
+          {photos[lightboxIndex]?.category && (
+            <div className="absolute top-12 left-1/2 -translate-x-1/2">
+              <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
+                {photos[lightboxIndex].category}
+              </Badge>
+            </div>
+          )}
+
+          {/* Image */}
+          <img
+            src={photos[lightboxIndex]?.image_url}
+            alt="Progress photo"
+            className="max-h-[85vh] max-w-[95vw] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Prev */}
+          {photos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((i) => (i === 0 ? photos.length - 1 : i - 1));
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2"
+            >
+              <ChevronLeft className="h-8 w-8" />
+            </button>
+          )}
+
+          {/* Next */}
+          {photos.length > 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setLightboxIndex((i) => (i === photos.length - 1 ? 0 : i + 1));
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-2"
+            >
+              <ChevronRight className="h-8 w-8" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Upload Category Dialog */}
+      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Categorise Photo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              {allCategories.map((cat) => (
+                <Button
+                  key={cat}
+                  variant={selectedCategory === cat ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setSelectedCategory(cat);
+                    setCustomLabel("");
+                  }}
+                  className="text-xs"
+                >
+                  {cat}
+                </Button>
+              ))}
+              <Button
+                variant={selectedCategory === "__custom" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory("__custom")}
+                className="text-xs"
+              >
+                Custom…
+              </Button>
+            </div>
+            {selectedCategory === "__custom" && (
+              <Input
+                placeholder="Custom label"
+                value={customLabel}
+                onChange={(e) => setCustomLabel(e.target.value)}
+                autoFocus
+              />
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setSelectedCategory("");
+                  handleConfirmUpload();
+                }}
+              >
+                Skip
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleConfirmUpload}
+                disabled={selectedCategory === "__custom" && !customLabel.trim()}
+              >
+                Upload
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

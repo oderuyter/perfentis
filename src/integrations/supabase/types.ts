@@ -6050,8 +6050,30 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_photo_categories: {
+        Row: {
+          created_at: string
+          id: string
+          label: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       progress_photos: {
         Row: {
+          category: string | null
           created_at: string
           id: string
           image_url: string
@@ -6059,6 +6081,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           created_at?: string
           id?: string
           image_url: string
@@ -6066,6 +6089,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           created_at?: string
           id?: string
           image_url?: string

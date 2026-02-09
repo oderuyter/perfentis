@@ -50,8 +50,9 @@ const SegmentedRing = ({ flags, size = 36, strokeWidth = 3 }: { flags: DayFlags 
     <svg
       width={size}
       height={size}
-      className="absolute inset-0"
-      style={{ transform: "rotate(-90deg)" }}
+      viewBox={`0 0 ${size} ${size}`}
+      className="absolute left-1/2 top-1/2 pointer-events-none"
+      style={{ transform: "translate(-50%, -50%) rotate(-90deg)" }}
     >
       {activeSegments.map((seg, i) => {
         const offset = i * (segmentLength + gap);
