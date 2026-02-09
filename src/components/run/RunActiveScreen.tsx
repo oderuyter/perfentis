@@ -30,7 +30,7 @@ export function RunActiveScreen({ state, onPause, onResume, onStop, onLap, onDis
   };
 
   return (
-    <div className="fixed inset-0 z-[200] gradient-page flex flex-col overflow-hidden">
+    <div className="min-h-[100dvh] gradient-page flex flex-col">
       {/* Status bar */}
       <div className={`text-center py-2 text-xs font-semibold uppercase tracking-widest ${
         isPaused ? 'bg-yellow-500/20 text-yellow-400' : 'bg-primary/10 text-primary'
