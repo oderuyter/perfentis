@@ -18,6 +18,14 @@ export interface WorkoutSession {
   status: string;
   notes: string | null;
   created_at: string;
+  // Run-specific fields
+  modality: string;
+  moving_seconds: number | null;
+  distance_meters: number | null;
+  avg_pace_sec_per_km: number | null;
+  elevation_gain_m: number | null;
+  elevation_loss_m: number | null;
+  privacy_level: string;
 }
 
 export function useWorkoutHistory() {
