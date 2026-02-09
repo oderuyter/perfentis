@@ -37,7 +37,7 @@ const DrawerContent = React.forwardRef<
       {...props}
     >
       <div className="mx-auto mt-4 h-1.5 w-12 rounded-full bg-muted-foreground/30" />
-      <div className="flex-1 pb-[calc(env(safe-area-inset-bottom,0px)+6rem)]">
+      <div className="flex-1 pb-[env(safe-area-inset-bottom,16px)]">
         {children}
       </div>
     </DrawerPrimitive.Content>
