@@ -273,7 +273,7 @@ export default function Social() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[69]"
+              className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[120]"
               onClick={() => setShowCreatePost(false)}
             />
             <motion.div
@@ -281,7 +281,7 @@ export default function Social() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[70] shadow-elevated max-h-[85vh] overflow-hidden flex flex-col"
+              className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[130] shadow-elevated max-h-[85vh] overflow-hidden flex flex-col"
             >
               <div className="p-4 pb-0 relative flex-shrink-0">
                 <button

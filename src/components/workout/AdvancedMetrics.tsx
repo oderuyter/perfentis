@@ -41,7 +41,7 @@ export function AdvancedMetrics({ rpe, tempo, note, onUpdate, onClose }: Advance
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 shadow-elevated p-4 pb-safe"
+        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[130] shadow-elevated p-4 pb-safe"
       >
         <button
           onClick={onClose}
