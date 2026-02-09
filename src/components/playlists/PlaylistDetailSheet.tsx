@@ -62,7 +62,7 @@ export function PlaylistDetailSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[120]"
             onClick={onClose}
           />
           
@@ -72,7 +72,7 @@ export function PlaylistDetailSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-50 max-h-[85vh] flex flex-col shadow-elevated"
+            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[130] max-h-[85vh] flex flex-col shadow-elevated"
           >
             {/* Handle */}
             <div className="flex justify-center pt-3 pb-2">

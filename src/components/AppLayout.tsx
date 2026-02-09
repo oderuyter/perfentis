@@ -57,7 +57,7 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
                   <button
                     onClick={() => setQrWalletOpen(true)}
                     className="relative p-2.5 rounded-full hover:bg-muted/50 transition-colors duration-200"
-                    aria-label="QR Wallet"
+                    aria-label="Passes"
                   >
                     <QrCode className="h-5 w-5 text-foreground/80" />
                   </button>
