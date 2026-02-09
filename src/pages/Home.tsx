@@ -9,7 +9,7 @@ export default function Home() {
   const greeting = getGreeting();
   
   return (
-    <div className="min-h-screen gradient-page px-5">
+    <div className="min-h-screen gradient-page px-5 overflow-x-hidden">
       {/* Ambient glow */}
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
       

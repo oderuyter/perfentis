@@ -29,14 +29,11 @@ export function AppLayout({ hideNav = false }: AppLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen gradient-page">
+    <div className="min-h-screen gradient-page overflow-x-hidden">
       {/* Persistent Header - Always on top (z-header) */}
       {!hideNav && (
         <header className="fixed top-0 left-0 right-0 z-header">
-          {/* Safe area spacer for notch/status bar */}
-          <div className="h-safe-top bg-background/95 dark:bg-surface-bg-primary/95" />
-          
-          <div className="header-surface">
+          <div className="header-surface pt-safe">
             <div className="flex items-center justify-between px-5 py-3">
               {/* Left: Hamburger */}
               <HamburgerButton onClick={() => setDrawerOpen(true)} />

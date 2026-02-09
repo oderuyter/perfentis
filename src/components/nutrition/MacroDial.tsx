@@ -23,7 +23,7 @@ export function MacroDial({
   const remaining = Math.max(goal - consumed, 0);
   const isOver = consumed > goal;
 
-  const dims = size === "lg" ? { r: 52, stroke: 8, box: 128 } : { r: 36, stroke: 6, box: 88 };
+  const dims = size === "lg" ? { r: 44, stroke: 7, box: 104 } : { r: 30, stroke: 5, box: 74 };
   const circumference = 2 * Math.PI * dims.r;
   const dashOffset = circumference * (1 - Math.min(pct, 1));
 
