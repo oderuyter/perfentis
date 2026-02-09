@@ -306,8 +306,8 @@ function AppRoutes() {
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
-      <Route path="/workout/template/:templateId/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
-      <Route path="/workout/split/:splitId/:workoutId/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
+      <Route path="/workout/template/:templateId/active" element={<ProtectedRoute><TemplateActiveWorkout /></ProtectedRoute>} />
+      <Route path="/workout/split/:splitId/:workoutId/active" element={<ProtectedRoute><TemplateActiveWorkout /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

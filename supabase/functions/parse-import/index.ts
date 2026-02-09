@@ -358,7 +358,8 @@ The content may contain:
 - A training split (multiple workouts grouped by day)
 - A multi-week training plan (workouts organized by week)
 
-Extract ALL exercises with their sets, reps, load guidance, rest periods, and notes.
+Extract ALL exercises from ALL pages with their sets, reps, load guidance, rest periods, and notes.
+IMPORTANT: The document may span multiple pages. Make sure you parse the ENTIRE content, including workouts that may start on one page and continue on the next. Do not stop at page boundaries.
 
 Return ONLY a valid JSON object with this exact structure (no markdown, no code blocks):
 {
@@ -394,7 +395,7 @@ Return ONLY a valid JSON object with this exact structure (no markdown, no code 
 }
 
 PDF Content:
-${textContent.substring(0, 15000)}`;
+${textContent}`;
 
   const response = await fetch(
     "https://ai.gateway.lovable.dev/v1/chat/completions",
@@ -413,7 +414,7 @@ ${textContent.substring(0, 15000)}`;
           },
         ],
         temperature: 0.1,
-        max_tokens: 8000,
+        max_tokens: 32000,
       }),
     }
   );
