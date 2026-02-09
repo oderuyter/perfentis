@@ -7706,6 +7706,7 @@ export type Database = {
           id: string
           is_demo: boolean | null
           max_hr: number | null
+          min_hr: number | null
           modality: string
           moving_seconds: number | null
           notes: string | null
@@ -7742,6 +7743,7 @@ export type Database = {
           id?: string
           is_demo?: boolean | null
           max_hr?: number | null
+          min_hr?: number | null
           modality?: string
           moving_seconds?: number | null
           notes?: string | null
@@ -7778,6 +7780,7 @@ export type Database = {
           id?: string
           is_demo?: boolean | null
           max_hr?: number | null
+          min_hr?: number | null
           modality?: string
           moving_seconds?: number | null
           notes?: string | null

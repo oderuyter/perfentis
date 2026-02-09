@@ -18,6 +18,7 @@ import {
   X,
   ArrowLeft,
   Tag,
+  Heart,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { RunRouteMap } from "@/components/run/RunRouteMap";
 import { RunCharts } from "@/components/run/RunCharts";
 import { GpsPoint } from "@/types/run";
+import { WorkoutDetailSheet } from "@/components/progress/WorkoutDetailSheet";
 
 interface DayDrawerProps {
   open: boolean;
@@ -45,14 +47,20 @@ interface DayWorkout {
   id: string;
   workout_name: string;
   started_at: string;
+  ended_at: string | null;
   duration_seconds: number | null;
   total_volume: number | null;
   modality: string;
+  status: string;
   distance_meters: number | null;
   moving_seconds: number | null;
   avg_pace_sec_per_km: number | null;
   elevation_gain_m: number | null;
   elevation_loss_m: number | null;
+  avg_hr: number | null;
+  max_hr: number | null;
+  min_hr: number | null;
+  time_in_zones: Record<string, number> | null;
 }
 
 interface DayHabit {
@@ -94,6 +102,10 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
   const [loading, setLoading] = useState(false);
   const [counts, setCounts] = useState({ workouts: 0, runs: 0, habits: 0, food: 0, photos: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Workout detail sheet
+  const [selectedWorkout, setSelectedWorkout] = useState<DayWorkout | null>(null);
+  const [workoutDetailOpen, setWorkoutDetailOpen] = useState(false);
 
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -461,7 +473,11 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
                     ) : (
                       <div className="space-y-3">
                         {gymWorkouts.map((w) => (
-                          <div key={w.id} className="card-glass p-4 rounded-xl">
+                          <button
+                            key={w.id}
+                            className="card-glass p-4 rounded-xl w-full text-left active:scale-[0.98] transition-transform"
+                            onClick={() => { setSelectedWorkout(w); setWorkoutDetailOpen(true); }}
+                          >
                             <div className="flex items-start justify-between mb-2">
                               <h4 className="font-semibold text-foreground text-sm">{w.workout_name}</h4>
                               <span className="text-xs text-muted-foreground">
@@ -475,8 +491,13 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
                               <span className="flex items-center gap-1">
                                 <Dumbbell className="h-3 w-3" /> {formatVolume(w.total_volume)}
                               </span>
+                              {w.avg_hr && (
+                                <span className="flex items-center gap-1">
+                                  <Heart className="h-3 w-3 text-red-500" /> {w.avg_hr} bpm
+                                </span>
+                              )}
                             </div>
-                          </div>
+                          </button>
                         ))}
                       </div>
                     )}
@@ -864,6 +885,14 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Workout Detail Sheet */}
+      <WorkoutDetailSheet
+        open={workoutDetailOpen}
+        onOpenChange={setWorkoutDetailOpen}
+        workout={selectedWorkout}
+        onBack={() => setWorkoutDetailOpen(false)}
+      />
     </>
   );
 };
