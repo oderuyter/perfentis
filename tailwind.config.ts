@@ -170,12 +170,12 @@ export default {
         "22": "5.5rem",
       },
       zIndex: {
-        // Layering system: drawers slide behind persistent header/footer
-        "sheet-overlay": "50",
-        "sheet": "60",
-        "drawer": "70",
+        // Layering system: sheets & drawers overlay everything including header/footer
         "footer": "100",
         "header": "100",
+        "drawer": "110",
+        "sheet-overlay": "120",
+        "sheet": "130",
       },
       transitionDuration: {
         fast: "150ms",

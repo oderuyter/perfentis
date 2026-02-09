@@ -240,7 +240,7 @@ export function AddExternalCardSheet({ open, onOpenChange }: AddExternalCardShee
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) handleClose(); else onOpenChange(true); }}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl overflow-y-auto pb-24">
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl overflow-y-auto">
         <SheetHeader className="mb-4">
           <SheetTitle>
             {step === "choose" && "Add External Gym Card"}
