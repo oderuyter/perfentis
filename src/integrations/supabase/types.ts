@@ -4274,6 +4274,84 @@ export type Database = {
         }
         Relationships: []
       }
+      hr_devices: {
+        Row: {
+          created_at: string
+          device_identifier: string | null
+          id: string
+          is_preferred: boolean
+          last_connected_at: string | null
+          manufacturer: string | null
+          name: string
+          transport: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_identifier?: string | null
+          id?: string
+          is_preferred?: boolean
+          last_connected_at?: string | null
+          manufacturer?: string | null
+          name: string
+          transport?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_identifier?: string | null
+          id?: string
+          is_preferred?: boolean
+          last_connected_at?: string | null
+          manufacturer?: string | null
+          name?: string
+          transport?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      hr_samples: {
+        Row: {
+          bpm: number
+          created_at: string
+          id: string
+          session_id: string
+          source_device_id: string | null
+          timestamp: string
+        }
+        Insert: {
+          bpm: number
+          created_at?: string
+          id?: string
+          session_id: string
+          source_device_id?: string | null
+          timestamp?: string
+        }
+        Update: {
+          bpm?: number
+          created_at?: string
+          id?: string
+          session_id?: string
+          source_device_id?: string | null
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hr_samples_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hr_samples_source_device_id_fkey"
+            columns: ["source_device_id"]
+            isOneToOne: false
+            referencedRelation: "hr_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_batches: {
         Row: {
           completed_at: string | null
@@ -7624,6 +7702,7 @@ export type Database = {
           elevation_gain_m: number | null
           elevation_loss_m: number | null
           ended_at: string | null
+          hr_device_id: string | null
           id: string
           is_demo: boolean | null
           max_hr: number | null
@@ -7644,6 +7723,7 @@ export type Database = {
           status: string
           synced_at: string | null
           template_id: string | null
+          time_in_zones: Json | null
           total_volume: number | null
           user_id: string
           workout_name: string
@@ -7658,6 +7738,7 @@ export type Database = {
           elevation_gain_m?: number | null
           elevation_loss_m?: number | null
           ended_at?: string | null
+          hr_device_id?: string | null
           id?: string
           is_demo?: boolean | null
           max_hr?: number | null
@@ -7678,6 +7759,7 @@ export type Database = {
           status?: string
           synced_at?: string | null
           template_id?: string | null
+          time_in_zones?: Json | null
           total_volume?: number | null
           user_id: string
           workout_name: string
@@ -7692,6 +7774,7 @@ export type Database = {
           elevation_gain_m?: number | null
           elevation_loss_m?: number | null
           ended_at?: string | null
+          hr_device_id?: string | null
           id?: string
           is_demo?: boolean | null
           max_hr?: number | null
@@ -7712,12 +7795,20 @@ export type Database = {
           status?: string
           synced_at?: string | null
           template_id?: string | null
+          time_in_zones?: Json | null
           total_volume?: number | null
           user_id?: string
           workout_name?: string
           workout_template_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "workout_sessions_hr_device_id_fkey"
+            columns: ["hr_device_id"]
+            isOneToOne: false
+            referencedRelation: "hr_devices"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workout_sessions_plan_assignment_id_fkey"
             columns: ["plan_assignment_id"]

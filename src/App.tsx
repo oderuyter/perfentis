@@ -127,6 +127,7 @@ import ImportWizard from "./pages/ImportWizard";
 import AdminExerciseSubmissions from "./pages/admin-portal/AdminExerciseSubmissions";
 import AdminNutrition from "./pages/admin-portal/AdminNutrition";
 import AdminExternalGymSubmissions from "./pages/admin-portal/AdminExternalGymSubmissions";
+import AdminConnectedDevices from "./pages/admin-portal/AdminConnectedDevices";
 import NutritionLibrary from "./pages/NutritionLibrary";
 import RunTracker from "./pages/RunTracker";
 
@@ -303,6 +304,7 @@ function AppRoutes() {
         <Route path="exercise-submissions" element={<AdminExerciseSubmissions />} />
         <Route path="nutrition" element={<AdminNutrition />} />
         <Route path="external-gym-submissions" element={<AdminExternalGymSubmissions />} />
+        <Route path="connected-devices" element={<AdminConnectedDevices />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />

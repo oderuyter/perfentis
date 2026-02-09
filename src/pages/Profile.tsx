@@ -5,8 +5,9 @@ import {
   Target, 
   Ruler, 
   Heart, 
-  Smartphone, 
-  Palette, 
+  Smartphone,
+  Palette,
+  Radio,
   Bell, 
   Shield, 
   ChevronRight,
@@ -29,6 +30,7 @@ import { TrainingGoalsSheet } from "@/components/profile/TrainingGoalsSheet";
 import { UnitsSheet } from "@/components/profile/UnitsSheet";
 import { IntegrationsSheet } from "@/components/profile/IntegrationsSheet";
 import { HeartRateZonesSheet } from "@/components/profile/HeartRateZonesSheet";
+import { HRDevicesSheet } from "@/components/profile/HRDevicesSheet";
 import { NotificationsSheet } from "@/components/profile/NotificationsSheet";
 import { PrivacySheet } from "@/components/profile/PrivacySheet";
 import {
@@ -146,6 +148,7 @@ export default function Profile() {
   const [hrZonesOpen, setHrZonesOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [hrDevicesOpen, setHrDevicesOpen] = useState(false);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
 
   const cycleTheme = () => {
@@ -286,14 +289,19 @@ export default function Profile() {
         <SectionHeader title="Health & Devices" />
         <div className="card-glass p-4 space-y-0.5">
           <SettingRow 
-            icon={Smartphone} 
-            label="Integrations" 
-            onClick={() => setIntegrationsOpen(true)} 
+            icon={Radio} 
+            label="HR Monitors" 
+            onClick={() => setHrDevicesOpen(true)} 
           />
           <SettingRow 
             icon={Heart} 
             label="Heart Rate Zones" 
             onClick={() => setHrZonesOpen(true)} 
+          />
+          <SettingRow 
+            icon={Smartphone} 
+            label="Integrations" 
+            onClick={() => setIntegrationsOpen(true)} 
           />
         </div>
 
@@ -385,7 +393,11 @@ export default function Profile() {
         isOpen={notificationsOpen} 
         onClose={() => setNotificationsOpen(false)} 
       />
-      <PrivacySheet 
+      <HRDevicesSheet
+        isOpen={hrDevicesOpen}
+        onClose={() => setHrDevicesOpen(false)}
+      />
+      <PrivacySheet
         isOpen={privacyOpen} 
         onClose={() => setPrivacyOpen(false)} 
       />
