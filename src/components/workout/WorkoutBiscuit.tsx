@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Timer, Dumbbell, ArrowRight } from "lucide-react";
+import { Timer } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { loadSavedWorkout } from "@/hooks/useWorkoutState";
 
@@ -28,7 +28,6 @@ export function WorkoutBiscuit() {
     
     checkWorkout();
     
-    // Also listen for storage changes (when workout is cleared)
     const handleStorage = (e: StorageEvent) => {
       if (e.key === 'active_workout_state' || e.key === null) {
         checkWorkout();
@@ -36,8 +35,6 @@ export function WorkoutBiscuit() {
     };
     
     window.addEventListener('storage', handleStorage);
-    
-    // Periodic check to catch same-tab localStorage changes
     const interval = setInterval(checkWorkout, 500);
     
     return () => {
@@ -46,7 +43,7 @@ export function WorkoutBiscuit() {
     };
   }, [location.pathname]);
   
-  // Keep elapsed time updated while showing the biscuit
+  // Keep elapsed time updated
   useEffect(() => {
     if (!workoutState || workoutState.status !== 'active') return;
     
@@ -63,10 +60,6 @@ export function WorkoutBiscuit() {
   
   if (!shouldShow) return null;
   
-  const currentExercise = workoutState.exercises[workoutState.currentExerciseIndex];
-  const currentSetNum = workoutState.currentSetIndex + 1;
-  const totalSets = currentExercise?.sets.length || 0;
-  
   const handleClick = () => {
     navigate(`/workout/${workoutState.workoutId}/active`);
   };
@@ -74,39 +67,21 @@ export function WorkoutBiscuit() {
   return (
     <AnimatePresence>
       <motion.button
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 100, opacity: 0 }}
+        initial={{ x: 100, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        exit={{ x: 100, opacity: 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         onClick={handleClick}
-        className="fixed bottom-20 left-4 right-4 z-50 gradient-card-accent rounded-2xl p-4 shadow-lg border border-accent/30 active:scale-[0.98] transition-transform"
+        className="fixed right-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-1 rounded-2xl bg-accent p-3 shadow-lg border border-accent/30 active:scale-95 transition-transform"
+        aria-label="Resume workout"
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {/* Pulsing indicator */}
-            <div className="relative">
-              <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center">
-                <Dumbbell className="h-5 w-5 text-accent-foreground" />
-              </div>
-              <span className="absolute -top-0.5 -right-0.5 h-3 w-3 bg-accent rounded-full animate-pulse-soft ring-2 ring-background" />
-            </div>
-            
-            <div className="text-left">
-              <div className="flex items-center gap-2">
-                <Timer className="h-3.5 w-3.5 text-accent-foreground" />
-                <span className="text-sm font-bold text-accent-foreground">{formatTime(elapsedTime)}</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[180px]">
-                {currentExercise?.name} • Set {currentSetNum}/{totalSets}
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2 text-accent-foreground">
-            <span className="text-sm font-semibold">Continue</span>
-            <ArrowRight className="h-4 w-4" />
-          </div>
-        </div>
+        {/* Pulsing dot */}
+        <span className="absolute -top-1 -right-1 h-3 w-3 bg-accent rounded-full animate-pulse-soft ring-2 ring-background" />
+        
+        <Timer className="h-5 w-5 text-accent-foreground" />
+        <span className="text-xs font-bold text-accent-foreground tabular-nums leading-none">
+          {formatTime(elapsedTime)}
+        </span>
       </motion.button>
     </AnimatePresence>
   );
