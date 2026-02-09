@@ -261,7 +261,7 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="h-[66vh]">
         <DrawerHeader className="pb-2">
           <DrawerTitle>
             {selectedDate ? format(selectedDate, "EEEE, MMMM d") : "Day Details"}
@@ -292,7 +292,7 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
             </TabsTrigger>
           </TabsList>
 
-          <div className="mt-3 pb-[env(safe-area-inset-bottom,16px)] max-h-[55vh] overflow-y-auto">
+          <div className="mt-3 pb-[env(safe-area-inset-bottom,16px)] flex-1 overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />

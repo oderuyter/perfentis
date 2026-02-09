@@ -8,6 +8,7 @@ import { WeeklySummaryTiles } from "@/components/progress/WeeklySummaryTiles";
 import { ActivityCalendar } from "@/components/progress/ActivityCalendar";
 import { DayDrawer } from "@/components/progress/DayDrawer";
 import { StreakCard } from "@/components/progress/StreakCard";
+import { ExerciseGoalsSection } from "@/components/progress/ExerciseGoalsSection";
 import { useWorkoutStreak } from "@/hooks/useWorkoutStreak";
 
 export default function Progress() {
@@ -103,6 +104,11 @@ export default function Progress() {
             dayFlags={dayFlags}
             onDayClick={handleDayClick}
           />
+        </motion.div>
+
+        {/* Exercise Goals */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12 }}>
+          <ExerciseGoalsSection />
         </motion.div>
       </div>
 
