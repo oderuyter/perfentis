@@ -313,11 +313,13 @@ export function useHeartRateMonitor() {
 
   const stopRecording = useCallback(async () => {
     await stopFlushing();
+    const bpms = samplesRef.current.map(s => s.bpm).filter(b => b > 0);
     const result = {
-      avgHR: samplesRef.current.length > 0
-        ? Math.round(samplesRef.current.reduce((s, x) => s + x.bpm, 0) / samplesRef.current.length)
+      avgHR: bpms.length > 0
+        ? Math.round(bpms.reduce((s, x) => s + x, 0) / bpms.length)
         : 0,
       maxHR: maxHRRef.current,
+      minHR: bpms.length > 0 ? Math.min(...bpms) : 0,
       timeInZones: { ...timeInZonesRef.current },
       deviceId: deviceIdRef.current,
     };
