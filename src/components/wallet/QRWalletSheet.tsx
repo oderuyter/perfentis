@@ -36,6 +36,7 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
   const [selectedPass, setSelectedPass] = useState<GymPass | EventPass | null>(null);
   const [selectedExternalCard, setSelectedExternalCard] = useState<ExternalGymCard | null>(null);
   const [showAddExternal, setShowAddExternal] = useState(false);
+  const [userNavigatedBack, setUserNavigatedBack] = useState(false);
 
   const isGymPass = (pass: GymPass | EventPass): pass is GymPass => {
     return "gymName" in pass;
@@ -115,7 +116,7 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
               {gymPasses.map((pass) => (
                 <button
                   key={pass.id}
-                  onClick={() => setSelectedPass(pass)}
+                  onClick={() => { setSelectedPass(pass); setUserNavigatedBack(false); }}
                   className="w-full p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-left"
                 >
                   <div className="flex items-center justify-between">
@@ -195,7 +196,7 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
               {eventPasses.map((pass) => (
                 <button
                   key={pass.id}
-                  onClick={() => setSelectedPass(pass)}
+                  onClick={() => { setSelectedPass(pass); setUserNavigatedBack(false); }}
                   className="w-full p-4 rounded-xl bg-card border border-border hover:border-primary/50 transition-all text-left"
                 >
                   <div className="flex items-center justify-between">
@@ -255,7 +256,7 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setSelectedPass(null)}
+          onClick={() => { setSelectedPass(null); setUserNavigatedBack(true); }}
           className="self-start mb-4 -ml-2"
         >
           <ChevronLeft className="h-4 w-4 mr-1" />
@@ -308,11 +309,11 @@ export function QRWalletSheet({ isOpen, onClose }: QRWalletSheetProps) {
     );
   };
 
-  const displayPass = selectedPass || (hasOnlyOnePass && externalCards.length === 0 ? singlePass : null);
+  const displayPass = selectedPass || (!userNavigatedBack && hasOnlyOnePass && externalCards.length === 0 ? singlePass : null);
 
   return (
     <>
-      <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Sheet open={isOpen} onOpenChange={(open) => { if (!open) { onClose(); setUserNavigatedBack(false); } }}>
         <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
           <SheetHeader className="mb-4">
             <SheetTitle className="flex items-center gap-2">
