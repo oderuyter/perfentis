@@ -217,15 +217,23 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
       }
       
       const isLastSet = prev.currentSetIndex >= currentExercise.sets.length - 1;
-      const isLastExercise = prev.currentExerciseIndex >= exercises.length - 1;
+      const nonSkippedExercises = exercises.filter(e => !e.skipped);
+      const currentNonSkippedIndex = nonSkippedExercises.findIndex(e => e.exerciseId === currentExercise.exerciseId && e.originalIndex === currentExercise.originalIndex);
+      const isLastExercise = currentNonSkippedIndex >= nonSkippedExercises.length - 1;
       
       if (isLastSet && isLastExercise) {
-        return { ...prev, exercises, phase: 'complete', status: 'completed', completedAt: new Date().toISOString() };
+        // Signal that we need the "add more or finish" prompt
+        return { ...prev, exercises, phase: 'complete' as const };
       }
       
-      const nextExerciseIndex = isLastSet ? prev.currentExerciseIndex + 1 : prev.currentExerciseIndex;
+      const nextExerciseIndex = isLastSet 
+        ? exercises.findIndex((e, i) => i > prev.currentExerciseIndex && !e.skipped)
+        : prev.currentExerciseIndex;
       const nextSetIndex = isLastSet ? 0 : prev.currentSetIndex + 1;
-      const restDuration = isLastSet ? 120 : 90; // Longer rest between exercises
+      // Use the exercise's own rest duration instead of hardcoded values
+      const restDuration = isLastSet 
+        ? (exercises[nextExerciseIndex !== -1 ? nextExerciseIndex : 0]?.restDuration || 120) 
+        : currentExercise.restDuration;
       
       return {
         ...prev,
@@ -408,6 +416,50 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
     setState(prev => prev ? { ...prev, workoutNote: note } : null);
   }, []);
 
+  // Add a set to an exercise
+  const addSet = useCallback((exerciseIndex: number) => {
+    setState(prev => {
+      if (!prev) return null;
+      const exercises = [...prev.exercises];
+      const exercise = exercises[exerciseIndex];
+      const lastSet = exercise.sets[exercise.sets.length - 1];
+      const isCardio = exercise.exerciseType === 'cardio';
+      
+      const newSet: ExerciseSet = {
+        setNumber: exercise.sets.length + 1,
+        targetWeight: lastSet?.targetWeight ?? null,
+        targetReps: lastSet?.targetReps ?? (isCardio ? '' : '8-12'),
+        completedWeight: lastSet?.completedWeight ?? null,
+        completedReps: null,
+        targetTime: lastSet?.targetTime ?? null,
+        targetDistance: lastSet?.targetDistance ?? null,
+        completedTime: null,
+        completedDistance: null,
+        completedSpeed: null,
+        completed: false,
+        completedAt: null,
+        rpe: null,
+        tempo: null,
+        note: null,
+      };
+      
+      exercises[exerciseIndex] = {
+        ...exercise,
+        sets: [...exercise.sets, newSet],
+      };
+      
+      return { ...prev, exercises };
+    });
+  }, []);
+
+  // Continue workout after last exercise (user chose to add more)
+  const continueWorkout = useCallback(() => {
+    setState(prev => {
+      if (!prev) return null;
+      return { ...prev, phase: 'exercise' as const, status: 'active' as const };
+    });
+  }, []);
+
   // End workout (completed or abandoned)
   const endWorkout = useCallback((abandoned: boolean = false) => {
     setState(prev => {
@@ -437,8 +489,10 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
     editRestDuration,
     swapExercise,
     addExercise,
+    addSet,
     removeExercise,
     setWorkoutNote,
+    continueWorkout,
     endWorkout,
   };
 }

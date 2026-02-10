@@ -58,7 +58,9 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
     editRestDuration,
     swapExercise,
     addExercise,
+    addSet,
     removeExercise,
+    continueWorkout,
     endWorkout,
   } = useWorkoutState(workout || null, resumeState, isFreeform);
 
@@ -168,8 +170,62 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
     );
   }
 
-  // Complete Screen
-  if (state.phase === "complete") {
+  // "All exercises done" prompt — phase is complete but status is still active
+  if (state.phase === "complete" && state.status === 'active') {
+    return (
+      <div className="fixed inset-0 bg-background flex flex-col items-center justify-center p-6">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center w-full max-w-xs">
+          <div className="h-20 w-20 rounded-full gradient-card-accent flex items-center justify-center mx-auto mb-6 shadow-lg">
+            <Check className="h-10 w-10 text-accent-foreground" />
+          </div>
+          <h1 className="text-xl font-semibold mb-2">All Exercises Done!</h1>
+          <p className="text-muted-foreground mb-6">
+            {formatTime(state.elapsedTime)} elapsed · {state.exercises.flatMap(e => e.sets).filter(s => s.completed).length} sets completed
+          </p>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => {
+                continueWorkout();
+                setShowAdd(true);
+              }} 
+              variant="outline"
+              className="w-full h-12 rounded-xl font-semibold gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              Add Another Exercise
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (state) {
+                  await saveWorkoutSession(state);
+                  if (user?.id) {
+                    await notifyWorkoutCompleted(user.id, state.workoutName, '');
+                  }
+                  const prs = await checkAndSavePRs(state, '');
+                  if (prs.length > 0) {
+                    setNewPRs(prs);
+                    toast.success(`${prs.length} new PR${prs.length > 1 ? 's' : ''}!`);
+                  }
+                }
+                endWorkout(false);
+              }}
+              className="w-full h-12 rounded-xl font-semibold"
+            >
+              Finish Workout
+            </Button>
+          </div>
+        </motion.div>
+        
+        {/* Add exercise overlay */}
+        <AnimatePresence>
+          {showAdd && <AddExerciseSheet onAdd={(ex) => { addExercise(ex); continueWorkout(); }} onClose={() => setShowAdd(false)} />}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // Complete Screen (status === 'completed')
+  if (state.phase === "complete" && state.status !== 'active') {
     const completedSets = state.exercises.flatMap(e => e.sets).filter(s => s.completed);
     const totalVolume = completedSets.reduce((sum, s) => sum + (s.completedWeight || 0) * (s.completedReps || 0), 0);
     
@@ -348,7 +404,16 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
               
               {/* All Sets */}
               <div className="flex-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">All Sets</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">All Sets</p>
+                  <button 
+                    onClick={() => addSet(state.currentExerciseIndex)}
+                    className="flex items-center gap-1 text-xs font-medium text-primary"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Set
+                  </button>
+                </div>
                 <SetEditor
                   sets={currentExercise.sets}
                   currentSetIndex={state.currentSetIndex}
@@ -448,7 +513,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         />
         {showHistory && <ExerciseHistorySheet exerciseName={currentExercise.name} currentWeight={currentSet?.completedWeight ?? currentSet?.targetWeight ?? null} currentReps={currentSet?.completedReps ?? parseInt(currentSet?.targetReps?.match(/\d+/)?.[0] || '0')} onClose={() => setShowHistory(false)} />}
         {showSwap && <SwapExerciseSheet currentExercise={currentExercise.name} currentMuscleGroup={currentExercise.muscleGroup} onSwap={(ex) => { swapExercise(state.currentExerciseIndex, ex); setShowSwap(false); }} onClose={() => setShowSwap(false)} />}
-        {showAdd && <AddExerciseSheet onAdd={addExercise} onClose={() => setShowAdd(false)} />}
+        {showAdd && <AddExerciseSheet onAdd={addExercise} onClose={() => setShowAdd(false)} multiSelect />}
         {showRestEdit && <RestTimerEdit currentDuration={state.restDuration} onUpdate={editRestDuration} onClose={() => setShowRestEdit(false)} />}
         {showExerciseNav && <ExerciseNav exercises={state.exercises} currentIndex={state.currentExerciseIndex} onSelect={(i) => goToExercise(i)} onRemove={removeExercise} onClose={() => setShowExerciseNav(false)} />}
         {showAdvanced && <AdvancedMetrics rpe={currentSet?.rpe ?? null} tempo={currentSet?.tempo ?? null} note={currentSet?.note ?? null} onUpdate={(updates) => updateSet(state.currentExerciseIndex, state.currentSetIndex, updates)} onClose={() => setShowAdvanced(false)} />}
