@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Search, Plus, Loader2 } from 'lucide-react';
+import { ChevronDown, Search, Plus, Loader2, Check } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { useExerciseLibrary } from '@/hooks/useExerciseLibrary';
 import { ExerciseListItem } from '@/components/exercises/ExerciseListItem';
 import { ExerciseFiltersBar } from '@/components/exercises/ExerciseFilters';
@@ -12,11 +13,13 @@ import type { Exercise } from '@/types/exercise';
 interface AddExerciseSheetProps {
   onAdd: (exercise: { id: string; name: string; sets?: number; version?: number; exerciseType?: 'strength' | 'cardio' }) => void;
   onClose: () => void;
+  multiSelect?: boolean;
 }
 
-export function AddExerciseSheet({ onAdd, onClose }: AddExerciseSheetProps) {
+export function AddExerciseSheet({ onAdd, onClose, multiSelect = false }: AddExerciseSheetProps) {
   const [showCreateSheet, setShowCreateSheet] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null);
+  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   
   const {
     groupedExercises,
@@ -37,6 +40,25 @@ export function AddExerciseSheet({ onAdd, onClose }: AddExerciseSheetProps) {
       version: exercise.version,
       exerciseType: exercise.type,
     });
+    if (!multiSelect) {
+      onClose();
+    }
+  };
+
+  const toggleSelection = (exercise: Exercise) => {
+    setSelectedExercises(prev => {
+      const exists = prev.find(e => e.exercise_id === exercise.exercise_id);
+      if (exists) return prev.filter(e => e.exercise_id !== exercise.exercise_id);
+      return [...prev, exercise];
+    });
+  };
+
+  const isSelected = (exercise: Exercise) => 
+    selectedExercises.some(e => e.exercise_id === exercise.exercise_id);
+
+  const handleAddAll = () => {
+    selectedExercises.forEach(ex => handleAddExercise(ex));
+    setSelectedExercises([]);
     onClose();
   };
 
@@ -65,7 +87,7 @@ export function AddExerciseSheet({ onAdd, onClose }: AddExerciseSheetProps) {
           </button>
           
           <div className="flex items-center justify-between pt-4 mb-4">
-            <h3 className="text-lg font-semibold">Add Exercise</h3>
+            <h3 className="text-lg font-semibold">Add Exercise{multiSelect ? 's' : ''}</h3>
             <button
               onClick={() => setShowCreateSheet(true)}
               className="flex items-center gap-1.5 text-sm text-primary font-medium"
@@ -110,13 +132,25 @@ export function AddExerciseSheet({ onAdd, onClose }: AddExerciseSheetProps) {
                   </p>
                   <div className="space-y-2">
                     {exercises.map(exercise => (
-                      <ExerciseListItem
-                        key={exercise.id}
-                        exercise={exercise}
-                        showAddButton
-                        onClick={() => setSelectedExercise(exercise)}
-                        onAdd={() => handleAddExercise(exercise)}
-                      />
+                      <div key={exercise.id} className="relative">
+                        {multiSelect && isSelected(exercise) && (
+                          <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                            <Check className="h-3 w-3 text-primary-foreground" />
+                          </div>
+                        )}
+                        <ExerciseListItem
+                          exercise={exercise}
+                          showAddButton={!multiSelect}
+                          onClick={() => {
+                            if (multiSelect) {
+                              toggleSelection(exercise);
+                            } else {
+                              setSelectedExercise(exercise);
+                            }
+                          }}
+                          onAdd={() => handleAddExercise(exercise)}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -124,6 +158,16 @@ export function AddExerciseSheet({ onAdd, onClose }: AddExerciseSheetProps) {
             </div>
           )}
         </div>
+
+        {/* Multi-select action bar */}
+        {multiSelect && selectedExercises.length > 0 && (
+          <div className="border-t border-border/50 p-4 pb-safe">
+            <Button onClick={handleAddAll} className="w-full h-12 rounded-xl font-semibold gap-2">
+              <Plus className="h-5 w-5" />
+              Add {selectedExercises.length} Exercise{selectedExercises.length > 1 ? 's' : ''}
+            </Button>
+          </div>
+        )}
       </motion.div>
       
       <AnimatePresence>
