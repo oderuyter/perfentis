@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ChevronDown, Check, CircleDashed, Trash2 } from 'lucide-react';
+import { ChevronDown, Check, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ActiveExercise } from '@/types/workout';
 
@@ -8,11 +8,15 @@ interface ExerciseNavProps {
   currentIndex: number;
   onSelect: (index: number) => void;
   onRemove: (index: number) => void;
+  onReorder: (fromIndex: number, toIndex: number) => void;
   onClose: () => void;
 }
 
-export function ExerciseNav({ exercises, currentIndex, onSelect, onRemove, onClose }: ExerciseNavProps) {
-  const activeExercises = exercises.filter(ex => !ex.skipped);
+export function ExerciseNav({ exercises, currentIndex, onSelect, onRemove, onReorder, onClose }: ExerciseNavProps) {
+  // Build list of non-skipped exercises with their real indices
+  const visibleExercises = exercises
+    .map((ex, idx) => ({ exercise: ex, realIndex: idx }))
+    .filter(({ exercise }) => !exercise.skipped);
 
   return (
     <>
@@ -43,27 +47,51 @@ export function ExerciseNav({ exercises, currentIndex, onSelect, onRemove, onClo
         
         <div className="flex-1 overflow-y-auto px-4 pb-safe">
           <div className="space-y-2 pb-4">
-            {exercises.map((exercise, index) => {
-              if (exercise.skipped) return null;
-              
+            {visibleExercises.map(({ exercise, realIndex }, visIdx) => {
               const completedSets = exercise.sets.filter(s => s.completed).length;
               const totalSets = exercise.sets.length;
               const isComplete = completedSets === totalSets;
-              const isCurrent = index === currentIndex;
+              const isCurrent = realIndex === currentIndex;
               
               return (
                 <div
-                  key={exercise.exerciseId + index}
+                  key={exercise.exerciseId + realIndex}
                   className={cn(
-                    "rounded-xl p-3 border transition-all flex items-center gap-3",
+                    "rounded-xl p-3 border transition-all flex items-center gap-2",
                     isCurrent && "bg-primary/5 border-primary/20",
                     !isCurrent && isComplete && "bg-muted/30 border-border/30",
                     !isCurrent && !isComplete && "bg-card border-border/50"
                   )}
                 >
+                  {/* Reorder buttons */}
+                  <div className="flex flex-col gap-0.5 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        if (visIdx > 0) {
+                          onReorder(realIndex, visibleExercises[visIdx - 1].realIndex);
+                        }
+                      }}
+                      disabled={visIdx === 0}
+                      className={cn("p-0.5 rounded", visIdx === 0 ? "text-muted-foreground/30" : "text-muted-foreground hover:text-foreground")}
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (visIdx < visibleExercises.length - 1) {
+                          onReorder(realIndex, visibleExercises[visIdx + 1].realIndex);
+                        }
+                      }}
+                      disabled={visIdx === visibleExercises.length - 1}
+                      className={cn("p-0.5 rounded", visIdx === visibleExercises.length - 1 ? "text-muted-foreground/30" : "text-muted-foreground hover:text-foreground")}
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => {
-                      onSelect(index);
+                      onSelect(realIndex);
                       onClose();
                     }}
                     className="flex-1 flex items-center gap-3 text-left"
@@ -77,7 +105,7 @@ export function ExerciseNav({ exercises, currentIndex, onSelect, onRemove, onClo
                         <Check className="h-4 w-4" />
                       ) : (
                         <span className="text-sm font-medium text-muted-foreground">
-                          {index + 1}
+                          {visIdx + 1}
                         </span>
                       )}
                     </div>
@@ -99,7 +127,7 @@ export function ExerciseNav({ exercises, currentIndex, onSelect, onRemove, onClo
                   </button>
                   
                   <button
-                    onClick={() => onRemove(index)}
+                    onClick={() => onRemove(realIndex)}
                     className="p-2 text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <Trash2 className="h-4 w-4" />

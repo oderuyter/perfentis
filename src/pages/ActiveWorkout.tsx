@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save } from "lucide-react";
+import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save, Trash2 } from "lucide-react";
 
 import { useParams, useNavigate } from "react-router-dom";
 import { workouts, type Workout } from "@/data/workouts";
@@ -59,7 +59,9 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
     swapExercise,
     addExercise,
     addSet,
+    removeSet,
     removeExercise,
+    reorderExercise,
     continueWorkout,
     endWorkout,
   } = useWorkoutState(workout || null, resumeState, isFreeform);
@@ -218,7 +220,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         
         {/* Add exercise overlay */}
         <AnimatePresence>
-          {showAdd && <AddExerciseSheet onAdd={(ex) => { addExercise(ex); continueWorkout(); }} onClose={() => setShowAdd(false)} />}
+          {showAdd && <AddExerciseSheet onAdd={(ex) => { addExercise(ex, true); continueWorkout(); }} onClose={() => setShowAdd(false)} />}
         </AnimatePresence>
       </div>
     );
@@ -404,16 +406,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
               
               {/* All Sets */}
               <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">All Sets</p>
-                  <button 
-                    onClick={() => addSet(state.currentExerciseIndex)}
-                    className="flex items-center gap-1 text-xs font-medium text-primary"
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Add Set
-                  </button>
-                </div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">All Sets</p>
                 <SetEditor
                   sets={currentExercise.sets}
                   currentSetIndex={state.currentSetIndex}
@@ -421,6 +414,24 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
                   onSelectSet={(setIndex) => goToExercise(state.currentExerciseIndex, setIndex)}
                   exerciseType={currentExercise.exerciseType}
                 />
+                <div className="flex items-center gap-2 mt-2">
+                  <button 
+                    onClick={() => addSet(state.currentExerciseIndex)}
+                    className="flex items-center gap-1 text-xs font-medium text-primary"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add Set
+                  </button>
+                  {currentExercise.sets.length > 1 && (
+                    <button 
+                      onClick={() => removeSet(state.currentExerciseIndex)}
+                      className="flex items-center gap-1 text-xs font-medium text-destructive"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Remove Set
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           ) : (
@@ -513,9 +524,9 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         />
         {showHistory && <ExerciseHistorySheet exerciseName={currentExercise.name} currentWeight={currentSet?.completedWeight ?? currentSet?.targetWeight ?? null} currentReps={currentSet?.completedReps ?? parseInt(currentSet?.targetReps?.match(/\d+/)?.[0] || '0')} onClose={() => setShowHistory(false)} />}
         {showSwap && <SwapExerciseSheet currentExercise={currentExercise.name} currentMuscleGroup={currentExercise.muscleGroup} onSwap={(ex) => { swapExercise(state.currentExerciseIndex, ex); setShowSwap(false); }} onClose={() => setShowSwap(false)} />}
-        {showAdd && <AddExerciseSheet onAdd={addExercise} onClose={() => setShowAdd(false)} multiSelect />}
+        {showAdd && <AddExerciseSheet onAdd={(ex) => { addExercise(ex, true); }} onClose={() => setShowAdd(false)} multiSelect />}
         {showRestEdit && <RestTimerEdit currentDuration={state.restDuration} onUpdate={editRestDuration} onClose={() => setShowRestEdit(false)} />}
-        {showExerciseNav && <ExerciseNav exercises={state.exercises} currentIndex={state.currentExerciseIndex} onSelect={(i) => goToExercise(i)} onRemove={removeExercise} onClose={() => setShowExerciseNav(false)} />}
+        {showExerciseNav && <ExerciseNav exercises={state.exercises} currentIndex={state.currentExerciseIndex} onSelect={(i) => goToExercise(i)} onRemove={removeExercise} onReorder={reorderExercise} onClose={() => setShowExerciseNav(false)} />}
         {showAdvanced && <AdvancedMetrics rpe={currentSet?.rpe ?? null} tempo={currentSet?.tempo ?? null} note={currentSet?.note ?? null} onUpdate={(updates) => updateSet(state.currentExerciseIndex, state.currentSetIndex, updates)} onClose={() => setShowAdvanced(false)} />}
       </AnimatePresence>
     </div>

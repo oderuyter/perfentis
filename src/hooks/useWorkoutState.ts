@@ -347,8 +347,8 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
     });
   }, []);
 
-  // Add exercise
-  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string; exerciseType?: 'strength' | 'cardio' }) => {
+  // Add exercise and optionally navigate to it
+  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string; exerciseType?: 'strength' | 'cardio' }, navigateTo: boolean = false) => {
     setState(prev => {
       if (!prev) return null;
 
@@ -385,7 +385,14 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
         exerciseType: exercise.exerciseType,
       };
       
-      return { ...prev, exercises: [...prev.exercises, newExercise] };
+      const newExercises = [...prev.exercises, newExercise];
+      const newIndex = newExercises.length - 1;
+      
+      if (navigateTo) {
+        return { ...prev, exercises: newExercises, currentExerciseIndex: newIndex, currentSetIndex: 0, phase: 'exercise' as const };
+      }
+      
+      return { ...prev, exercises: newExercises };
     });
   }, []);
 
@@ -452,6 +459,50 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
     });
   }, []);
 
+  // Remove the last set from an exercise
+  const removeSet = useCallback((exerciseIndex: number) => {
+    setState(prev => {
+      if (!prev) return null;
+      const exercises = [...prev.exercises];
+      const exercise = exercises[exerciseIndex];
+      if (exercise.sets.length <= 1) return prev;
+      
+      exercises[exerciseIndex] = {
+        ...exercise,
+        sets: exercise.sets.slice(0, -1),
+      };
+      
+      // Adjust currentSetIndex if it was pointing at the removed set
+      const newSetIndex = prev.currentExerciseIndex === exerciseIndex && prev.currentSetIndex >= exercises[exerciseIndex].sets.length
+        ? exercises[exerciseIndex].sets.length - 1
+        : prev.currentSetIndex;
+      
+      return { ...prev, exercises, currentSetIndex: newSetIndex };
+    });
+  }, []);
+
+  // Reorder exercise (move from one index to another)
+  const reorderExercise = useCallback((fromIndex: number, toIndex: number) => {
+    setState(prev => {
+      if (!prev) return null;
+      const exercises = [...prev.exercises];
+      const [moved] = exercises.splice(fromIndex, 1);
+      exercises.splice(toIndex, 0, moved);
+      
+      // Adjust currentExerciseIndex to follow the current exercise
+      let newCurrentIndex = prev.currentExerciseIndex;
+      if (prev.currentExerciseIndex === fromIndex) {
+        newCurrentIndex = toIndex;
+      } else if (fromIndex < prev.currentExerciseIndex && toIndex >= prev.currentExerciseIndex) {
+        newCurrentIndex = prev.currentExerciseIndex - 1;
+      } else if (fromIndex > prev.currentExerciseIndex && toIndex <= prev.currentExerciseIndex) {
+        newCurrentIndex = prev.currentExerciseIndex + 1;
+      }
+      
+      return { ...prev, exercises, currentExerciseIndex: newCurrentIndex };
+    });
+  }, []);
+
   // Continue workout after last exercise (user chose to add more)
   const continueWorkout = useCallback(() => {
     setState(prev => {
@@ -490,7 +541,9 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
     swapExercise,
     addExercise,
     addSet,
+    removeSet,
     removeExercise,
+    reorderExercise,
     setWorkoutNote,
     continueWorkout,
     endWorkout,
