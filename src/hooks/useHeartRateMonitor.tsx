@@ -29,7 +29,9 @@ type ConnectionStatus = "disconnected" | "connecting" | "connected" | "reconnect
 const HR_SERVICE_UUID = 0x180d;
 const HR_MEASUREMENT_UUID = 0x2a37;
 const BATCH_INTERVAL_MS = 10000; // flush samples every 10s
-const RECONNECT_DELAY_MS = 3000;
+const RECONNECT_INITIAL_DELAY_MS = 2000;
+const RECONNECT_MAX_DELAY_MS = 30000;
+const MAX_RECONNECT_ATTEMPTS = 10;
 
 function isWebBluetoothSupported(): boolean {
   return typeof navigator !== "undefined" && "bluetooth" in navigator;
@@ -65,6 +67,8 @@ export function useHeartRateMonitor() {
   const sessionIdRef = useRef<string | null>(null);
   const deviceIdRef = useRef<string | null>(null);
   const reconnectRef = useRef(false);
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimerRef = useRef<NodeJS.Timeout | null>(null);
   const samplesRef = useRef<HRSample[]>([]);
   const maxHRRef = useRef(0);
   const timeInZonesRef = useRef<Record<number, number>>({ 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
@@ -165,29 +169,55 @@ export function useHeartRateMonitor() {
   }, [flushSamples]);
 
   // Disconnect handler
+  const attemptReconnect = useCallback(async () => {
+    if (!reconnectRef.current || !bleDeviceRef.current?.gatt) {
+      setStatus("disconnected");
+      return;
+    }
+
+    const attempt = reconnectAttemptsRef.current;
+    if (attempt >= MAX_RECONNECT_ATTEMPTS) {
+      setStatus("disconnected");
+      reconnectRef.current = false;
+      reconnectAttemptsRef.current = 0;
+      toast.error("HR monitor reconnection failed after multiple attempts");
+      return;
+    }
+
+    const delay = Math.min(
+      RECONNECT_INITIAL_DELAY_MS * Math.pow(1.5, attempt),
+      RECONNECT_MAX_DELAY_MS
+    );
+    reconnectAttemptsRef.current = attempt + 1;
+    setStatus("reconnecting");
+
+    reconnectTimerRef.current = setTimeout(async () => {
+      try {
+        if (!reconnectRef.current || !bleDeviceRef.current?.gatt) {
+          setStatus("disconnected");
+          return;
+        }
+        const server = await bleDeviceRef.current.gatt.connect();
+        const service = await server.getPrimaryService(HR_SERVICE_UUID);
+        const char = await service.getCharacteristic(HR_MEASUREMENT_UUID);
+        characteristicRef.current = char;
+        await char.startNotifications();
+        char.addEventListener("characteristicvaluechanged", handleHRMeasurement);
+        reconnectAttemptsRef.current = 0;
+        setStatus("connected");
+        toast.success("HR monitor reconnected");
+      } catch {
+        // Retry again
+        attemptReconnect();
+      }
+    }, delay);
+  }, [handleHRMeasurement]);
+
   const onDisconnected = useCallback(() => {
     setStatus("disconnected");
     characteristicRef.current = null;
-
-    if (reconnectRef.current && bleDeviceRef.current?.gatt) {
-      setStatus("reconnecting");
-      setTimeout(async () => {
-        try {
-          if (!bleDeviceRef.current?.gatt) return;
-          const server = await bleDeviceRef.current.gatt.connect();
-          const service = await server.getPrimaryService(HR_SERVICE_UUID);
-          const char = await service.getCharacteristic(HR_MEASUREMENT_UUID);
-          characteristicRef.current = char;
-          await char.startNotifications();
-          char.addEventListener("characteristicvaluechanged", handleHRMeasurement);
-          setStatus("connected");
-        } catch {
-          setStatus("disconnected");
-          reconnectRef.current = false;
-        }
-      }, RECONNECT_DELAY_MS);
-    }
-  }, [handleHRMeasurement]);
+    attemptReconnect();
+  }, [attemptReconnect]);
 
   // Connect to BLE device
   const connectBLE = useCallback(async (device?: HRDevice) => {
@@ -282,6 +312,11 @@ export function useHeartRateMonitor() {
   // Disconnect
   const disconnect = useCallback(async () => {
     reconnectRef.current = false;
+    reconnectAttemptsRef.current = 0;
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     if (characteristicRef.current) {
       try {
         await characteristicRef.current.stopNotifications();
@@ -351,6 +386,7 @@ export function useHeartRateMonitor() {
     return () => {
       reconnectRef.current = false;
       if (flushTimerRef.current) clearInterval(flushTimerRef.current);
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
     };
   }, []);
 
