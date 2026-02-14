@@ -3,371 +3,293 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { 
-  Mail, Send, CheckCircle, XCircle, AlertTriangle, RefreshCw, 
-  Search, Clock, ArrowRight, ExternalLink, Activity, Shield, Loader2,
-  Settings, Key, Globe, Save, Eye, EyeOff
+import {
+  Mail, Send, CheckCircle, XCircle, RefreshCw, Settings, Save,
+  Loader2, Activity, Shield, Eye, EyeOff, Plug
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { sendTestEmail, checkEmailHealth, retryEmail, EmailHealthCheck } from "@/lib/emailService";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 
-interface EmailLog {
-  id: string;
-  to_email: string;
-  template_key: string;
-  subject: string;
-  context_type: string | null;
-  context_id: string | null;
-  resend_message_id: string | null;
-  status: string;
-  error_code: string | null;
-  error_message: string | null;
-  attempt_count: number;
-  last_attempt_at: string;
-  created_at: string;
+interface SmtpConfig {
+  host: string;
+  port: number;
+  secure: boolean;
+  username: string;
+  from_name: string;
+  from_email: string;
+  reply_to: string | null;
+  enabled: boolean;
+  updated_at: string;
+  updated_by: string | null;
 }
-
-interface DeliveryEvent {
-  id: string;
-  email_log_id: string;
-  event_type: string;
-  occurred_at: string;
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-800",
-  sent: "bg-blue-100 text-blue-800",
-  delivered: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
-  bounced: "bg-red-100 text-red-800",
-  complained: "bg-orange-100 text-orange-800",
-};
-
-const TEMPLATE_OPTIONS = [
-  { value: "test_email", label: "Test Email" },
-  { value: "gym_invite", label: "Gym Invitation" },
-  { value: "coach_invite", label: "Coach Invitation" },
-  { value: "event_invite", label: "Event Invitation" },
-  { value: "notification_coach", label: "Coach Notification" },
-  { value: "notification_event", label: "Event Notification" },
-  { value: "notification_gym", label: "Gym Notification" },
-  { value: "notification_system", label: "System Notification" },
-];
 
 export default function AdminEmailDiagnostics() {
-  const [health, setHealth] = useState<EmailHealthCheck | null>(null);
-  const [healthLoading, setHealthLoading] = useState(true);
-  const [logs, setLogs] = useState<EmailLog[]>([]);
-  const [logsLoading, setLogsLoading] = useState(true);
-  const [selectedLog, setSelectedLog] = useState<EmailLog | null>(null);
-  const [deliveryEvents, setDeliveryEvents] = useState<DeliveryEvent[]>([]);
-  
-  // Test email form
+  const [config, setConfig] = useState<SmtpConfig | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  // Form state
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState(587);
+  const [secure, setSecure] = useState(false);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [fromName, setFromName] = useState("Flow Fitness");
+  const [fromEmail, setFromEmail] = useState("");
+  const [replyTo, setReplyTo] = useState("");
+  const [enabled, setEnabled] = useState(false);
+
+  // Test email state
   const [testTo, setTestTo] = useState("");
-  const [testTemplate, setTestTemplate] = useState("test_email");
   const [testSubject, setTestSubject] = useState("");
-  const [testBody, setTestBody] = useState("");
+  const [testMessage, setTestMessage] = useState("");
   const [sending, setSending] = useState(false);
-  const [lastTestResult, setLastTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
 
-  // Search/filter
-  const [searchEmail, setSearchEmail] = useState("");
-  const [searchMessageId, setSearchMessageId] = useState("");
-  const [filterTemplate, setFilterTemplate] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
+  // Connection test state
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionResult, setConnectionResult] = useState<{ success: boolean; error?: string } | null>(null);
 
-  // Settings state
-  const [fromEmail, setFromEmail] = useState("onboarding@resend.dev");
-  const [fromName, setFromName] = useState("Lovable");
-  const [replyToEmail, setReplyToEmail] = useState("");
-  const [enabledCategories, setEnabledCategories] = useState({
-    gym_invite: true,
-    coach_invite: true,
-    event_invite: true,
-    notifications: true,
-  });
-  const [showApiKeyHint, setShowApiKeyHint] = useState(false);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
-
-  // Load email settings from database
   useEffect(() => {
-    loadEmailSettings();
+    loadConfig();
   }, []);
 
-  const loadEmailSettings = async () => {
+  const loadConfig = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("app_settings" as any)
-        .select("*")
-        .eq("category", "email")
-        .maybeSingle();
-
-      if (data) {
-        const settings = (data as any).settings as Record<string, any>;
-        if (settings) {
-          setFromEmail(settings.from_email || "onboarding@resend.dev");
-          setFromName(settings.from_name || "Lovable");
-          setReplyToEmail(settings.reply_to || "");
-          setEnabledCategories({
-            gym_invite: settings.enabled_gym_invite ?? true,
-            coach_invite: settings.enabled_coach_invite ?? true,
-            event_invite: settings.enabled_event_invite ?? true,
-            notifications: settings.enabled_notifications ?? true,
-          });
-        }
-      }
-      setSettingsLoaded(true);
-    } catch (err) {
-      console.error("Failed to load email settings:", err);
-      setSettingsLoaded(true);
-    }
-  };
-
-  const handleSaveSettings = async () => {
-    setSettingsSaving(true);
-    try {
-      const settings = {
-        from_email: fromEmail,
-        from_name: fromName,
-        reply_to: replyToEmail,
-        enabled_gym_invite: enabledCategories.gym_invite,
-        enabled_coach_invite: enabledCategories.coach_invite,
-        enabled_event_invite: enabledCategories.event_invite,
-        enabled_notifications: enabledCategories.notifications,
-        updated_at: new Date().toISOString(),
-      };
-
-      // Use raw SQL via rpc or direct insert since table might not be in types yet
-      const { error } = await supabase
-        .from("app_settings" as any)
-        .upsert({
-          category: "email",
-          settings,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: "category"
-        });
-
+      const { data, error } = await supabase.functions.invoke("smtp-config", { method: "GET" });
       if (error) throw error;
-      toast.success("Email settings saved successfully");
+      const cfg = data?.config;
+      setConfig(cfg);
+      if (cfg) {
+        setHost(cfg.host || "");
+        setPort(cfg.port || 587);
+        setSecure(cfg.secure || false);
+        setUsername(cfg.username || "");
+        setFromName(cfg.from_name || "Flow Fitness");
+        setFromEmail(cfg.from_email || "");
+        setReplyTo(cfg.reply_to || "");
+        setEnabled(cfg.enabled || false);
+      }
     } catch (err: any) {
-      console.error("Failed to save settings:", err);
-      toast.error("Failed to save settings: " + (err.message || "Unknown error"));
+      console.error("Failed to load SMTP config:", err);
+      toast.error("Failed to load SMTP configuration");
     } finally {
-      setSettingsSaving(false);
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadHealth();
-    loadLogs();
-  }, []);
+  const handleSave = async () => {
+    if (enabled && !host) { toast.error("Host is required when SMTP is enabled"); return; }
+    if (port < 1 || port > 65535) { toast.error("Port must be 1-65535"); return; }
+    if (fromEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fromEmail)) { toast.error("Invalid From Email"); return; }
+    if (enabled && !username) { toast.error("Username is required when SMTP is enabled"); return; }
 
-  const loadHealth = async () => {
-    setHealthLoading(true);
-    const result = await checkEmailHealth();
-    setHealth(result);
-    setHealthLoading(false);
-  };
-
-  const loadLogs = async () => {
-    setLogsLoading(true);
+    setSaving(true);
     try {
-      let query = supabase
-        .from("email_logs")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
+      const body: Record<string, unknown> = { host, port, secure, username, from_name: fromName, from_email: fromEmail, reply_to: replyTo || null, enabled };
+      if (password) body.password = password;
 
-      if (searchEmail) {
-        query = query.ilike("to_email", `%${searchEmail}%`);
-      }
-      if (searchMessageId) {
-        query = query.ilike("resend_message_id", `%${searchMessageId}%`);
-      }
-      if (filterTemplate && filterTemplate !== "all") {
-        query = query.eq("template_key", filterTemplate);
-      }
-      if (filterStatus && filterStatus !== "all") {
-        query = query.eq("status", filterStatus);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await supabase.functions.invoke("smtp-config", {
+        method: "PUT",
+        body,
+      });
       if (error) throw error;
-      setLogs((data || []) as EmailLog[]);
-    } catch (err) {
-      console.error("Failed to load logs:", err);
-      toast.error("Failed to load email logs");
+      if (!data?.success) throw new Error("Save failed");
+
+      toast.success("SMTP settings saved successfully");
+      setPassword("");
+      loadConfig();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save SMTP settings");
     } finally {
-      setLogsLoading(false);
+      setSaving(false);
     }
   };
 
-  const loadDeliveryEvents = async (logId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("email_delivery_events")
-        .select("*")
-        .eq("email_log_id", logId)
-        .order("occurred_at", { ascending: true });
-
-      if (error) throw error;
-      setDeliveryEvents((data || []) as DeliveryEvent[]);
-    } catch (err) {
-      console.error("Failed to load delivery events:", err);
-    }
-  };
-
-  const handleSendTest = async () => {
-    if (!testTo) {
-      toast.error("Please enter a recipient email");
+  const handleTestEmail = async () => {
+    if (!testTo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(testTo)) {
+      toast.error("Enter a valid recipient email");
       return;
     }
-
     setSending(true);
-    setLastTestResult(null);
-
+    setTestResult(null);
     try {
-      const result = await sendTestEmail(testTo, testSubject || undefined, testBody || undefined);
-      setLastTestResult(result);
-
-      if (result.success) {
+      const { data, error } = await supabase.functions.invoke("smtp-config", {
+        method: "POST",
+        body: { action: "test-email", to: testTo, subject: testSubject || undefined, message: testMessage || undefined },
+      });
+      if (error) throw error;
+      setTestResult(data);
+      if (data?.success) {
         toast.success("Test email sent successfully!");
-        loadLogs();
       } else {
-        toast.error(result.error || "Failed to send test email");
+        toast.error(data?.error || "Failed to send test email");
       }
     } catch (err: any) {
+      setTestResult({ success: false, error: err.message });
       toast.error(err.message || "Failed to send test email");
-      setLastTestResult({ success: false, error: err.message });
     } finally {
       setSending(false);
     }
   };
 
-  const handleRetry = async (logId: string) => {
+  const handleConnectionTest = async () => {
+    setTestingConnection(true);
+    setConnectionResult(null);
     try {
-      const result = await retryEmail(logId);
-      if (result.success) {
-        toast.success("Email resent successfully!");
-        loadLogs();
+      const { data, error } = await supabase.functions.invoke("smtp-config", {
+        method: "POST",
+        body: { action: "connection-test" },
+      });
+      if (error) throw error;
+      setConnectionResult(data);
+      if (data?.success) {
+        toast.success("SMTP connection successful!");
       } else {
-        toast.error(result.error || "Failed to resend email");
+        toast.error(data?.error || "Connection test failed");
       }
     } catch (err: any) {
-      toast.error(err.message || "Failed to resend email");
+      setConnectionResult({ success: false, error: err.message });
+      toast.error(err.message || "Connection test failed");
+    } finally {
+      setTestingConnection(false);
     }
   };
 
-  const handleSelectLog = (log: EmailLog) => {
-    setSelectedLog(log);
-    loadDeliveryEvents(log.id);
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Email Diagnostics</h1>
-          <p className="text-muted-foreground">Test and debug email delivery</p>
+          <h1 className="text-2xl font-bold">Email (SMTP) Configuration</h1>
+          <p className="text-muted-foreground">Configure SMTP settings and test email delivery</p>
         </div>
-        <Button onClick={loadHealth} variant="outline" size="sm">
+        <Button onClick={loadConfig} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh Status
+          Refresh
         </Button>
       </div>
 
-      {/* Health Checklist */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            <CardTitle>Health Checklist</CardTitle>
-          </div>
-          <CardDescription>Email service configuration status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {healthLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Checking health...
-            </div>
-          ) : health ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <div className="flex items-center gap-3 p-3 rounded-lg border">
-                {health.resendConfigured ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <XCircle className="h-5 w-5 text-red-500" />
-                )}
-                <div>
-                  <p className="font-medium text-sm">Resend API Key</p>
-                  <p className="text-xs text-muted-foreground">
-                    {health.resendConfigured ? "Configured" : "Missing"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg border">
-                {health.fromEmailConfigured ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                ) : (
-                  <XCircle className="h-5 w-5 text-red-500" />
-                )}
-                <div>
-                  <p className="font-medium text-sm">From Email</p>
-                  <p className="text-xs text-muted-foreground">onboarding@resend.dev</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
-                <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                <div>
-                  <p className="font-medium text-sm">Domain Verification</p>
-                  <p className="text-xs text-muted-foreground">
-                    Using test mode (onboarding@resend.dev). To send to any email, 
-                    <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer" className="text-primary underline ml-1">
-                      verify your domain
-                    </a>
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg border">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <div>
-                  <p className="font-medium text-sm">Last Check</p>
-                  <p className="text-xs text-muted-foreground">
-                    {format(new Date(health.timestamp), "HH:mm:ss")}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-red-500">
-              <XCircle className="h-5 w-5" />
-              Failed to check email service health
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Tabs defaultValue="test" className="space-y-4">
+      <Tabs defaultValue="settings" className="space-y-4">
         <TabsList>
+          <TabsTrigger value="settings">SMTP Settings</TabsTrigger>
           <TabsTrigger value="test">Send Test Email</TabsTrigger>
-          <TabsTrigger value="logs">Email Logs</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="troubleshooting">Troubleshooting</TabsTrigger>
+          <TabsTrigger value="health">Health & Diagnostics</TabsTrigger>
         </TabsList>
 
+        {/* Section 1: SMTP Settings */}
+        <TabsContent value="settings">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  <CardTitle>SMTP Server</CardTitle>
+                </div>
+                <CardDescription>Configure your SMTP server connection</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="host">Host *</Label>
+                  <Input id="host" placeholder="smtp.example.com" value={host} onChange={(e) => setHost(e.target.value)} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="port">Port *</Label>
+                    <Input id="port" type="number" min={1} max={65535} value={port} onChange={(e) => setPort(parseInt(e.target.value) || 587)} />
+                    <p className="text-xs text-muted-foreground">Use 2525 for cloud-hosted environments</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Secure (TLS)</Label>
+                    <div className="flex items-center gap-2 pt-2">
+                      <Switch checked={secure} onCheckedChange={setSecure} />
+                      <span className="text-sm text-muted-foreground">{secure ? "TLS on connect (465)" : "STARTTLS / Plain"}</span>
+                    </div>
+                  </div>
+                </div>
+                <Separator />
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username *</Label>
+                  <Input id="username" placeholder="your-smtp-username" value={username} onChange={(e) => setUsername(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder={config ? "••••••••  (leave blank to keep current)" : "Enter SMTP password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Password is encrypted at rest. Leave blank to keep existing password.</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  <CardTitle>Sender Settings</CardTitle>
+                </div>
+                <CardDescription>Configure default sender information</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fromName">From Name</Label>
+                  <Input id="fromName" placeholder="Your App Name" value={fromName} onChange={(e) => setFromName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fromEmail">From Email *</Label>
+                  <Input id="fromEmail" type="email" placeholder="noreply@yourdomain.com" value={fromEmail} onChange={(e) => setFromEmail(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="replyTo">Reply-To (optional)</Label>
+                  <Input id="replyTo" type="email" placeholder="support@yourdomain.com" value={replyTo} onChange={(e) => setReplyTo(e.target.value)} />
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div>
+                    <p className="font-medium text-sm">Enable SMTP</p>
+                    <p className="text-xs text-muted-foreground">Toggle email sending on/off</p>
+                  </div>
+                  <Switch checked={enabled} onCheckedChange={setEnabled} />
+                </div>
+                <Button onClick={handleSave} disabled={saving} className="w-full">
+                  {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+                  Save Settings
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Section 2: Send Test Email */}
         <TabsContent value="test">
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
@@ -376,627 +298,112 @@ export default function AdminEmailDiagnostics() {
                   <Send className="h-5 w-5" />
                   <CardTitle>Send Test Email</CardTitle>
                 </div>
-                <CardDescription>
-                  Send a test email to verify delivery is working
-                </CardDescription>
+                <CardDescription>Verify SMTP delivery is working (rate limited: 1/min, 30/day)</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="testTo">Recipient Email *</Label>
-                  <Input
-                    id="testTo"
-                    type="email"
-                    placeholder="recipient@example.com"
-                    value={testTo}
-                    onChange={(e) => setTestTo(e.target.value)}
-                  />
+                  <Input id="testTo" type="email" placeholder="recipient@example.com" value={testTo} onChange={(e) => setTestTo(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="testTemplate">Template</Label>
-                  <Select value={testTemplate} onValueChange={setTestTemplate}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TEMPLATE_OPTIONS.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="testSubject">Subject (optional)</Label>
+                  <Input id="testSubject" placeholder="Test Email" value={testSubject} onChange={(e) => setTestSubject(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="testSubject">Custom Subject (optional)</Label>
-                  <Input
-                    id="testSubject"
-                    placeholder="Override template subject..."
-                    value={testSubject}
-                    onChange={(e) => setTestSubject(e.target.value)}
-                  />
+                  <Label htmlFor="testMessage">Message (optional)</Label>
+                  <Input id="testMessage" placeholder="Custom message body..." value={testMessage} onChange={(e) => setTestMessage(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="testBody">Custom Body (optional)</Label>
-                  <Textarea
-                    id="testBody"
-                    placeholder="Override template body..."
-                    value={testBody}
-                    onChange={(e) => setTestBody(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-                <Button 
-                  onClick={handleSendTest} 
-                  disabled={sending || !testTo}
-                  className="w-full"
-                >
-                  {sending ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Mail className="h-4 w-4 mr-2" />
-                  )}
+                <Button onClick={handleTestEmail} disabled={sending || !testTo} className="w-full">
+                  {sending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
                   Send Test Email
                 </Button>
               </CardContent>
             </Card>
-
             <Card>
-              <CardHeader>
-                <CardTitle>Last Test Result</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle>Test Result</CardTitle></CardHeader>
               <CardContent>
-                {lastTestResult ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      {lastTestResult.success ? (
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                      ) : (
-                        <XCircle className="h-5 w-5 text-red-500" />
-                      )}
-                      <span className="font-medium">
-                        {lastTestResult.success ? "Email Sent" : "Send Failed"}
-                      </span>
-                    </div>
-                    
-                    {lastTestResult.success && (
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Resend Message ID:</span>
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
-                            {lastTestResult.resendMessageId}
-                          </code>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Email Log ID:</span>
-                          <code className="text-xs bg-muted px-2 py-1 rounded">
-                            {lastTestResult.emailLogId}
-                          </code>
-                        </div>
-                      </div>
-                    )}
-
-                    {!lastTestResult.success && (
-                      <div className="bg-red-50 dark:bg-red-950 p-3 rounded-lg">
-                        <p className="text-sm text-red-700 dark:text-red-300 font-medium">
-                          Error: {lastTestResult.error}
-                        </p>
-                        {lastTestResult.errorCode && (
-                          <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                            Code: {lastTestResult.errorCode}
-                          </p>
-                        )}
-                      </div>
+                {testResult ? (
+                  <div className="flex items-center gap-3">
+                    {testResult.success ? (
+                      <><CheckCircle className="h-5 w-5 text-green-500" /><div><p className="font-medium">Email Sent</p><p className="text-xs text-muted-foreground">{new Date().toISOString()}</p></div></>
+                    ) : (
+                      <><XCircle className="h-5 w-5 text-red-500" /><div><p className="font-medium text-red-600">Send Failed</p><p className="text-sm text-muted-foreground mt-1">{testResult.error}</p></div></>
                     )}
                   </div>
                 ) : (
-                  <p className="text-muted-foreground text-sm">
-                    No test email sent yet. Use the form to send a test.
-                  </p>
+                  <p className="text-muted-foreground text-sm">No test email sent yet.</p>
                 )}
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="logs">
-          <Card>
-            <CardHeader>
-              <CardTitle>Email Logs</CardTitle>
-              <CardDescription>View and search email send history</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {/* Filters */}
-              <div className="flex flex-wrap gap-3 mb-4">
-                <div className="flex-1 min-w-[200px]">
-                  <Input
-                    placeholder="Search by email..."
-                    value={searchEmail}
-                    onChange={(e) => setSearchEmail(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <div className="flex-1 min-w-[200px]">
-                  <Input
-                    placeholder="Search by Resend ID..."
-                    value={searchMessageId}
-                    onChange={(e) => setSearchMessageId(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                <Select value={filterTemplate} onValueChange={setFilterTemplate}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="All templates" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All templates</SelectItem>
-                    {TEMPLATE_OPTIONS.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="All statuses" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All statuses</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="sent">Sent</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="failed">Failed</SelectItem>
-                    <SelectItem value="bounced">Bounced</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button onClick={loadLogs} variant="outline" size="icon">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </div>
-
-              {/* Logs Table */}
-              <ScrollArea className="h-[400px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Time</TableHead>
-                      <TableHead>Recipient</TableHead>
-                      <TableHead>Template</TableHead>
-                      <TableHead>Subject</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8">
-                          <Loader2 className="h-6 w-6 animate-spin mx-auto" />
-                        </TableCell>
-                      </TableRow>
-                    ) : logs.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          No email logs found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      logs.map((log) => (
-                        <TableRow 
-                          key={log.id} 
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => handleSelectLog(log)}
-                        >
-                          <TableCell className="text-sm">
-                            {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
-                          </TableCell>
-                          <TableCell className="font-mono text-sm">{log.to_email}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{log.template_key}</Badge>
-                          </TableCell>
-                          <TableCell className="max-w-[200px] truncate text-sm">
-                            {log.subject}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={STATUS_COLORS[log.status] || ""}>
-                              {log.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {log.status === "failed" && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRetry(log.id);
-                                }}
-                              >
-                                <RefreshCw className="h-3 w-3 mr-1" />
-                                Retry
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
-
-              {/* Selected Log Details */}
-              {selectedLog && (
-                <div className="mt-4 p-4 border rounded-lg bg-muted/30">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-medium">Email Details</h4>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setSelectedLog(null)}
-                    >
-                      Close
-                    </Button>
-                  </div>
-                  <div className="grid gap-3 text-sm">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <span className="text-muted-foreground">To:</span>{" "}
-                        <span className="font-mono">{selectedLog.to_email}</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Template:</span>{" "}
-                        {selectedLog.template_key}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Subject:</span>{" "}
-                        {selectedLog.subject}
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Status:</span>{" "}
-                        <Badge className={STATUS_COLORS[selectedLog.status] || ""}>
-                          {selectedLog.status}
-                        </Badge>
-                      </div>
-                      {selectedLog.resend_message_id && (
-                        <div className="col-span-2">
-                          <span className="text-muted-foreground">Resend ID:</span>{" "}
-                          <code className="bg-muted px-1 rounded text-xs">
-                            {selectedLog.resend_message_id}
-                          </code>
-                        </div>
-                      )}
-                      {selectedLog.error_message && (
-                        <div className="col-span-2 text-red-600">
-                          <span className="text-muted-foreground">Error:</span>{" "}
-                          {selectedLog.error_message}
-                        </div>
-                      )}
-                    </div>
-
-                    {deliveryEvents.length > 0 && (
-                      <div className="mt-2">
-                        <p className="text-muted-foreground mb-2">Delivery Events:</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {deliveryEvents.map((event) => (
-                            <Badge key={event.id} variant="secondary">
-                              {event.event_type} @ {format(new Date(event.occurred_at), "HH:mm")}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Resend Integration */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Key className="h-5 w-5" />
-                  <CardTitle>Resend Integration</CardTitle>
-                </div>
-                <CardDescription>
-                  Configure your Resend API connection
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>API Key Status</Label>
-                  <div className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30">
-                    {health?.resendConfigured ? (
-                      <>
-                        <CheckCircle className="h-5 w-5 text-green-500" />
-                        <div className="flex-1">
-                          <p className="font-medium text-sm">API Key Configured</p>
-                          <p className="text-xs text-muted-foreground">
-                            {showApiKeyHint ? "RESEND_API_KEY is set in secrets" : "••••••••••••••••"}
-                          </p>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => setShowApiKeyHint(!showApiKeyHint)}
-                        >
-                          {showApiKeyHint ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </Button>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-5 w-5 text-red-500" />
-                        <div className="flex-1">
-                          <p className="font-medium text-sm text-red-600">API Key Missing</p>
-                          <p className="text-xs text-muted-foreground">
-                            Add RESEND_API_KEY to your secrets
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    To update the API key, go to{" "}
-                    <a 
-                      href="https://resend.com/api-keys" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary underline"
-                    >
-                      Resend API Keys
-                    </a>
-                    {" "}and update the RESEND_API_KEY secret in your project settings.
-                  </p>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label>Domain Status</Label>
-                  <div className="flex items-center gap-3 p-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
-                    <AlertTriangle className="h-5 w-5 text-yellow-600" />
-                    <div>
-                      <p className="font-medium text-sm">Using Test Mode</p>
-                      <p className="text-xs text-muted-foreground">
-                        Currently using onboarding@resend.dev which only sends to verified emails.
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <a 
-                      href="https://resend.com/domains" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                    >
-                      <Globe className="h-4 w-4 mr-2" />
-                      Verify Domain in Resend
-                    </a>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Email Sender Settings */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  <CardTitle>Sender Settings</CardTitle>
-                </div>
-                <CardDescription>
-                  Configure default sender information for emails
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fromEmail">From Email Address</Label>
-                  <Input
-                    id="fromEmail"
-                    type="email"
-                    placeholder="noreply@yourdomain.com"
-                    value={fromEmail}
-                    onChange={(e) => setFromEmail(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Must use a verified domain in Resend, or use onboarding@resend.dev for testing
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="fromName">From Name</Label>
-                  <Input
-                    id="fromName"
-                    placeholder="Your App Name"
-                    value={fromName}
-                    onChange={(e) => setFromName(e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="replyTo">Reply-To Email (optional)</Label>
-                  <Input
-                    id="replyTo"
-                    type="email"
-                    placeholder="support@yourdomain.com"
-                    value={replyToEmail}
-                    onChange={(e) => setReplyToEmail(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Where replies to your emails should go
-                  </p>
-                </div>
-
-                <Button 
-                  onClick={handleSaveSettings} 
-                  disabled={settingsSaving}
-                  className="w-full"
-                >
-                  {settingsSaving ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  Save Sender Settings
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Email Categories */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  <CardTitle>Email Categories</CardTitle>
-                </div>
-                <CardDescription>
-                  Enable or disable email sending for different categories
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">Gym Invitations</p>
-                      <p className="text-xs text-muted-foreground">Invite members to gyms</p>
-                    </div>
-                    <Switch
-                      checked={enabledCategories.gym_invite}
-                      onCheckedChange={(checked) => 
-                        setEnabledCategories(prev => ({ ...prev, gym_invite: checked }))
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">Coach Invitations</p>
-                      <p className="text-xs text-muted-foreground">Invite clients to coaching</p>
-                    </div>
-                    <Switch
-                      checked={enabledCategories.coach_invite}
-                      onCheckedChange={(checked) => 
-                        setEnabledCategories(prev => ({ ...prev, coach_invite: checked }))
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">Event Invitations</p>
-                      <p className="text-xs text-muted-foreground">Event & team invites</p>
-                    </div>
-                    <Switch
-                      checked={enabledCategories.event_invite}
-                      onCheckedChange={(checked) => 
-                        setEnabledCategories(prev => ({ ...prev, event_invite: checked }))
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <p className="font-medium text-sm">Notifications</p>
-                      <p className="text-xs text-muted-foreground">System notifications</p>
-                    </div>
-                    <Switch
-                      checked={enabledCategories.notifications}
-                      onCheckedChange={(checked) => 
-                        setEnabledCategories(prev => ({ ...prev, notifications: checked }))
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Button 
-                    onClick={handleSaveSettings} 
-                    disabled={settingsSaving}
-                  >
-                    {settingsSaving ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
-                    Save Category Settings
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="troubleshooting">
+        {/* Section 3: Health & Diagnostics */}
+        <TabsContent value="health">
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                <CardTitle>Troubleshooting Guide</CardTitle>
+                <Activity className="h-5 w-5" />
+                <CardTitle>SMTP Health</CardTitle>
               </div>
+              <CardDescription>Status and connection diagnostics</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h4 className="font-medium mb-2">Common Issues</h4>
-                <div className="space-y-3">
-                  <div className="p-3 border rounded-lg">
-                    <p className="font-medium text-sm">Emails not being received</p>
-                    <ul className="text-sm text-muted-foreground mt-1 list-disc list-inside">
-                      <li>Check spam/junk folder</li>
-                      <li>Verify domain is validated in Resend dashboard</li>
-                      <li>Check if recipient email is on suppression list</li>
-                      <li>Use a custom domain instead of @resend.dev for better deliverability</li>
-                    </ul>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="flex items-center gap-3 p-3 rounded-lg border">
+                  {enabled ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-muted-foreground" />}
+                  <div>
+                    <p className="font-medium text-sm">Enabled</p>
+                    <p className="text-xs text-muted-foreground">{enabled ? "Yes" : "No"}</p>
                   </div>
-                  <div className="p-3 border rounded-lg">
-                    <p className="font-medium text-sm">API Key Issues</p>
-                    <ul className="text-sm text-muted-foreground mt-1 list-disc list-inside">
-                      <li>Verify RESEND_API_KEY is set in Supabase secrets</li>
-                      <li>Check API key hasn't expired or been revoked</li>
-                      <li>Ensure API key has proper permissions</li>
-                    </ul>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg border">
+                  {host ? <CheckCircle className="h-5 w-5 text-green-500" /> : <XCircle className="h-5 w-5 text-red-500" />}
+                  <div>
+                    <p className="font-medium text-sm">Host</p>
+                    <p className="text-xs text-muted-foreground">{host || "Not configured"}</p>
                   </div>
-                  <div className="p-3 border rounded-lg">
-                    <p className="font-medium text-sm">Bounces & Complaints</p>
-                    <ul className="text-sm text-muted-foreground mt-1 list-disc list-inside">
-                      <li>Check Resend dashboard for suppression list</li>
-                      <li>Remove invalid addresses from mailing</li>
-                      <li>Contact Resend support for unsuppression</li>
-                    </ul>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg border">
+                  <Shield className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium text-sm">Last Updated</p>
+                    <p className="text-xs text-muted-foreground">
+                      {config?.updated_at ? format(new Date(config.updated_at), "PPp") : "Never"}
+                    </p>
                   </div>
                 </div>
               </div>
 
               <Separator />
 
-              <div>
-                <h4 className="font-medium mb-2">External Resources</h4>
-                <div className="flex flex-col gap-2">
-                  <a 
-                    href="https://resend.com/domains" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Resend Domain Management
-                  </a>
-                  <a 
-                    href="https://resend.com/api-keys" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Resend API Keys
-                  </a>
-                  <a 
-                    href="https://resend.com/docs" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-sm text-primary hover:underline"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Resend Documentation
-                  </a>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Connection Test</p>
+                  <p className="text-sm text-muted-foreground">Test SMTP server connectivity (handshake only, no email sent)</p>
                 </div>
+                <Button onClick={handleConnectionTest} disabled={testingConnection || !host} variant="outline">
+                  {testingConnection ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plug className="h-4 w-4 mr-2" />}
+                  Run Connection Test
+                </Button>
+              </div>
+
+              {connectionResult && (
+                <div className={`flex items-center gap-3 p-3 rounded-lg border ${connectionResult.success ? "border-green-200 bg-green-50 dark:bg-green-950" : "border-red-200 bg-red-50 dark:bg-red-950"}`}>
+                  {connectionResult.success ? (
+                    <><CheckCircle className="h-5 w-5 text-green-500" /><p className="text-sm font-medium text-green-700 dark:text-green-300">Connection successful</p></>
+                  ) : (
+                    <><XCircle className="h-5 w-5 text-red-500" /><div><p className="text-sm font-medium text-red-700 dark:text-red-300">Connection failed</p><p className="text-xs text-red-600 dark:text-red-400 mt-1">{connectionResult.error}</p></div></>
+                  )}
+                </div>
+              )}
+
+              <div className="p-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-800">
+                <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">⚠️ Port Restrictions</p>
+                <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                  Cloud-hosted environments may block standard SMTP ports (25, 465, 587).
+                  Use port 2525 if your SMTP provider supports it (e.g., SendGrid, Mailgun, Postmark).
+                </p>
               </div>
             </CardContent>
           </Card>
