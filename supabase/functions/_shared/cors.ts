@@ -36,6 +36,7 @@ export function corsHeaders(req: Request, extraHeaders?: string): Record<string,
 
   const headers: Record<string, string> = {
     "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
     "Access-Control-Allow-Headers": extraHeaders
       ? `${ALWAYS_ALLOWED_HEADERS}, ${extraHeaders}`
       : ALWAYS_ALLOWED_HEADERS,
