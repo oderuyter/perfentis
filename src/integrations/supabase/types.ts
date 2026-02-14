@@ -1934,6 +1934,8 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string | null
+          cta_defaults_json: Json | null
+          defaults_json: Json | null
           design_json: Json | null
           editor_mode: string
           html_content: string
@@ -1944,12 +1946,15 @@ export type Database = {
           status: string
           subject: string
           template_id: string
+          theme_json: Json | null
           variables_used: string[] | null
           version_number: number
         }
         Insert: {
           created_at?: string
           created_by?: string | null
+          cta_defaults_json?: Json | null
+          defaults_json?: Json | null
           design_json?: Json | null
           editor_mode?: string
           html_content?: string
@@ -1960,12 +1965,15 @@ export type Database = {
           status?: string
           subject?: string
           template_id: string
+          theme_json?: Json | null
           variables_used?: string[] | null
           version_number?: number
         }
         Update: {
           created_at?: string
           created_by?: string | null
+          cta_defaults_json?: Json | null
+          defaults_json?: Json | null
           design_json?: Json | null
           editor_mode?: string
           html_content?: string
@@ -1976,6 +1984,7 @@ export type Database = {
           status?: string
           subject?: string
           template_id?: string
+          theme_json?: Json | null
           variables_used?: string[] | null
           version_number?: number
         }

@@ -111,26 +111,41 @@ const handler = async (req: Request): Promise<Response> => {
     let emailHtml: string;
     let templateVersionId: string | null = null;
 
+    const { data: dbTemplate } = await supabase
+      .from("email_templates")
+      .select("id")
+      .eq("template_key", templateKey)
+      .eq("is_enabled", true)
+      .maybeSingle();
+
+    const dbTemplateId = dbTemplate?.id || "00000000-0000-0000-0000-000000000000";
+
     const { data: dbVersion } = await supabase
       .from("email_template_versions")
-      .select("id, subject, html_content, version_number")
+      .select("id, subject, html_content, version_number, defaults_json, cta_defaults_json")
       .eq("status", "published")
-      .eq("template_id",
-        // subquery: get template id by key
-        (await supabase.from("email_templates").select("id").eq("template_key", templateKey).eq("is_enabled", true).maybeSingle()).data?.id || "00000000-0000-0000-0000-000000000000"
-      )
+      .eq("template_id", dbTemplateId)
       .maybeSingle();
 
     const appUrl = data.appUrl || Deno.env.get("APP_URL") || "https://calm-train-flow.lovable.app";
-    const enrichedData = { ...data, appUrl, settingsUrl: `${appUrl}/profile` };
+
+    // Build enriched data: start with template defaults, then layer runtime data
+    const templateDefaults: Record<string, any> = dbVersion?.defaults_json || {};
+    const ctaDefaults: Record<string, any> = dbVersion?.cta_defaults_json || {};
+    
+    // Apply CTA defaults
+    if (ctaDefaults.ctaLabel && !data["cta.label"]) templateDefaults["cta.label"] = ctaDefaults.ctaLabel;
+    if (ctaDefaults.ctaUrl && !data["cta.url"]) templateDefaults["cta.url"] = ctaDefaults.ctaUrl;
+    if (ctaDefaults.secondaryCtaUrl && !data["cta.secondary_url"]) templateDefaults["cta.secondary_url"] = ctaDefaults.secondaryCtaUrl;
+    
+    // Merge: defaults < runtime data < system values
+    const enrichedData = { ...templateDefaults, ...data, appUrl, settingsUrl: `${appUrl}/profile` };
 
     if (dbVersion) {
-      // Use database-managed template
       templateVersionId = dbVersion.id;
       emailSubject = subject || renderMergeTags(dbVersion.subject, enrichedData);
       emailHtml = renderMergeTags(dbVersion.html_content, enrichedData);
     } else {
-      // Fallback to hardcoded template
       const templateDef = templates[templateKey];
       if (!templateDef) {
         return new Response(
