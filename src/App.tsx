@@ -128,6 +128,8 @@ import AdminExerciseSubmissions from "./pages/admin-portal/AdminExerciseSubmissi
 import AdminNutrition from "./pages/admin-portal/AdminNutrition";
 import AdminExternalGymSubmissions from "./pages/admin-portal/AdminExternalGymSubmissions";
 import AdminConnectedDevices from "./pages/admin-portal/AdminConnectedDevices";
+import AdminEmailTemplates from "./pages/admin-portal/AdminEmailTemplates";
+import AdminEmailTemplateEditor from "./pages/admin-portal/AdminEmailTemplateEditor";
 import NutritionLibrary from "./pages/NutritionLibrary";
 import RunTracker from "./pages/RunTracker";
 
@@ -305,6 +307,8 @@ function AppRoutes() {
         <Route path="nutrition" element={<AdminNutrition />} />
         <Route path="external-gym-submissions" element={<AdminExternalGymSubmissions />} />
         <Route path="connected-devices" element={<AdminConnectedDevices />} />
+        <Route path="email-templates" element={<AdminEmailTemplates />} />
+        <Route path="email-templates/:templateId" element={<AdminEmailTemplateEditor />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />

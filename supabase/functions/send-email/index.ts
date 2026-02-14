@@ -32,6 +32,26 @@ async function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/**
+ * Replace merge tags like {{user.first_name}} with values from data.
+ * Supports both dot-notation keys and flat keys.
+ */
+function renderMergeTags(template: string, data: Record<string, any>): string {
+  return template.replace(/\{\{([^}]+)\}\}/g, (_match, key: string) => {
+    const trimmed = key.trim();
+    // Try direct key first (e.g., data["user.first_name"])
+    if (data[trimmed] !== undefined) return String(data[trimmed]);
+    // Try dot-notation (e.g., data.user?.first_name)
+    const parts = trimmed.split(".");
+    let val: any = data;
+    for (const p of parts) {
+      if (val == null) break;
+      val = val[p];
+    }
+    return val !== undefined && val !== null ? String(val) : `{{${trimmed}}}`;
+  });
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return handleCorsPreFlight(req);
@@ -86,19 +106,41 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const templateDef = templates[templateKey];
-    if (!templateDef) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Unknown template: ${templateKey}`, errorCode: "TEMPLATE_ERROR" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
+    // Try to resolve template from database first (published version)
+    let emailSubject: string;
+    let emailHtml: string;
+    let templateVersionId: string | null = null;
+
+    const { data: dbVersion } = await supabase
+      .from("email_template_versions")
+      .select("id, subject, html_content, version_number")
+      .eq("status", "published")
+      .eq("template_id",
+        // subquery: get template id by key
+        (await supabase.from("email_templates").select("id").eq("template_key", templateKey).eq("is_enabled", true).maybeSingle()).data?.id || "00000000-0000-0000-0000-000000000000"
+      )
+      .maybeSingle();
 
     const appUrl = data.appUrl || Deno.env.get("APP_URL") || "https://calm-train-flow.lovable.app";
     const enrichedData = { ...data, appUrl, settingsUrl: `${appUrl}/profile` };
 
-    const emailSubject = subject || templateDef.subject(enrichedData);
-    const emailHtml = templateDef.html(enrichedData);
+    if (dbVersion) {
+      // Use database-managed template
+      templateVersionId = dbVersion.id;
+      emailSubject = subject || renderMergeTags(dbVersion.subject, enrichedData);
+      emailHtml = renderMergeTags(dbVersion.html_content, enrichedData);
+    } else {
+      // Fallback to hardcoded template
+      const templateDef = templates[templateKey];
+      if (!templateDef) {
+        return new Response(
+          JSON.stringify({ success: false, error: `Unknown template: ${templateKey}`, errorCode: "TEMPLATE_ERROR" }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      emailSubject = subject || templateDef.subject(enrichedData);
+      emailHtml = templateDef.html(enrichedData);
+    }
 
     // Create email log entry
     let logId = emailLogId;
@@ -113,7 +155,7 @@ const handler = async (req: Request): Promise<Response> => {
           context_id: contextId || null,
           actor_user_id: actorUserId || null,
           status: "pending",
-          metadata: { data: enrichedData },
+          metadata: { data: enrichedData, template_version_id: templateVersionId },
         })
         .select("id")
         .single();

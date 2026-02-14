@@ -1930,6 +1930,98 @@ export type Database = {
         }
         Relationships: []
       }
+      email_template_versions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          design_json: Json | null
+          editor_mode: string
+          html_content: string
+          id: string
+          notes: string | null
+          preheader: string | null
+          published_at: string | null
+          status: string
+          subject: string
+          template_id: string
+          variables_used: string[] | null
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          design_json?: Json | null
+          editor_mode?: string
+          html_content?: string
+          id?: string
+          notes?: string | null
+          preheader?: string | null
+          published_at?: string | null
+          status?: string
+          subject?: string
+          template_id: string
+          variables_used?: string[] | null
+          version_number?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          design_json?: Json | null
+          editor_mode?: string
+          html_content?: string
+          id?: string
+          notes?: string | null
+          preheader?: string | null
+          published_at?: string | null
+          status?: string
+          subject?: string
+          template_id?: string
+          variables_used?: string[] | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_template_versions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_critical: boolean
+          is_enabled: boolean
+          name: string
+          template_key: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_critical?: boolean
+          is_enabled?: boolean
+          name: string
+          template_key: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_critical?: boolean
+          is_enabled?: boolean
+          name?: string
+          template_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_assets: {
         Row: {
           alt_text: string | null
