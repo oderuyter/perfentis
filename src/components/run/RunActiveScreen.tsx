@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Pause, Play, Square, Flag, X } from 'lucide-react';
+import { Pause, Play, Square, Flag, X, Satellite, AlertTriangle, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { RunState, formatPace, formatRunDuration, formatDistance } from '@/types/run';
+import { TrackingState, GpsQuality, getQualityColor, getQualityLabel } from '@/lib/gpsTrackingManager';
 
 interface Props {
   state: RunState;
+  gpsState: TrackingState;
   onPause: () => void;
   onResume: () => void;
   onStop: () => Promise<string | null>;
@@ -17,10 +19,11 @@ interface Props {
   onDiscard: () => void;
 }
 
-export function RunActiveScreen({ state, onPause, onResume, onStop, onLap, onDiscard }: Props) {
+export function RunActiveScreen({ state, gpsState, onPause, onResume, onStop, onLap, onDiscard }: Props) {
   const [showStopDialog, setShowStopDialog] = useState(false);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showBgHelp, setShowBgHelp] = useState(false);
   const isPaused = state.status === 'paused';
 
   const handleStop = async () => {
@@ -32,11 +35,35 @@ export function RunActiveScreen({ state, onPause, onResume, onStop, onLap, onDis
   return (
     <div className="min-h-[100dvh] gradient-page flex flex-col">
       {/* Status bar */}
-      <div className={`text-center py-2 text-xs font-semibold uppercase tracking-widest ${
+      <div className={`text-center py-2 text-xs font-semibold uppercase tracking-widest flex items-center justify-center gap-3 ${
         isPaused ? 'bg-yellow-500/20 text-yellow-400' : 'bg-primary/10 text-primary'
       }`}>
-        {isPaused ? '⏸ Paused' : `🏃 ${state.modality === 'walk' ? 'Walking' : 'Running'}`}
+        <span>{isPaused ? '⏸ Paused' : `🏃 ${state.modality === 'walk' ? 'Walking' : 'Running'}`}</span>
+        {/* GPS Quality Indicator */}
+        <span className={`flex items-center gap-1 text-[10px] ${getQualityColor(gpsState.quality)}`}>
+          <Satellite className="h-3 w-3" />
+          {getQualityLabel(gpsState.quality)}
+        </span>
       </div>
+
+      {/* Background tracking warning */}
+      {gpsState.backgroundWarning && !isPaused && (
+        <button
+          onClick={() => setShowBgHelp(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs"
+        >
+          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+          <span>Background tracking limited in browser. Keep screen on for best results.</span>
+        </button>
+      )}
+
+      {/* Wake Lock indicator */}
+      {gpsState.hasWakeLock && !isPaused && (
+        <div className="flex items-center justify-center gap-1.5 py-1 text-[10px] text-muted-foreground/60">
+          <Shield className="h-3 w-3" />
+          Screen wake lock active
+        </div>
+      )}
 
       {/* Main metrics */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 gap-4">
@@ -76,8 +103,8 @@ export function RunActiveScreen({ state, onPause, onResume, onStop, onLap, onDis
             unit="m"
           />
           <MetricTile
-            label="Laps"
-            value={`${state.laps.length}`}
+            label="Points"
+            value={`${gpsState.pointCount}`}
           />
         </div>
       </div>
@@ -85,7 +112,6 @@ export function RunActiveScreen({ state, onPause, onResume, onStop, onLap, onDis
       {/* Controls */}
       <div className="pb-safe px-6 py-6">
         <div className="flex items-center justify-center gap-6">
-          {/* Lap */}
           <Button
             variant="outline"
             size="icon"
@@ -96,7 +122,6 @@ export function RunActiveScreen({ state, onPause, onResume, onStop, onLap, onDis
             <Flag className="h-5 w-5" />
           </Button>
 
-          {/* Pause / Resume */}
           {isPaused ? (
             <Button
               size="icon"
@@ -115,7 +140,6 @@ export function RunActiveScreen({ state, onPause, onResume, onStop, onLap, onDis
             </Button>
           )}
 
-          {/* Stop */}
           <Button
             variant="destructive"
             size="icon"
@@ -170,6 +194,30 @@ export function RunActiveScreen({ state, onPause, onResume, onStop, onLap, onDis
             <AlertDialogAction onClick={onDiscard} className="bg-destructive text-destructive-foreground">
               Discard
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Background help dialog */}
+      <AlertDialog open={showBgHelp} onOpenChange={setShowBgHelp}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Background Tracking</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                Browser-based tracking has limitations when the screen is locked or the app is backgrounded.
+              </p>
+              <p className="font-medium text-foreground">For best results:</p>
+              <ul className="list-disc pl-5 space-y-1 text-sm">
+                <li>Keep this tab in the foreground</li>
+                <li>Prevent your screen from locking (Wake Lock is {gpsState.hasWakeLock ? 'active ✓' : 'unavailable'})</li>
+                <li>On iOS, use "Add to Home Screen" for better background support</li>
+                <li>For full background tracking, install the native app (coming soon)</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>Got it</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
