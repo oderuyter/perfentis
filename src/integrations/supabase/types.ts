@@ -7074,6 +7074,57 @@ export type Database = {
           },
         ]
       }
+      smtp_config: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          encrypted_password: string
+          from_email: string
+          from_name: string
+          host: string
+          id: string
+          password_iv: string
+          port: number
+          reply_to: string | null
+          secure: boolean
+          updated_at: string
+          updated_by: string | null
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          encrypted_password?: string
+          from_email?: string
+          from_name?: string
+          host?: string
+          id?: string
+          password_iv?: string
+          port?: number
+          reply_to?: string | null
+          secure?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          username?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          encrypted_password?: string
+          from_email?: string
+          from_name?: string
+          host?: string
+          id?: string
+          password_iv?: string
+          port?: number
+          reply_to?: string | null
+          secure?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          username?: string
+        }
+        Relationships: []
+      }
       social_posts: {
         Row: {
           comments_count: number

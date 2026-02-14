@@ -75,7 +75,7 @@ const navItems: NavItem[] = [
   { to: "/admin-portal/notifications", icon: Bell, label: "Notifications" },
   { to: "/admin-portal/imports", icon: FileUp, label: "Imports & Exports" },
   { to: "/admin-portal/logs", icon: FileText, label: "Logs & Audit" },
-  { to: "/admin-portal/email-diagnostics", icon: Mail, label: "Email Diagnostics" },
+  { to: "/admin-portal/email-diagnostics", icon: Mail, label: "Email (SMTP)" },
   { to: "/admin-portal/connected-devices", icon: Radio, label: "Connected Devices" },
   { to: "/admin-portal/settings", icon: Settings, label: "Settings" },
 ];

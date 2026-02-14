@@ -12,20 +12,20 @@ export interface SendEmailParams {
 export interface EmailResult {
   success: boolean;
   emailLogId?: string;
-  resendMessageId?: string;
   error?: string;
   errorCode?: string;
 }
 
 export interface EmailHealthCheck {
   status: string;
-  resendConfigured: boolean;
+  smtpConfigured: boolean;
+  smtpEnabled: boolean;
   fromEmailConfigured: boolean;
   timestamp: string;
 }
 
 /**
- * Send an email using the centralized email service
+ * Send an email using the centralized email service (SMTP-backed)
  */
 export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
   try {
@@ -42,21 +42,13 @@ export async function sendEmail(params: SendEmailParams): Promise<EmailResult> {
 
     if (error) {
       console.error("Email service error:", error);
-      return {
-        success: false,
-        error: error.message || "Failed to send email",
-        errorCode: "SERVICE_ERROR",
-      };
+      return { success: false, error: error.message || "Failed to send email", errorCode: "SERVICE_ERROR" };
     }
 
     return data as EmailResult;
   } catch (err: any) {
     console.error("Email service exception:", err);
-    return {
-      success: false,
-      error: err.message || "Unexpected error",
-      errorCode: "EXCEPTION",
-    };
+    return { success: false, error: err.message || "Unexpected error", errorCode: "EXCEPTION" };
   }
 }
 
@@ -67,18 +59,9 @@ export async function checkEmailHealth(): Promise<EmailHealthCheck | null> {
   try {
     const response = await fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email/health`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      { method: "GET", headers: { "Content-Type": "application/json" } }
     );
-
-    if (!response.ok) {
-      return null;
-    }
-
+    if (!response.ok) return null;
     return await response.json();
   } catch (err) {
     console.error("Health check failed:", err);
@@ -105,7 +88,6 @@ export async function sendTestEmail(to: string, subject?: string, body?: string)
  */
 export async function retryEmail(emailLogId: string): Promise<EmailResult> {
   try {
-    // Get the original email log
     const { data: log, error: fetchError } = await supabase
       .from("email_logs")
       .select("*")
@@ -113,18 +95,12 @@ export async function retryEmail(emailLogId: string): Promise<EmailResult> {
       .single();
 
     if (fetchError || !log) {
-      return {
-        success: false,
-        error: "Email log not found",
-        errorCode: "NOT_FOUND",
-      };
+      return { success: false, error: "Email log not found", errorCode: "NOT_FOUND" };
     }
 
-    // Extract metadata
     const metadata = log.metadata as { data?: Record<string, any> } | null;
     const originalData = metadata?.data || {};
 
-    // Resend using the email service
     const { data, error } = await supabase.functions.invoke("send-email", {
       body: {
         to: log.to_email,
@@ -138,25 +114,13 @@ export async function retryEmail(emailLogId: string): Promise<EmailResult> {
       },
     });
 
-    if (error) {
-      return {
-        success: false,
-        error: error.message,
-        errorCode: "RETRY_ERROR",
-      };
-    }
-
+    if (error) return { success: false, error: error.message, errorCode: "RETRY_ERROR" };
     return data as EmailResult;
   } catch (err: any) {
-    return {
-      success: false,
-      error: err.message,
-      errorCode: "EXCEPTION",
-    };
+    return { success: false, error: err.message, errorCode: "EXCEPTION" };
   }
 }
 
-// Template types for type safety
 export type EmailTemplate =
   | "gym_invite"
   | "coach_invite"
@@ -168,33 +132,3 @@ export type EmailTemplate =
   | "notification_system"
   | "notification_message"
   | "test_email";
-
-// Template data interfaces
-export interface GymInviteData {
-  recipientName?: string;
-  gymName: string;
-  membershipLevel?: string;
-  actionUrl: string;
-}
-
-export interface CoachInviteData {
-  recipientName?: string;
-  coachName: string;
-  serviceName?: string;
-  message?: string;
-  actionUrl: string;
-}
-
-export interface EventInviteData {
-  recipientName?: string;
-  eventName: string;
-  teamName?: string;
-  actionUrl: string;
-}
-
-export interface NotificationEmailData {
-  title?: string;
-  subject: string;
-  body: string;
-  actionUrl?: string;
-}
