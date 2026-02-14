@@ -6,7 +6,7 @@ import { RunSummaryScreen } from '@/components/run/RunSummaryScreen';
 
 export default function RunTracker() {
   const tracker = useRunTracker();
-  const { state } = tracker;
+  const { state, gpsState } = tracker;
   
   if (state.status === 'completed') {
     return <RunSummaryScreen state={state} onReset={tracker.reset} />;
@@ -16,6 +16,7 @@ export default function RunTracker() {
     return (
       <RunActiveScreen
         state={state}
+        gpsState={gpsState}
         onPause={tracker.pause}
         onResume={tracker.resume}
         onStop={tracker.stop}

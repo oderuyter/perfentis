@@ -5,11 +5,10 @@ import {
   RunState, RunModality, RunStatus, GpsPoint, RunPause, RunLap,
   haversineDistance, saveRunStateLocal, loadRunStateLocal, clearRunStateLocal, PrivacyLevel
 } from '@/types/run';
+import { GpsTrackingManager, TrackingPoint, TrackingState, GpsQuality } from '@/lib/gpsTrackingManager';
 import { toast } from 'sonner';
 
-const ACCURACY_THRESHOLD = 30; // meters – ignore points with worse accuracy
-const MIN_DISTANCE_THRESHOLD = 2; // meters – ignore if moved less than this
-const PACE_WINDOW = 10; // recent points for current pace
+const PACE_WINDOW = 10;
 
 function createInitialState(modality: RunModality, privacyLevel: PrivacyLevel): RunState {
   return {
@@ -43,10 +42,52 @@ export function useRunTracker() {
     return createInitialState('run', 'private');
   });
 
-  const watchIdRef = useRef<number | null>(null);
+  const [gpsState, setGpsState] = useState<TrackingState>({
+    isTracking: false,
+    quality: 'none' as GpsQuality,
+    pointCount: 0,
+    lastPointAt: null,
+    hasWakeLock: false,
+    backgroundWarning: false,
+  });
+
+  const trackerRef = useRef<GpsTrackingManager | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
+
+  // Create tracker once
+  useEffect(() => {
+    const manager = new GpsTrackingManager({
+      accuracyThreshold: 50,
+      minDistanceThreshold: 2,
+      minTimeInterval: 2000,
+      stationaryTimeInterval: 15000,
+      enableWakeLock: true,
+      enableKalmanFilter: true,
+    });
+
+    manager.onPoint((point: TrackingPoint) => {
+      addPoint(point);
+    });
+
+    manager.onStateChange((ts: TrackingState) => {
+      setGpsState(ts);
+    });
+
+    trackerRef.current = manager;
+
+    return () => {
+      manager.stop();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-resume tracking on mount if session was active
+  useEffect(() => {
+    if ((state.status === 'active') && trackerRef.current && !trackerRef.current.state.isTracking) {
+      trackerRef.current.start();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Persist state on every change
   useEffect(() => {
@@ -71,21 +112,18 @@ export function useRunTracker() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [state.status]);
 
-  const addPoint = useCallback((pos: GeolocationPosition) => {
+  const addPoint = useCallback((point: TrackingPoint) => {
     const s = stateRef.current;
     if (s.status !== 'active') return;
 
-    const point: GpsPoint = {
-      lat: pos.coords.latitude,
-      lng: pos.coords.longitude,
-      timestamp: pos.timestamp,
-      accuracy: pos.coords.accuracy,
-      altitude: pos.coords.altitude,
-      speed: pos.coords.speed,
+    const gpsPoint: GpsPoint = {
+      lat: point.lat,
+      lng: point.lng,
+      timestamp: point.timestamp,
+      accuracy: point.accuracy,
+      altitude: point.altitude,
+      speed: point.speed,
     };
-
-    // Filter poor accuracy
-    if (point.accuracy > ACCURACY_THRESHOLD) return;
 
     setState(prev => {
       const points = [...prev.points];
@@ -95,19 +133,18 @@ export function useRunTracker() {
 
       if (points.length > 0) {
         const last = points[points.length - 1];
-        const d = haversineDistance(last.lat, last.lng, point.lat, point.lng);
-        if (d < MIN_DISTANCE_THRESHOLD) return prev; // too small
+        const d = haversineDistance(last.lat, last.lng, gpsPoint.lat, gpsPoint.lng);
+        if (d < 1) return prev; // extra safety
         distanceMeters += d;
 
-        // Elevation from GPS (rough, will be refined by API later)
-        if (last.altitude != null && point.altitude != null) {
-          const elevDelta = point.altitude - last.altitude;
+        if (last.altitude != null && gpsPoint.altitude != null) {
+          const elevDelta = gpsPoint.altitude - last.altitude;
           if (elevDelta > 1) elevationGain += elevDelta;
           if (elevDelta < -1) elevationLoss += Math.abs(elevDelta);
         }
       }
 
-      points.push(point);
+      points.push(gpsPoint);
 
       // Current pace from recent window
       let currentPaceSecPerKm = prev.currentPaceSecPerKm;
@@ -126,7 +163,6 @@ export function useRunTracker() {
         }
       }
 
-      // Average pace
       const avgPaceSecPerKm = distanceMeters > 10 && prev.movingSeconds > 0
         ? (prev.movingSeconds / distanceMeters) * 1000
         : null;
@@ -143,43 +179,19 @@ export function useRunTracker() {
     });
   }, []);
 
-  const startGps = useCallback(() => {
-    if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported');
-      return;
-    }
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      addPoint,
-      (err) => {
-        if (err.code === err.PERMISSION_DENIED) {
-          toast.error('Location permission denied');
-        }
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 2000,
-        timeout: 10000,
-      }
-    );
-  }, [addPoint]);
-
-  const stopGps = useCallback(() => {
-    if (watchIdRef.current != null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-  }, []);
-
-  const start = useCallback((modality: RunModality, privacyLevel: PrivacyLevel = 'private') => {
+  const start = useCallback(async (modality: RunModality, privacyLevel: PrivacyLevel = 'private') => {
     const now = Date.now();
     setState({
       ...createInitialState(modality, privacyLevel),
       status: 'active',
       startedAt: now,
     });
-    startGps();
-  }, [startGps]);
+
+    const ok = await trackerRef.current?.start();
+    if (!ok) {
+      toast.error('Could not start GPS tracking. Check location permissions.');
+    }
+  }, []);
 
   const pause = useCallback(() => {
     setState(prev => ({
@@ -187,10 +199,10 @@ export function useRunTracker() {
       status: 'paused',
       pauses: [...prev.pauses, { pausedAt: Date.now(), resumedAt: null, durationMs: null }],
     }));
-    stopGps();
-  }, [stopGps]);
+    trackerRef.current?.pause();
+  }, []);
 
-  const resume = useCallback(() => {
+  const resume = useCallback(async () => {
     setState(prev => {
       const pauses = [...prev.pauses];
       if (pauses.length > 0) {
@@ -206,8 +218,8 @@ export function useRunTracker() {
       }
       return { ...prev, status: 'active', pauses };
     });
-    startGps();
-  }, [startGps]);
+    await trackerRef.current?.resume();
+  }, []);
 
   const markLap = useCallback(() => {
     setState(prev => {
@@ -223,11 +235,10 @@ export function useRunTracker() {
   }, []);
 
   const stop = useCallback(async (): Promise<string | null> => {
-    stopGps();
+    trackerRef.current?.stop();
     const s = stateRef.current;
     const endedAt = Date.now();
 
-    // Finalize pauses
     const pauses = s.pauses.map(p => {
       if (!p.resumedAt) return { ...p, resumedAt: endedAt, durationMs: endedAt - p.pausedAt };
       return p;
@@ -252,7 +263,6 @@ export function useRunTracker() {
 
     setState(finalState);
 
-    // Save to DB
     if (!user) return null;
     try {
       const { data: session, error: sessionErr } = await supabase
@@ -284,7 +294,7 @@ export function useRunTracker() {
 
       if (sessionErr) throw sessionErr;
 
-      // Save route points in batches of 500
+      // Save route points in batches
       if (s.points.length > 0) {
         const batchSize = 500;
         for (let i = 0; i < s.points.length; i += batchSize) {
@@ -302,7 +312,6 @@ export function useRunTracker() {
         }
       }
 
-      // Save pauses
       if (pauses.length > 0) {
         await supabase.from('activity_pauses').insert(
           pauses.map(p => ({
@@ -314,7 +323,6 @@ export function useRunTracker() {
         );
       }
 
-      // Save laps
       if (s.laps.length > 0) {
         await supabase.from('activity_laps').insert(
           s.laps.map(l => ({
@@ -328,7 +336,6 @@ export function useRunTracker() {
         );
       }
 
-      // Create simplified route
       const simplifiedPoints = simplifyRoute(s.points, 50);
       const bbox = computeBbox(s.points);
       await supabase.from('activity_routes').insert({
@@ -338,10 +345,9 @@ export function useRunTracker() {
         total_points: s.points.length,
       });
 
-      // Trigger elevation computation (fire and forget)
       supabase.functions.invoke('compute-elevation', {
         body: { sessionId: session.id },
-      }).catch(() => { /* will retry later */ });
+      }).catch(() => {});
 
       clearRunStateLocal();
       setState(prev => ({ ...prev, sessionId: session.id }));
@@ -353,22 +359,21 @@ export function useRunTracker() {
       saveRunStateLocal(finalState);
       return null;
     }
-  }, [user, stopGps]);
+  }, [user]);
 
   const discard = useCallback(() => {
-    stopGps();
+    trackerRef.current?.stop();
     clearRunStateLocal();
     setState(createInitialState('run', 'private'));
-  }, [stopGps]);
+  }, []);
 
   const reset = useCallback(() => {
     setState(createInitialState('run', 'private'));
   }, []);
 
-  return { state, start, pause, resume, stop, markLap, discard, reset };
+  return { state, gpsState, start, pause, resume, stop, markLap, discard, reset };
 }
 
-// Simple route simplification (keep every Nth point)
 function simplifyRoute(points: GpsPoint[], maxPoints: number): GpsPoint[] {
   if (points.length <= maxPoints) return points;
   const step = Math.ceil(points.length / maxPoints);

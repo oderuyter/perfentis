@@ -2,11 +2,14 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Share2, Download, MapPin, Clock, TrendingUp, Mountain, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNavigate } from 'react-router-dom';
 import { RunState, formatPace, formatRunDuration, formatDistance, RunSplit } from '@/types/run';
 import { RunRouteMap } from './RunRouteMap';
 import { RunCharts } from './RunCharts';
+import { smoothGpsPoints } from '@/lib/gpsTrackingManager';
 
 interface Props {
   state: RunState;
@@ -16,6 +19,12 @@ interface Props {
 export function RunSummaryScreen({ state, onReset }: Props) {
   const navigate = useNavigate();
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [useSmoothed, setUseSmoothed] = useState(true);
+
+  const displayPoints = useMemo(() => {
+    if (!useSmoothed || state.points.length < 3) return state.points;
+    return smoothGpsPoints(state.points);
+  }, [state.points, useSmoothed]);
 
   const handleDone = () => {
     onReset();
@@ -144,7 +153,20 @@ export function RunSummaryScreen({ state, onReset }: Props) {
         style={{ height: 220 }}
       >
         {state.points.length > 1 ? (
-          <RunRouteMap points={state.points} />
+          <div className="relative">
+            <RunRouteMap points={displayPoints} />
+            <div className="absolute bottom-3 right-3 z-[400] flex items-center gap-2 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-border/50">
+              <Label htmlFor="smooth-toggle" className="text-[10px] uppercase tracking-wider text-muted-foreground cursor-pointer">
+                {useSmoothed ? 'Smoothed' : 'Raw GPS'}
+              </Label>
+              <Switch
+                id="smooth-toggle"
+                checked={useSmoothed}
+                onCheckedChange={setUseSmoothed}
+                className="scale-75"
+              />
+            </div>
+          </div>
         ) : (
           <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
             <MapPin className="h-4 w-4 mr-2" />
