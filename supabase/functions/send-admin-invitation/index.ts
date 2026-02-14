@@ -1,24 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-interface InvitationRequest {
-  email: string;
-  name?: string;
-  role?: string;
-}
+import { corsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreFlight(req);
   }
+
+  const cors = corsHeaders(req);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -50,6 +41,26 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Only admins can invite users");
     }
 
+    // ── Rate limit: 5/min, 30/day per admin ──
+    const rl = await checkRateLimit({
+      functionName: "send-admin-invitation",
+      actorKey: user.id,
+      maxPerMinute: 5,
+      maxPerDay: 30,
+    });
+    if (!rl.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { status: 429, headers: { ...cors, "Content-Type": "application/json", "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
+
+    interface InvitationRequest {
+      email: string;
+      name?: string;
+      role?: string;
+    }
+
     const { email, name, role = "athlete" }: InvitationRequest = await req.json();
 
     if (!email) {
@@ -58,7 +69,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Admin ${user.id} inviting ${email} with role ${role}`);
 
-    // Check if user already exists
     const { data: existingUsers } = await supabase.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(u => 
       u.email?.toLowerCase() === email.toLowerCase()
@@ -68,10 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("A user with this email already exists");
     }
 
-    // Generate a secure invite token
     const inviteToken = crypto.randomUUID() + "-" + crypto.randomUUID();
-    
-    // Create the user with a temporary random password
     const tempPassword = crypto.randomUUID();
     const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
       email: email.toLowerCase(),
@@ -91,7 +98,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`User created with ID: ${newUser.user.id}`);
 
-    // Create profile for the new user
     await supabase
       .from("profiles")
       .upsert({
@@ -100,7 +106,6 @@ const handler = async (req: Request): Promise<Response> => {
         status: "active"
       });
 
-    // Assign the specified role
     await supabase
       .from("user_roles")
       .insert({
@@ -110,7 +115,6 @@ const handler = async (req: Request): Promise<Response> => {
         is_active: true
       });
 
-    // Generate password reset link
     const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
       type: "recovery",
       email: email.toLowerCase(),
@@ -125,7 +129,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const resetLink = resetData?.properties?.action_link || "";
 
-    // Send invitation email
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY not configured");
+    }
+    const resend = new Resend(resendApiKey);
+
     const emailResponse = await resend.emails.send({
       from: "Flow Fitness <onboarding@resend.dev>",
       to: [email],
@@ -168,7 +177,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Invitation email sent:", emailResponse);
 
-    // Log audit event
     await supabase.from("audit_logs").insert({
       action: "user_invited",
       message: `Admin invited ${email} with role ${role}`,
@@ -186,19 +194,13 @@ const handler = async (req: Request): Promise<Response> => {
         userId: newUser.user.id,
         message: `Invitation sent to ${email}`
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 200, headers: { "Content-Type": "application/json", ...cors } }
     );
   } catch (error: any) {
     console.error("Error in send-admin-invitation function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 400, headers: { "Content-Type": "application/json", ...cors } }
     );
   }
 };

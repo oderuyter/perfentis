@@ -1,13 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { corsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 interface ResetRequest {
   userId: string;
@@ -16,8 +13,10 @@ interface ResetRequest {
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreFlight(req);
   }
+
+  const cors = corsHeaders(req);
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -36,7 +35,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Invalid authorization");
     }
 
-    // Check if user is admin
     const { data: adminRole } = await supabase
       .from("user_roles")
       .select("role")
@@ -49,6 +47,20 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Only admins can reset passwords");
     }
 
+    // ── Rate limit: 3/min, 20/day per admin ──
+    const rl = await checkRateLimit({
+      functionName: "admin-reset-password",
+      actorKey: user.id,
+      maxPerMinute: 3,
+      maxPerDay: 20,
+    });
+    if (!rl.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { status: 429, headers: { ...cors, "Content-Type": "application/json", "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
+
     const { userId, email }: ResetRequest = await req.json();
 
     if (!userId) {
@@ -57,7 +69,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Admin ${user.id} initiating password reset for user ${userId}`);
 
-    // Get the target user's email
     const { data: targetUser, error: userLookupError } = await supabase.auth.admin.getUserById(userId);
 
     if (userLookupError || !targetUser?.user?.email) {
@@ -66,7 +77,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const targetEmail = email || targetUser.user.email;
 
-    // Generate password reset link
     const { data: resetData, error: resetError } = await supabase.auth.admin.generateLink({
       type: "recovery",
       email: targetEmail,
@@ -82,7 +92,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const resetLink = resetData?.properties?.action_link || "";
 
-    // Get display name from profile
     const { data: profile } = await supabase
       .from("profiles")
       .select("display_name")
@@ -91,7 +100,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     const displayName = profile?.display_name || targetEmail.split("@")[0];
 
-    // Send password reset email
     const emailResponse = await resend.emails.send({
       from: "Flow Fitness <onboarding@resend.dev>",
       to: [targetEmail],
@@ -134,7 +142,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Password reset email sent:", emailResponse);
 
-    // Log audit event
     await supabase.from("audit_logs").insert({
       action: "password_reset_initiated",
       message: `Admin initiated password reset for ${targetEmail}`,
@@ -151,19 +158,13 @@ const handler = async (req: Request): Promise<Response> => {
         success: true, 
         message: `Password reset email sent to ${targetEmail}`
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 200, headers: { "Content-Type": "application/json", ...cors } }
     );
   } catch (error: any) {
     console.error("Error in admin-reset-password function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 400, headers: { "Content-Type": "application/json", ...cors } }
     );
   }
 };
