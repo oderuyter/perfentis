@@ -1,34 +1,28 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 interface AcceptRequest {
   token: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreFlight(req);
   }
 
+  const cors = corsHeaders(req);
+
   try {
-    // Get authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("No authorization header - you must be logged in to accept an invitation");
     }
 
-    // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get user from JWT
     const jwtToken = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabase.auth.getUser(jwtToken);
     
@@ -44,7 +38,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Accepting invitation with token for user ${user.id}`);
 
-    // Get the invitation
     const { data: invitation, error: inviteError } = await supabase
       .from("gym_invitations")
       .select(`
@@ -60,14 +53,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Invitation not found");
     }
 
-    // Check invitation status
     if (invitation.status !== "pending") {
       throw new Error(`This invitation has already been ${invitation.status}`);
     }
 
-    // Check if invitation has expired
     if (new Date(invitation.expires_at) < new Date()) {
-      // Update status to expired
       await supabase
         .from("gym_invitations")
         .update({ status: "expired" })
@@ -75,12 +65,10 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("This invitation has expired");
     }
 
-    // Check if user email matches invitation email
     if (user.email?.toLowerCase() !== invitation.email.toLowerCase()) {
       throw new Error(`This invitation was sent to ${invitation.email}. Please log in with that email address.`);
     }
 
-    // Check if user already has an active membership at this gym
     const { data: existingMembership } = await supabase
       .from("memberships")
       .select("id, status")
@@ -90,7 +78,6 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (existingMembership) {
-      // Update invitation to accepted but don't create duplicate membership
       await supabase
         .from("gym_invitations")
         .update({ 
@@ -107,14 +94,10 @@ const handler = async (req: Request): Promise<Response> => {
           membershipId: existingMembership.id,
           alreadyMember: true
         }),
-        {
-          status: 200,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        { status: 200, headers: { "Content-Type": "application/json", ...cors } }
       );
     }
 
-    // Create membership
     const { data: membership, error: membershipError } = await supabase
       .from("memberships")
       .insert({
@@ -136,7 +119,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Membership created with ID: ${membership.id}`);
 
-    // Update invitation status
     await supabase
       .from("gym_invitations")
       .update({ 
@@ -146,7 +128,6 @@ const handler = async (req: Request): Promise<Response> => {
       })
       .eq("id", invitation.id);
 
-    // Assign gym_user role
     await supabase
       .from("user_roles")
       .insert({
@@ -166,19 +147,13 @@ const handler = async (req: Request): Promise<Response> => {
         gymId: invitation.gym_id,
         gymName: invitation.gym?.name
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 200, headers: { "Content-Type": "application/json", ...cors } }
     );
   } catch (error: any) {
     console.error("Error in accept-gym-invitation function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 400, headers: { "Content-Type": "application/json", ...cors } }
     );
   }
 };

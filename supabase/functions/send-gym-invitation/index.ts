@@ -1,11 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
 import { Resend } from "https://esm.sh/resend@2.0.0";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 interface InvitationRequest {
   gymId: string;
@@ -16,9 +13,10 @@ interface InvitationRequest {
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreFlight(req);
   }
 
+  const cors = corsHeaders(req);
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const resendApiKey = Deno.env.get("RESEND_API_KEY");
@@ -37,6 +35,20 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Invalid authorization");
     }
 
+    // ── Rate limit: 5/min, 50/day per user ──
+    const rl = await checkRateLimit({
+      functionName: "send-gym-invitation",
+      actorKey: user.id,
+      maxPerMinute: 5,
+      maxPerDay: 50,
+    });
+    if (!rl.allowed) {
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        { status: 429, headers: { ...cors, "Content-Type": "application/json", "Retry-After": String(rl.retryAfterSeconds) } }
+      );
+    }
+
     const { gymId, email, name, membershipLevelId }: InvitationRequest = await req.json();
 
     if (!gymId || !email) {
@@ -45,7 +57,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Creating invitation for ${email} to gym ${gymId}`);
 
-    // Check if user has permission to invite
     const { data: gym, error: gymError } = await supabase
       .from("gyms")
       .select("id, name, owner_id")
@@ -56,7 +67,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Gym not found");
     }
 
-    // Check roles
     const { data: roles } = await supabase
       .from("user_roles")
       .select("role")
@@ -79,7 +89,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("You don't have permission to invite members to this gym");
     }
 
-    // Check for existing pending invitation
     const { data: existingInvite } = await supabase
       .from("gym_invitations")
       .select("id, status")
@@ -92,7 +101,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("There's already a pending invitation for this email");
     }
 
-    // Check if user already has a membership
     const { data: existingMembership } = await supabase
       .from("memberships")
       .select("id, user_id")
@@ -111,7 +119,6 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Get membership level details
     let levelName = "Standard";
     if (membershipLevelId) {
       const { data: level } = await supabase
@@ -124,12 +131,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Generate secure token
     const token_value = crypto.randomUUID() + "-" + crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Create invitation record (with pending email status)
     const { data: invitation, error: inviteError } = await supabase
       .from("gym_invitations")
       .insert({
@@ -153,13 +158,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Invitation created with ID: ${invitation.id}`);
 
-    // Get the app URL
     const origin = req.headers.get("origin") || "https://calm-train-flow.lovable.app";
     const inviteLink = `${origin}/accept-invite?token=${token_value}`;
     const settingsUrl = `${origin}/profile`;
 
-    // Create email log
-    const { data: emailLog, error: logError } = await supabase
+    const { data: emailLog, error: _logError } = await supabase
       .from("email_logs")
       .insert({
         to_email: email.toLowerCase(),
@@ -182,7 +185,6 @@ const handler = async (req: Request): Promise<Response> => {
       .select("id")
       .single();
 
-    // Try to send the email
     let emailSuccess = false;
     let resendMessageId: string | null = null;
     let emailError: string | null = null;
@@ -231,8 +233,6 @@ const handler = async (req: Request): Promise<Response> => {
           `,
         });
 
-        console.log("Resend response:", JSON.stringify(emailResponse));
-
         if (emailResponse.data?.id) {
           emailSuccess = true;
           resendMessageId = emailResponse.data.id;
@@ -245,7 +245,6 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // Update email log with result
     if (emailLog?.id) {
       await supabase
         .from("email_logs")
@@ -260,7 +259,6 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("id", emailLog.id);
     }
 
-    // Update invitation with email status
     await supabase
       .from("gym_invitations")
       .update({
@@ -281,19 +279,13 @@ const handler = async (req: Request): Promise<Response> => {
           ? `Invitation sent to ${email}` 
           : `Invitation created but email failed: ${emailError}`,
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 200, headers: { "Content-Type": "application/json", ...cors } }
     );
   } catch (error: any) {
     console.error("Error in send-gym-invitation function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      { status: 400, headers: { "Content-Type": "application/json", ...cors } }
     );
   }
 };

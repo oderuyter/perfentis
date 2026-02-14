@@ -20,3 +20,21 @@ verify_jwt = false
 
 [functions.compute-elevation]
 verify_jwt = false
+
+[functions.send-email]
+verify_jwt = false
+
+[functions.fetch-playlist-metadata]
+verify_jwt = false
+
+[functions.seed-demo-data]
+verify_jwt = false
+
+[functions.seed-curated-content]
+verify_jwt = false
+
+[functions.cleanup-demo-data]
+verify_jwt = false
+
+[functions.resend-webhook]
+verify_jwt = false

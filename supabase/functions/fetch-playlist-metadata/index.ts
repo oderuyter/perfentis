@@ -1,10 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders as makeCorsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
 
 interface PlaylistMetadata {
   name?: string;
@@ -78,10 +73,10 @@ function getBasicMetadata(url: string, platform: string): PlaylistMetadata {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreFlight(req);
   }
+  const corsHeaders = makeCorsHeaders(req);
 
   try {
     const { url } = await req.json();

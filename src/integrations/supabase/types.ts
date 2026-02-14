@@ -1817,6 +1817,30 @@ export type Database = {
         }
         Relationships: []
       }
+      edge_function_rate_limits: {
+        Row: {
+          actor_key: string
+          function_name: string
+          id: string
+          request_count: number
+          window_start: string
+        }
+        Insert: {
+          actor_key: string
+          function_name: string
+          id?: string
+          request_count?: number
+          window_start?: string
+        }
+        Update: {
+          actor_key?: string
+          function_name?: string
+          id?: string
+          request_count?: number
+          window_start?: string
+        }
+        Relationships: []
+      }
       email_delivery_events: {
         Row: {
           created_at: string
@@ -8175,6 +8199,7 @@ export type Database = {
         Args: { p_conversation_id: string; p_user_id: string }
         Returns: boolean
       }
+      cleanup_old_rate_limits: { Args: never; Returns: undefined }
       create_conversation_rpc: {
         Args: {
           p_context_id: string
