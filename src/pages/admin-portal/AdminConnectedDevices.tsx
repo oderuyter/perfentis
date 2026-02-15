@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bluetooth, Smartphone, Users, Activity, Radio, Wifi } from "lucide-react";
+import { Bluetooth, Smartphone, Users, Activity, Radio, Wifi, Heart, TrendingUp } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface DeviceStats {
   total_devices: number;
@@ -19,28 +20,30 @@ interface DeviceBreakdown {
   last_connected: string | null;
 }
 
-const SERVICE_PLACEHOLDERS = [
-  { name: "Apple Health", icon: Activity, status: "Coming soon" },
-  { name: "Google Fit", icon: Activity, status: "Coming soon" },
-  { name: "Strava", icon: Activity, status: "Coming soon" },
-  { name: "Garmin Connect", icon: Radio, status: "Coming soon" },
-];
+interface IntegrationStats {
+  provider: string;
+  total_connections: number;
+  active_7d: number;
+  active_30d: number;
+  error_count: number;
+  top_metrics: string[];
+}
 
 export default function AdminConnectedDevices() {
   const [stats, setStats] = useState<DeviceStats>({ total_devices: 0, unique_users: 0, avg_per_user: 0, active_30d: 0 });
   const [breakdown, setBreakdown] = useState<DeviceBreakdown[]>([]);
+  const [integrationStats, setIntegrationStats] = useState<IntegrationStats[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchData() {
       setIsLoading(true);
 
-      // Total devices count
+      // HR Devices stats
       const { count: totalDevices } = await supabase
         .from("hr_devices")
         .select("id", { count: "exact", head: true });
 
-      // Unique users
       const { data: usersData } = await supabase
         .from("hr_devices")
         .select("user_id");
@@ -48,7 +51,6 @@ export default function AdminConnectedDevices() {
       const uniqueUserIds = new Set((usersData || []).map((d: any) => d.user_id));
       const uniqueUsers = uniqueUserIds.size;
 
-      // Active in last 30 days
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const { count: active30d } = await supabase
@@ -63,7 +65,7 @@ export default function AdminConnectedDevices() {
         active_30d: active30d || 0,
       });
 
-      // Breakdown by manufacturer + transport
+      // Breakdown by manufacturer
       const { data: allDevices } = await supabase
         .from("hr_devices")
         .select("manufacturer, transport, user_id, last_connected_at");
@@ -83,15 +85,69 @@ export default function AdminConnectedDevices() {
         setBreakdown(
           Object.entries(groups).map(([key, val]) => {
             const [manufacturer, transport] = key.split("|");
-            return {
-              manufacturer,
-              transport,
-              total: val.total,
-              unique_users: val.users.size,
-              last_connected: val.lastConnected,
-            };
+            return { manufacturer, transport, total: val.total, unique_users: val.users.size, last_connected: val.lastConnected };
           }).sort((a, b) => b.total - a.total)
         );
+      }
+
+      // Health Integration stats
+      const { data: connections } = await (supabase
+        .from("integration_connections") as any)
+        .select("*");
+
+      if (connections && connections.length > 0) {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const providerMap: Record<string, IntegrationStats> = {};
+        for (const conn of connections) {
+          if (!providerMap[conn.provider]) {
+            providerMap[conn.provider] = {
+              provider: conn.provider,
+              total_connections: 0,
+              active_7d: 0,
+              active_30d: 0,
+              error_count: 0,
+              top_metrics: [],
+            };
+          }
+          const ps = providerMap[conn.provider];
+          ps.total_connections++;
+          if (conn.status === "error") ps.error_count++;
+          if (conn.last_sync_at) {
+            const syncDate = new Date(conn.last_sync_at);
+            if (syncDate >= sevenDaysAgo) ps.active_7d++;
+            if (syncDate >= thirtyDaysAgo) ps.active_30d++;
+          }
+        }
+
+        // Get top metrics from preferences
+        const { data: prefs } = await (supabase
+          .from("integration_preferences") as any)
+          .select("provider, enabled_metrics");
+
+        if (prefs) {
+          const metricCounts: Record<string, Record<string, number>> = {};
+          for (const pref of prefs) {
+            if (!metricCounts[pref.provider]) metricCounts[pref.provider] = {};
+            const metrics = pref.enabled_metrics as any;
+            for (const [key, val] of Object.entries(metrics || {})) {
+              if ((val as any)?.read) {
+                metricCounts[pref.provider][key] = (metricCounts[pref.provider][key] || 0) + 1;
+              }
+            }
+          }
+          for (const [provider, counts] of Object.entries(metricCounts)) {
+            if (providerMap[provider]) {
+              providerMap[provider].top_metrics = Object.entries(counts)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3)
+                .map(([k]) => k);
+            }
+          }
+        }
+
+        setIntegrationStats(Object.values(providerMap));
       }
 
       setIsLoading(false);
@@ -99,6 +155,11 @@ export default function AdminConnectedDevices() {
 
     fetchData();
   }, []);
+
+  const PROVIDER_NAMES: Record<string, string> = {
+    healthkit: "Apple Health",
+    healthconnect: "Health Connect",
+  };
 
   const statTiles = [
     { label: "Total Devices", value: stats.total_devices, icon: Bluetooth },
@@ -132,6 +193,62 @@ export default function AdminConnectedDevices() {
           </Card>
         ))}
       </div>
+
+      {/* Health Integrations */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Heart className="h-5 w-5 text-primary" />
+            <CardTitle className="text-lg">Health Integrations</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : integrationStats.length === 0 ? (
+            <div className="text-center py-12">
+              <Activity className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+              <p className="text-muted-foreground">No health integrations connected yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {integrationStats.map(ist => (
+                <div key={ist.provider} className="p-4 rounded-xl border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{PROVIDER_NAMES[ist.provider] || ist.provider}</span>
+                    {ist.error_count > 0 && (
+                      <Badge variant="destructive" className="text-xs">{ist.error_count} errors</Badge>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <p className="text-lg font-bold">{ist.total_connections}</p>
+                      <p className="text-xs text-muted-foreground">Total</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold">{ist.active_7d}</p>
+                      <p className="text-xs text-muted-foreground">Active 7d</p>
+                    </div>
+                    <div>
+                      <p className="text-lg font-bold">{ist.active_30d}</p>
+                      <p className="text-xs text-muted-foreground">Active 30d</p>
+                    </div>
+                  </div>
+                  {ist.top_metrics.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {ist.top_metrics.map(m => (
+                        <Badge key={m} variant="secondary" className="text-xs">{m}</Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Devices Breakdown */}
       <Card>
@@ -179,31 +296,6 @@ export default function AdminConnectedDevices() {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Services Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Connected Services</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {SERVICE_PLACEHOLDERS.map(svc => (
-              <div key={svc.name} className="flex items-center gap-3 p-3 rounded-xl border border-dashed border-border/50 opacity-60">
-                <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center">
-                  <svc.icon className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{svc.name}</p>
-                  <p className="text-xs text-muted-foreground">{svc.status}</p>
-                </div>
-                <span className="text-xs px-2 py-1 rounded-full bg-muted text-muted-foreground">
-                  0 connected
-                </span>
-              </div>
-            ))}
-          </div>
         </CardContent>
       </Card>
     </div>

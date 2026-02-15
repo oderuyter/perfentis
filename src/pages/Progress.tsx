@@ -11,6 +11,7 @@ import { StreakCard } from "@/components/progress/StreakCard";
 import { ExerciseGoalsSection } from "@/components/progress/ExerciseGoalsSection";
 import { useWorkoutStreak } from "@/hooks/useWorkoutStreak";
 import { ImportRunSheet } from "@/components/run/ImportRunSheet";
+import { HealthDataTiles } from "@/components/progress/HealthDataTiles";
 
 export default function Progress() {
   const {
@@ -91,6 +92,11 @@ export default function Progress() {
         {/* Weekly Summary Tiles */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.06 }}>
           {weeklySummary && <WeeklySummaryTiles summary={weeklySummary} />}
+        </motion.div>
+
+        {/* Health Data Tiles (from integrations) */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}>
+          <HealthDataTiles />
         </motion.div>
 
         {/* Streak Card */}
