@@ -3550,6 +3550,62 @@ export type Database = {
         }
         Relationships: []
       }
+      external_data_records: {
+        Row: {
+          created_at: string
+          data_type: string
+          end_time: string | null
+          fingerprint_hash: string | null
+          id: string
+          is_primary: boolean
+          linked_session_id: string | null
+          provider: string
+          source_id: string | null
+          start_time: string
+          user_id: string
+          value_json: Json
+          writeback_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_type: string
+          end_time?: string | null
+          fingerprint_hash?: string | null
+          id?: string
+          is_primary?: boolean
+          linked_session_id?: string | null
+          provider: string
+          source_id?: string | null
+          start_time: string
+          user_id: string
+          value_json?: Json
+          writeback_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_type?: string
+          end_time?: string | null
+          fingerprint_hash?: string | null
+          id?: string
+          is_primary?: boolean
+          linked_session_id?: string | null
+          provider?: string
+          source_id?: string | null
+          start_time?: string
+          user_id?: string
+          value_json?: Json
+          writeback_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_data_records_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       external_gym_membership_cards: {
         Row: {
           created_at: string
@@ -4587,6 +4643,102 @@ export type Database = {
           status?: string
           submissions_created?: number | null
           total_exercises?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      integration_connections: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          last_sync_at: string | null
+          provider: string
+          scopes_granted: Json | null
+          status: string
+          sync_error: string | null
+          sync_error_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_sync_at?: string | null
+          provider: string
+          scopes_granted?: Json | null
+          status?: string
+          sync_error?: string | null
+          sync_error_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          last_sync_at?: string | null
+          provider?: string
+          scopes_granted?: Json | null
+          status?: string
+          sync_error?: string | null
+          sync_error_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      integration_preferences: {
+        Row: {
+          created_at: string
+          enabled_metrics: Json
+          id: string
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled_metrics?: Json
+          id?: string
+          provider: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled_metrics?: Json
+          id?: string
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      integration_priority: {
+        Row: {
+          created_at: string
+          id: string
+          metric_key: string
+          ordered_providers: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          metric_key: string
+          ordered_providers?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          metric_key?: string
+          ordered_providers?: string[]
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
