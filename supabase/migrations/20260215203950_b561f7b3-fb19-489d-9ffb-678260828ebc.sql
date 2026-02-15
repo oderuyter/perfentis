@@ -1,0 +1,2 @@
+ALTER TABLE public.workout_sessions DROP CONSTRAINT workout_sessions_session_type_check;
+ALTER TABLE public.workout_sessions ADD CONSTRAINT workout_sessions_session_type_check CHECK (session_type = ANY (ARRAY['freeform'::text, 'template'::text, 'split'::text, 'coach_plan'::text, 'imported'::text]));
