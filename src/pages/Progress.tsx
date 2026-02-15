@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useProgressData } from "@/hooks/useProgressData";
@@ -10,6 +10,7 @@ import { DayDrawer } from "@/components/progress/DayDrawer";
 import { StreakCard } from "@/components/progress/StreakCard";
 import { ExerciseGoalsSection } from "@/components/progress/ExerciseGoalsSection";
 import { useWorkoutStreak } from "@/hooks/useWorkoutStreak";
+import { ImportRunSheet } from "@/components/run/ImportRunSheet";
 
 export default function Progress() {
   const {
@@ -28,6 +29,7 @@ export default function Progress() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const handleDayClick = (date: Date) => {
     setSelectedDate(date);
@@ -47,7 +49,7 @@ export default function Progress() {
       <div className="fixed inset-0 gradient-glow pointer-events-none" />
 
       {/* Header */}
-      <header className="relative pt-6 pb-4">
+      <header className="relative pt-6 pb-4 flex items-center justify-between">
         <motion.h1
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -55,6 +57,10 @@ export default function Progress() {
         >
           Progress
         </motion.h1>
+        <Button variant="outline" size="sm" className="rounded-xl gap-1.5" onClick={() => setImportOpen(true)}>
+          <Upload className="h-3.5 w-3.5" />
+          Import Run
+        </Button>
       </header>
 
       {/* Week Selector */}
@@ -118,6 +124,9 @@ export default function Progress() {
         onOpenChange={setDrawerOpen}
         selectedDate={selectedDate}
       />
+
+      {/* Import Run Sheet */}
+      <ImportRunSheet open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

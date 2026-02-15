@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Play, MapPin, Lock, ArrowLeft } from 'lucide-react';
+import { Play, MapPin, Lock, ArrowLeft, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { RunModality, PrivacyLevel } from '@/types/run';
+import { ImportRunSheet } from './ImportRunSheet';
 
 interface RunPreScreenProps {
   onStart: (modality: RunModality, privacy: PrivacyLevel) => void;
@@ -13,6 +14,7 @@ export function RunPreScreen({ onStart }: RunPreScreenProps) {
   const navigate = useNavigate();
   const [modality, setModality] = useState<RunModality>('run');
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
+  const [importOpen, setImportOpen] = useState(false);
 
   const checkPermission = async () => {
     try {
@@ -130,6 +132,7 @@ export function RunPreScreen({ onStart }: RunPreScreenProps) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+          className="space-y-3"
         >
           <Button
             onClick={handleStart}
@@ -139,8 +142,18 @@ export function RunPreScreen({ onStart }: RunPreScreenProps) {
             <Play className="h-6 w-6" />
             Start {modality === 'run' ? 'Run' : 'Walk'}
           </Button>
+          <Button
+            variant="outline"
+            onClick={() => setImportOpen(true)}
+            className="w-full h-12 rounded-xl gap-2"
+          >
+            <Upload className="h-4 w-4" />
+            Import Past Run (GPX)
+          </Button>
         </motion.div>
       </div>
+
+      <ImportRunSheet open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }
