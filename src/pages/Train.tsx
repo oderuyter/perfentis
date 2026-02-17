@@ -7,6 +7,7 @@ import {
   Layers,
   FileUp,
   MapPin,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -45,7 +46,6 @@ export default function Train() {
   };
 
   const handleJustTrain = () => {
-    // Navigate to free workout (live builder mode)
     navigate("/workout/free/active");
   };
 
@@ -59,7 +59,7 @@ export default function Train() {
       <RunRecoveryPrompt />
       
       {/* Header */}
-      <header className="relative pt-6 pb-6">
+      <header className="relative pt-6 pb-4">
         <motion.h1 
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -71,93 +71,105 @@ export default function Train() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.04 }}
-          className="text-muted-foreground mt-1"
+          className="text-muted-foreground mt-0.5 text-sm"
         >
           Build strength, track progress
         </motion.p>
       </header>
 
-      {/* Primary CTAs */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.08 }}
-        className="mb-6 space-y-3"
-      >
-        <Button 
-          onClick={handleJustTrain}
-          className="w-full h-14 text-base font-semibold gap-3 rounded-2xl"
-          size="lg"
-        >
-          <Play className="h-5 w-5" />
-          Just Train
-        </Button>
-        <p className="text-xs text-muted-foreground/70 text-center mt-2.5">
-          Start a session and add exercises as you go
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="outline"
-            onClick={() => navigate("/run")}
-            className="h-11 gap-2 rounded-2xl"
+      <div className="relative space-y-5">
+        {/* ===== SECTION 1: Your Plan (most common path) ===== */}
+        {user && (
+          <motion.section
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
           >
-            <MapPin className="h-4 w-4" />
-            Run / Walk
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => navigate("/import?returnTo=/train")}
-            className="h-11 gap-2 rounded-2xl"
-          >
-            <FileUp className="h-4 w-4" />
-            Import
-          </Button>
-        </div>
-      </motion.div>
+            <ActiveSplitCard />
+          </motion.section>
+        )}
 
-      {/* Active Split Card (if user has one) */}
-      {user && (
-        <motion.div
+        {/* Assigned Plans Section (coach assigned) */}
+        <AssignedPlansSection />
+
+        {/* ===== SECTION 2: Quick Start Actions ===== */}
+        <motion.section
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="mb-6"
+          className="space-y-3"
         >
-          <ActiveSplitCard />
-        </motion.div>
-      )}
+          <h2 className="section-label px-0.5">Quick Start</h2>
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              onClick={handleJustTrain}
+              className="card-glass p-4 flex flex-col items-center gap-2.5 active:scale-[0.97] transition-transform"
+            >
+              <div className="h-11 w-11 rounded-xl bg-primary/12 flex items-center justify-center">
+                <Zap className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold">Just Train</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">Ad-hoc session</p>
+              </div>
+            </button>
 
-      {/* Assigned Plans Section (coach assigned) */}
-      <AssignedPlansSection />
+            <button
+              onClick={() => navigate("/run")}
+              className="card-glass p-4 flex flex-col items-center gap-2.5 active:scale-[0.97] transition-transform"
+            >
+              <div className="h-11 w-11 rounded-xl bg-primary/12 flex items-center justify-center">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold">Run / Walk</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">GPS tracked</p>
+              </div>
+            </button>
 
-      {/* Directory Tabs */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.16 }}
-        className="mt-6"
-      >
-        <Tabs value={directoryTab} onValueChange={(v) => handleTabChange(v as "workouts" | "splits")}>
-          <TabsList className="grid w-full grid-cols-2 mb-5 h-11">
-            <TabsTrigger value="workouts" className="gap-2 text-sm">
-              <Dumbbell className="h-4 w-4" />
-              Workouts
-            </TabsTrigger>
-            <TabsTrigger value="splits" className="gap-2 text-sm">
-              <Layers className="h-4 w-4" />
-              Splits
-            </TabsTrigger>
-          </TabsList>
+            <button
+              onClick={() => navigate("/import?returnTo=/train")}
+              className="card-glass p-4 flex flex-col items-center gap-2.5 active:scale-[0.97] transition-transform"
+            >
+              <div className="h-11 w-11 rounded-xl bg-primary/12 flex items-center justify-center">
+                <FileUp className="h-5 w-5 text-primary" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold">Import</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">From file</p>
+              </div>
+            </button>
+          </div>
+        </motion.section>
 
-          <TabsContent value="workouts" className="mt-0">
-            <WorkoutDirectory />
-          </TabsContent>
+        {/* ===== SECTION 3: Library ===== */}
+        <motion.section
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.16 }}
+        >
+          <Tabs value={directoryTab} onValueChange={(v) => handleTabChange(v as "workouts" | "splits")}>
+            <TabsList className="grid w-full grid-cols-2 mb-4 h-11">
+              <TabsTrigger value="workouts" className="gap-2 text-sm">
+                <Dumbbell className="h-4 w-4" />
+                Workouts
+              </TabsTrigger>
+              <TabsTrigger value="splits" className="gap-2 text-sm">
+                <Layers className="h-4 w-4" />
+                Splits
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="splits" className="mt-0">
-            <SplitDirectory />
-          </TabsContent>
-        </Tabs>
-      </motion.div>
+            <TabsContent value="workouts" className="mt-0">
+              <WorkoutDirectory />
+            </TabsContent>
+
+            <TabsContent value="splits" className="mt-0">
+              <SplitDirectory />
+            </TabsContent>
+          </Tabs>
+        </motion.section>
+      </div>
     </div>
   );
 }
