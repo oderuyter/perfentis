@@ -7630,6 +7630,7 @@ export type Database = {
           deleted_at: string | null
           expires_at: string
           id: string
+          media_url: string | null
           scope_id: string | null
           scope_type: string
           stats_card_data: Json | null
@@ -7642,6 +7643,7 @@ export type Database = {
           deleted_at?: string | null
           expires_at?: string
           id?: string
+          media_url?: string | null
           scope_id?: string | null
           scope_type?: string
           stats_card_data?: Json | null
@@ -7654,6 +7656,7 @@ export type Database = {
           deleted_at?: string | null
           expires_at?: string
           id?: string
+          media_url?: string | null
           scope_id?: string | null
           scope_type?: string
           stats_card_data?: Json | null
