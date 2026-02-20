@@ -5,6 +5,8 @@ import { ActiveWorkoutState } from "@/types/workout";
 
 const SYNC_QUEUE_KEY = "workout_sync_queue";
 const SYNC_INTERVAL = 5000; // 5 seconds
+const HEARTBEAT_INTERVAL = 30000; // 30 seconds — background DB upsert for active sessions
+const HEARTBEAT_KEY = "active_workout_session_id"; // stores the DB session id for the current active workout
 
 interface SyncOperation {
   id: string;
@@ -241,6 +243,111 @@ export function useWorkoutSync() {
     queueWorkoutSave,
     syncNow,
   };
+}
+
+// ─── Active session heartbeat ──────────────────────────────────────────────
+// Every 30 seconds this upserts an `active` workout_sessions row so that if
+// localStorage is cleared or the device crashes the session isn't lost.
+// The row is updated to `completed`/`abandoned` by saveWorkoutSession when the
+// user finishes normally.
+export function useWorkoutHeartbeat(workoutState: ActiveWorkoutState | null) {
+  const { user } = useAuth();
+  const sessionIdRef = useRef<string | null>(null);
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
+
+  const upsertActiveSession = useCallback(async (state: ActiveWorkoutState) => {
+    if (!user || state.status !== "active") return;
+
+    let totalVolume = 0;
+    state.exercises.forEach((ex) => {
+      ex.sets.forEach((set) => {
+        if (set.completed && set.completedWeight && set.completedReps) {
+          totalVolume += set.completedWeight * set.completedReps;
+        }
+      });
+    });
+
+    try {
+      if (!sessionIdRef.current) {
+        // Create the row for the first time
+        const { data, error } = await supabase
+          .from("workout_sessions")
+          .insert({
+            user_id: user.id,
+            workout_template_id: state.workoutId,
+            workout_name: state.workoutName,
+            started_at: state.startedAt,
+            duration_seconds: state.elapsedTime,
+            total_volume: totalVolume,
+            avg_hr: state.hrData?.avgHR || null,
+            max_hr: state.hrData?.maxHR || null,
+            status: "active",
+            notes: state.workoutNote,
+          })
+          .select("id")
+          .single();
+
+        if (!error && data) {
+          sessionIdRef.current = data.id;
+          localStorage.setItem(HEARTBEAT_KEY, data.id);
+        }
+      } else {
+        // Update the existing row
+        await supabase
+          .from("workout_sessions")
+          .update({
+            duration_seconds: state.elapsedTime,
+            total_volume: totalVolume,
+            avg_hr: state.hrData?.avgHR || null,
+            max_hr: state.hrData?.maxHR || null,
+            status: "active",
+            notes: state.workoutNote,
+          })
+          .eq("id", sessionIdRef.current);
+      }
+    } catch (err) {
+      // Silently fail — localStorage is still the source of truth
+      console.warn("Heartbeat upsert failed:", err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!workoutState || workoutState.status !== "active" || !user) {
+      // Clean up interval if workout ended
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+      // If workout finished normally, clear the heartbeat key
+      if (workoutState && workoutState.status !== "active") {
+        localStorage.removeItem(HEARTBEAT_KEY);
+        sessionIdRef.current = null;
+      }
+      return;
+    }
+
+    // Restore session id from localStorage on re-mount (e.g. page refresh)
+    if (!sessionIdRef.current) {
+      const storedId = localStorage.getItem(HEARTBEAT_KEY);
+      if (storedId) sessionIdRef.current = storedId;
+    }
+
+    // Run immediately then on interval
+    upsertActiveSession(workoutState);
+    heartbeatRef.current = setInterval(() => {
+      upsertActiveSession(workoutState);
+    }, HEARTBEAT_INTERVAL);
+
+    return () => {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+    };
+  }, [workoutState?.status, user, upsertActiveSession]);
+
+  // Expose the in-flight session id so the completion flow can reference it
+  return { dbSessionId: sessionIdRef.current };
 }
 
 // Hook for detecting and recovering crashed workouts

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { Clock, ChevronRight, Play, Target, Timer, TrendingUp, Trophy, Flame, Zap } from "lucide-react";
+import { Clock, ChevronRight, Play, Target, TrendingUp, Trophy, Flame, TrendingDown, Minus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { todayWorkout, weeklyStats } from "@/data/workouts";
+import { todayWorkout } from "@/data/workouts";
 import { Button } from "@/components/ui/button";
 import { NextEventCard } from "@/components/events/NextEventCard";
 import { useActiveSplit } from "@/hooks/useTrainingSplits";
@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { WorkoutRecoveryPrompt } from "@/components/train/WorkoutRecoveryPrompt";
 import { RunRecoveryPrompt } from "@/components/run/RunRecoveryPrompt";
+import { useProgressData } from "@/hooks/useProgressData";
+import { usePersonalRecords } from "@/hooks/usePersonalRecords";
 
 export default function Home() {
   const greeting = getGreeting();
@@ -17,6 +19,8 @@ export default function Home() {
   const { activeSplit, nextWorkout, progress, isLoading: splitLoading } = useActiveSplit();
   const savedWorkout = loadSavedWorkout();
   const hasActiveSession = savedWorkout && savedWorkout.status === 'active';
+  const { weeklySummary, loading: progressLoading } = useProgressData();
+  const { recentPRs } = usePersonalRecords();
 
   const handleStartNext = () => {
     if (nextWorkout) {
@@ -30,7 +34,14 @@ export default function Home() {
     }
   };
 
-  const volumeChange = Math.round(((weeklyStats.volumeThisWeek - weeklyStats.volumeLastWeek) / weeklyStats.volumeLastWeek) * 100);
+  // Compute real stats
+  const sessionsThisWeek = weeklySummary?.sessions ?? 0;
+  const volumeThisWeek = weeklySummary?.volume ?? 0;
+  const prevVolume = weeklySummary?.prevVolume ?? 0;
+  const volumeChange = prevVolume > 0
+    ? Math.round(((volumeThisWeek - prevVolume) / prevVolume) * 100)
+    : null;
+  const mostRecentPR = recentPRs?.[0] ?? null;
   
   return (
     <div className="min-h-screen gradient-page px-5 overflow-x-hidden">
@@ -193,8 +204,7 @@ export default function Home() {
               <Flame className="h-4 w-4 text-primary" />
             </div>
             <p className="text-2xl font-bold tracking-tight tabular-nums leading-none">
-              {weeklyStats.sessionsCompleted}
-              <span className="text-muted-foreground text-sm font-normal">/{weeklyStats.sessionsGoal}</span>
+              {progressLoading ? "–" : sessionsThisWeek}
             </p>
             <p className="text-xs text-muted-foreground mt-1">Sessions</p>
           </div>
@@ -206,10 +216,22 @@ export default function Home() {
                 <TrendingUp className="h-4 w-4 text-primary" />
               </div>
               <p className="text-2xl font-bold tracking-tight tabular-nums leading-none">
-                {(weeklyStats.volumeThisWeek / 1000).toFixed(0)}k
+                {progressLoading ? "–" : volumeThisWeek >= 1000 ? `${(volumeThisWeek / 1000).toFixed(0)}k` : volumeThisWeek.toFixed(0)}
               </p>
               <p className="text-xs text-muted-foreground mt-1">Volume (kg)</p>
-              <p className="text-[10px] font-medium text-status-success mt-0.5">+{volumeChange}%</p>
+              {volumeChange !== null && (
+                <p className={`text-[10px] font-medium mt-0.5 flex items-center gap-0.5 ${volumeChange >= 0 ? "text-status-success" : "text-destructive"}`}>
+                  {volumeChange >= 0
+                    ? <TrendingUp className="h-2.5 w-2.5" />
+                    : <TrendingDown className="h-2.5 w-2.5" />}
+                  {volumeChange >= 0 ? "+" : ""}{volumeChange}%
+                </p>
+              )}
+              {volumeChange === null && !progressLoading && (
+                <p className="text-[10px] text-muted-foreground/50 mt-0.5 flex items-center gap-0.5">
+                  <Minus className="h-2.5 w-2.5" /> –
+                </p>
+              )}
             </div>
           </Link>
 
@@ -218,10 +240,21 @@ export default function Home() {
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center mb-2">
               <Trophy className="h-4 w-4 text-primary" />
             </div>
-            <p className="text-sm font-bold tracking-tight leading-tight">
-              {weeklyStats.recentPR.value.split('×')[0].trim()}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 truncate w-full">{weeklyStats.recentPR.exercise}</p>
+            {mostRecentPR ? (
+              <>
+                <p className="text-sm font-bold tracking-tight leading-tight">
+                  {mostRecentPR.weight != null && mostRecentPR.reps != null
+                    ? `${mostRecentPR.weight}kg`
+                    : `${mostRecentPR.value.toFixed(0)}`}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 truncate w-full">{mostRecentPR.exercise_name}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-bold tracking-tight leading-tight text-muted-foreground">–</p>
+                <p className="text-xs text-muted-foreground mt-1">No PRs yet</p>
+              </>
+            )}
           </div>
         </motion.div>
       </div>
