@@ -542,7 +542,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
 
 
       {/* Action Buttons */}
-      <div className="px-4 pb-safe">
+      <div className="px-4 pb-bottom-nav">
         <div className="flex gap-2 mb-3">
           <button onClick={() => setShowAdd(true)} className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center">
             <Plus className="h-5 w-5" />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Globe, Building2, Flag, Footprints, Send, BookOpen } from "lucide-react";
 import { ScopeType, useCreatePost, useUserCommunities } from "@/hooks/useSocial";
@@ -73,7 +74,7 @@ export function CreatePostSheet({
     })),
   ];
 
-  return (
+  const content = (
     <AnimatePresence>
       {open && (
         <>
@@ -81,7 +82,7 @@ export function CreatePostSheet({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[120]"
+            className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-[200]"
             onClick={onClose}
           />
           <motion.div
@@ -89,7 +90,7 @@ export function CreatePostSheet({
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[130] shadow-elevated max-h-[90vh] overflow-hidden flex flex-col"
+            className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[201] shadow-elevated max-h-[90vh] overflow-hidden flex flex-col"
           >
             {/* Handle */}
             <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mt-3 mb-0 shrink-0" />
@@ -175,4 +176,6 @@ export function CreatePostSheet({
       )}
     </AnimatePresence>
   );
+
+  return createPortal(content, document.body);
 }
