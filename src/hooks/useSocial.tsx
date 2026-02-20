@@ -48,8 +48,9 @@ export interface SocialStory {
   author_user_id: string;
   scope_type: ScopeType;
   scope_id: string | null;
-  story_type: "text" | "stats_card";
+  story_type: "text" | "image" | "stats_card";
   caption: string | null;
+  media_url: string | null;
   stats_card_data: Record<string, unknown> | null;
   expires_at: string;
   created_at: string;
@@ -253,10 +254,26 @@ export function useCreateStory() {
       caption?: string;
       scope_type: ScopeType;
       scope_id?: string;
-      story_type?: "text" | "stats_card";
+      story_type?: "text" | "image" | "stats_card";
       stats_card_data?: Record<string, unknown>;
+      imageFile?: File;
     }) => {
       if (!user) throw new Error("Not authenticated");
+
+      let media_url: string | null = null;
+
+      // Upload image if provided
+      if (payload.imageFile) {
+        const ext = payload.imageFile.name.split(".").pop() || "jpg";
+        const path = `${user.id}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("social-stories")
+          .upload(path, payload.imageFile, { upsert: false });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from("social-stories").getPublicUrl(path);
+        media_url = urlData.publicUrl;
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase.from("social_stories") as any)
         .insert({
@@ -264,7 +281,8 @@ export function useCreateStory() {
           caption: payload.caption || null,
           scope_type: payload.scope_type,
           scope_id: payload.scope_id || null,
-          story_type: payload.story_type || "text",
+          story_type: payload.imageFile ? "image" : (payload.story_type || "text"),
+          media_url,
           stats_card_data: payload.stats_card_data || null,
         })
         .select()
