@@ -7484,7 +7484,7 @@ export type Database = {
           scope_type: string
           stats_card_data: Json | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           workout_session_id: string | null
         }
         Insert: {
@@ -7515,7 +7515,7 @@ export type Database = {
           scope_type?: string
           stats_card_data?: Json | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           workout_session_id?: string | null
         }
         Update: {
@@ -7546,7 +7546,7 @@ export type Database = {
           scope_type?: string
           stats_card_data?: Json | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           workout_session_id?: string | null
         }
         Relationships: []
