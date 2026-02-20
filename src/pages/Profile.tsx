@@ -17,7 +17,8 @@ import {
   Check,
   LogOut,
   Camera,
-  Loader2
+  Loader2,
+  Share2
 } from "lucide-react";
 import { useTheme, accentColors } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
@@ -25,6 +26,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { useAvatarUpload } from "@/hooks/useAvatarUpload";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
 import { PersonalDetailsSheet } from "@/components/profile/PersonalDetailsSheet";
 import { TrainingGoalsSheet } from "@/components/profile/TrainingGoalsSheet";
 import { UnitsSheet } from "@/components/profile/UnitsSheet";
@@ -136,7 +138,7 @@ const trainingGoalLabels: Record<string, string> = {
 export default function Profile() {
   const { mode, accent, setMode, setAccent } = useTheme();
   const { user, signOut } = useAuth();
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const { uploadAvatar, isUploading } = useAvatarUpload();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -353,6 +355,14 @@ export default function Profile() {
             label="Privacy & Data" 
             onClick={() => setPrivacyOpen(true)} 
           />
+          <SettingRow icon={Share2} label="Share after workout">
+            <Switch
+              checked={!!profile?.social_share_after_workout}
+              onCheckedChange={(checked) =>
+                updateProfile({ social_share_after_workout: checked })
+              }
+            />
+          </SettingRow>
         </div>
 
         <SectionHeader title="Account" />
