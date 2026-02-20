@@ -11,6 +11,7 @@ import { useWorkoutHeartbeat } from "@/hooks/useWorkoutSync";
 import { useWorkoutHistory } from "@/hooks/useWorkoutHistory";
 import { usePersonalRecords, type PersonalRecord } from "@/hooks/usePersonalRecords";
 import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { SetEditor } from "@/components/workout/SetEditor";
 import { ExerciseHistorySheet } from "@/components/workout/ExerciseHistorySheet";
@@ -39,6 +40,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const hr = useHeartRateMonitor();
   const isFreeform = id === 'free';
   // Use templateWorkout if provided, otherwise look up from static data
@@ -76,6 +78,8 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   useWorkoutHeartbeat(state);
   const [newPRs, setNewPRs] = useState<PersonalRecord[]>([]);
   const [showSharePost, setShowSharePost] = useState(false);
+  const [completedSessionId, setCompletedSessionId] = useState<string | undefined>(undefined);
+  const [isSavingSession, setIsSavingSession] = useState(false);
 
   // Overlays
   const [showHROverlay, setShowHROverlay] = useState(false);
@@ -129,23 +133,22 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
     }
   }, [navigate, endWorkout, state, saveWorkoutSession]);
 
+  // Save session + check PRs, then show share sheet (or navigate directly)
   const handleFinish = useCallback(async () => {
+    if (isSavingSession) return;
+    setIsSavingSession(true);
+    let sessionId: string | undefined;
     if (state && state.status === 'completed') {
-      // Save to database
-      const sessionId = await saveWorkoutSession(state);
+      const sid = await saveWorkoutSession(state);
+      sessionId = sid ?? undefined;
       if (sessionId) {
-        // Send workout completion notification
         if (user?.id) {
           await notifyWorkoutCompleted(user.id, state.workoutName, sessionId);
         }
-        
-        // Check for PRs
         const prs = await checkAndSavePRs(state, sessionId);
         if (prs.length > 0) {
           setNewPRs(prs);
           toast.success(`${prs.length} new PR${prs.length > 1 ? 's' : ''}!`);
-          
-          // Send PR notifications
           if (user?.id) {
             for (const pr of prs) {
               await notifyPRSet(user.id, pr.exercise_name, `${pr.value}kg`, pr.exercise_id);
@@ -155,8 +158,15 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
       }
     }
     clearSavedWorkout();
-    navigate("/");
-  }, [navigate, state, saveWorkoutSession, checkAndSavePRs, user]);
+    setCompletedSessionId(sessionId);
+    setIsSavingSession(false);
+    // Auto-open share sheet if user's default preference is enabled
+    if (profile?.social_share_after_workout) {
+      setShowSharePost(true);
+    } else {
+      navigate("/");
+    }
+  }, [isSavingSession, navigate, state, saveWorkoutSession, checkAndSavePRs, user, profile]);
 
   // For freeform workouts without exercises yet, show empty state with add prompt
   const hasNoExercises = state && state.exercises.length === 0;
@@ -335,7 +345,13 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
             Share to Community
           </Button>
 
-          <Button onClick={handleFinish} className="w-full h-12 rounded-xl font-semibold">Done</Button>
+          <Button
+            onClick={handleFinish}
+            className="w-full h-12 rounded-xl font-semibold"
+            disabled={isSavingSession}
+          >
+            {isSavingSession ? "Saving…" : "Done"}
+          </Button>
         </motion.div>
         
         {/* Save as Template Dialog */}
@@ -350,9 +366,10 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         {/* Post-workout share sheet */}
         <CreatePostSheet
           open={showSharePost}
-          onClose={() => setShowSharePost(false)}
+          onClose={() => { setShowSharePost(false); navigate("/"); }}
           prefillStatsCard={statsCardData || undefined}
           prefillCaption={`Just finished ${state.workoutName || "a workout"}! 💪`}
+          workoutSessionId={completedSessionId}
         />
       </div>
     );

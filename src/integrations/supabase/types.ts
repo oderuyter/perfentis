@@ -6291,6 +6291,7 @@ export type Database = {
           privacy_analytics: boolean | null
           privacy_insights: boolean | null
           resting_hr: number | null
+          social_share_after_workout: boolean
           status: string | null
           telephone: string | null
           theme_mode: string | null
@@ -6338,6 +6339,7 @@ export type Database = {
           privacy_analytics?: boolean | null
           privacy_insights?: boolean | null
           resting_hr?: number | null
+          social_share_after_workout?: boolean
           status?: string | null
           telephone?: string | null
           theme_mode?: string | null
@@ -6385,6 +6387,7 @@ export type Database = {
           privacy_analytics?: boolean | null
           privacy_insights?: boolean | null
           resting_hr?: number | null
+          social_share_after_workout?: boolean
           status?: string | null
           telephone?: string | null
           theme_mode?: string | null

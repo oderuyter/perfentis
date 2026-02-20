@@ -49,6 +49,8 @@ export interface UserProfile {
   date_of_birth: string | null;
   privacy_analytics: boolean | null;
   privacy_insights: boolean | null;
+  // Social settings
+  social_share_after_workout: boolean | null;
 }
 
 export function useProfile() {
