@@ -59,17 +59,17 @@ export function CreatePostSheet({
     ...(communities?.gyms || []).map((g) => ({
       type: "gym" as ScopeType,
       label: g.name,
-      id: g.id,
+      id: String(g.id || ""),
     })),
     ...(communities?.events || []).map((e) => ({
       type: "event" as ScopeType,
       label: e.name,
-      id: e.id,
+      id: String(e.id || ""),
     })),
     ...(communities?.runClubs || []).map((rc) => ({
       type: "run_club" as ScopeType,
       label: rc.name,
-      id: rc.id,
+      id: String(rc.id || ""),
     })),
   ];
 

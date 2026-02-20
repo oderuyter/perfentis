@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save, Trash2 } from "lucide-react";
+import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save, Trash2, Share2 } from "lucide-react";
 
 import { useParams, useNavigate } from "react-router-dom";
 import { workouts, type Workout } from "@/data/workouts";
@@ -20,6 +20,7 @@ import { RestTimerEdit } from "@/components/workout/RestTimerEdit";
 import { ExerciseNav } from "@/components/workout/ExerciseNav";
 import { AdvancedMetrics } from "@/components/workout/AdvancedMetrics";
 import { SaveAsTemplateDialog } from "@/components/workout/SaveAsTemplateDialog";
+import { CreatePostSheet } from "@/components/social/CreatePostSheet";
 import { HRPanel } from "@/components/workout/HRPanel";
 import { toast } from "sonner";
 import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
@@ -74,6 +75,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   // session survives localStorage being cleared or the device crashing.
   useWorkoutHeartbeat(state);
   const [newPRs, setNewPRs] = useState<PersonalRecord[]>([]);
+  const [showSharePost, setShowSharePost] = useState(false);
 
   // Overlays
   const [showHROverlay, setShowHROverlay] = useState(false);
@@ -85,6 +87,26 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(!!resumeState);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+
+  // Build stats card data for post-workout sharing
+  const statsCardData = useMemo(() => {
+    if (!state) return null;
+    const completedSets = state.exercises.flatMap((e) => e.sets).filter((s) => s.completed);
+    const totalVolume = completedSets.reduce((sum, s) => sum + (s.completedWeight || 0) * (s.completedReps || 0), 0);
+    const topExercises = state.exercises
+      .filter((e) => !e.skipped && e.sets.some((s) => s.completed))
+      .map((e) => e.name)
+      .slice(0, 3);
+    return {
+      workout_name: state.workoutName || "Workout",
+      date: new Date().toISOString(),
+      duration_seconds: state.elapsedTime,
+      total_volume_kg: totalVolume > 0 ? totalVolume : undefined,
+      top_exercises: topExercises,
+      session_type: "strength" as const,
+      is_pr: newPRs.length > 0,
+    };
+  }, [state, newPRs]);
 
   // Navigate away without ending workout - just go back
   const handleMinimize = useCallback(() => {
@@ -303,6 +325,16 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
             </Button>
           )}
           
+          {/* Share to community */}
+          <Button
+            variant="outline"
+            onClick={() => setShowSharePost(true)}
+            className="w-full h-12 rounded-xl font-semibold mb-3 gap-2"
+          >
+            <Share2 className="h-5 w-5" />
+            Share to Community
+          </Button>
+
           <Button onClick={handleFinish} className="w-full h-12 rounded-xl font-semibold">Done</Button>
         </motion.div>
         
@@ -313,6 +345,14 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
           exercises={templateExercises}
           suggestedName=""
           duration={Math.round(state.elapsedTime / 60)}
+        />
+
+        {/* Post-workout share sheet */}
+        <CreatePostSheet
+          open={showSharePost}
+          onClose={() => setShowSharePost(false)}
+          prefillStatsCard={statsCardData || undefined}
+          prefillCaption={`Just finished ${state.workoutName || "a workout"}! 💪`}
         />
       </div>
     );
