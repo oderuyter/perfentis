@@ -577,19 +577,23 @@ export function useUserCommunities() {
           .eq("status", "active"),
       ]);
 
+      // Deduplicate by id
+      const uniqueById = <T extends { id: unknown }>(arr: T[]) =>
+        arr.filter((item, idx, self) => self.findIndex((x) => x.id === item.id) === idx);
+
       return {
-        gyms: (gymsRes.data || []).map((m: Record<string, unknown>) => {
+        gyms: uniqueById((gymsRes.data || []).map((m: Record<string, unknown>) => {
           const gym = m.gyms as { id: string; name: string } | null;
-          return { id: gym?.id || m.gym_id, name: gym?.name || "Gym" };
-        }),
-        events: (eventsRes.data || []).map((m: Record<string, unknown>) => {
+          return { id: gym?.id || String(m.gym_id), name: gym?.name || "Gym" };
+        })),
+        events: uniqueById((eventsRes.data || []).map((m: Record<string, unknown>) => {
           const ev = m.events as { id: string; name: string } | null;
-          return { id: ev?.id || m.event_id, name: ev?.name || "Event" };
-        }),
-        runClubs: (rcRes.data || []).map((m: Record<string, unknown>) => {
+          return { id: ev?.id || String(m.event_id), name: ev?.name || "Event" };
+        })),
+        runClubs: uniqueById((rcRes.data || []).map((m: Record<string, unknown>) => {
           const rc = m.run_clubs as { id: string; name: string } | null;
-          return { id: rc?.id || m.run_club_id, name: rc?.name || "Run Club" };
-        }),
+          return { id: rc?.id || String(m.run_club_id), name: rc?.name || "Run Club" };
+        })),
       };
     },
     enabled: !!user,

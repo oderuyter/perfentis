@@ -118,13 +118,14 @@ export default function AdminSocial() {
 
   const handleBanUser = async () => {
     if (!banTarget || !user) return;
-    const { error } = await supabase.from("social_user_bans").insert({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase.from("social_user_bans") as any).insert({
       user_id: banTarget.userId,
       ban_type: banType,
       reason: banReason || null,
       created_by: user.id,
       expires_at: banType === "temp" ? new Date(Date.now() + 7 * 86400_000).toISOString() : null,
-    } as Parameters<typeof supabase.from>[0] extends "social_user_bans" ? never : never);
+    });
 
     if (error) { toast.error("Failed to apply sanction"); return; }
     await logAuditEvent({
