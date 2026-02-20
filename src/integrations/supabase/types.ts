@@ -7378,56 +7378,315 @@ export type Database = {
         }
         Relationships: []
       }
-      social_posts: {
+      social_comments: {
         Row: {
-          comments_count: number
-          content: string
           created_at: string
-          flagged_at: string | null
-          flagged_reason: string | null
+          deleted_at: string | null
           id: string
-          is_flagged: boolean
-          is_removed: boolean
-          likes_count: number
-          media_urls: string[] | null
-          removal_reason: string | null
-          removed_at: string | null
-          removed_by: string | null
-          updated_at: string
+          post_id: string
+          text: string
           user_id: string
         }
         Insert: {
-          comments_count?: number
-          content: string
           created_at?: string
-          flagged_at?: string | null
-          flagged_reason?: string | null
+          deleted_at?: string | null
           id?: string
-          is_flagged?: boolean
-          is_removed?: boolean
-          likes_count?: number
-          media_urls?: string[] | null
-          removal_reason?: string | null
-          removed_at?: string | null
-          removed_by?: string | null
-          updated_at?: string
+          post_id: string
+          text: string
           user_id: string
         }
         Update: {
-          comments_count?: number
-          content?: string
           created_at?: string
+          deleted_at?: string | null
+          id?: string
+          post_id?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_moderation_actions: {
+        Row: {
+          action_type: string
+          actor_user_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          reason: string | null
+          scope_id: string | null
+          scope_type: string | null
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action_type: string
+          actor_user_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action_type?: string
+          actor_user_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          reason?: string | null
+          scope_id?: string | null
+          scope_type?: string | null
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
+      social_posts: {
+        Row: {
+          author_user_id: string | null
+          caption: string | null
+          comments_count: number
+          comments_locked: boolean
+          content: string
+          created_at: string
+          deleted_at: string | null
+          flagged_at: string | null
+          flagged_reason: string | null
+          id: string
+          image_url: string | null
+          is_flagged: boolean
+          is_hidden: boolean
+          is_pinned: boolean
+          is_removed: boolean
+          likes_count: number
+          media_urls: string[] | null
+          pinned_at: string | null
+          pinned_by_user_id: string | null
+          post_type: string
+          removal_reason: string | null
+          removed_at: string | null
+          removed_by: string | null
+          scope_id: string | null
+          scope_type: string
+          stats_card_data: Json | null
+          updated_at: string
+          user_id: string
+          workout_session_id: string | null
+        }
+        Insert: {
+          author_user_id?: string | null
+          caption?: string | null
+          comments_count?: number
+          comments_locked?: boolean
+          content: string
+          created_at?: string
+          deleted_at?: string | null
           flagged_at?: string | null
           flagged_reason?: string | null
           id?: string
+          image_url?: string | null
           is_flagged?: boolean
+          is_hidden?: boolean
+          is_pinned?: boolean
           is_removed?: boolean
           likes_count?: number
           media_urls?: string[] | null
+          pinned_at?: string | null
+          pinned_by_user_id?: string | null
+          post_type?: string
           removal_reason?: string | null
           removed_at?: string | null
           removed_by?: string | null
+          scope_id?: string | null
+          scope_type?: string
+          stats_card_data?: Json | null
           updated_at?: string
+          user_id: string
+          workout_session_id?: string | null
+        }
+        Update: {
+          author_user_id?: string | null
+          caption?: string | null
+          comments_count?: number
+          comments_locked?: boolean
+          content?: string
+          created_at?: string
+          deleted_at?: string | null
+          flagged_at?: string | null
+          flagged_reason?: string | null
+          id?: string
+          image_url?: string | null
+          is_flagged?: boolean
+          is_hidden?: boolean
+          is_pinned?: boolean
+          is_removed?: boolean
+          likes_count?: number
+          media_urls?: string[] | null
+          pinned_at?: string | null
+          pinned_by_user_id?: string | null
+          post_type?: string
+          removal_reason?: string | null
+          removed_at?: string | null
+          removed_by?: string | null
+          scope_id?: string | null
+          scope_type?: string
+          stats_card_data?: Json | null
+          updated_at?: string
+          user_id?: string
+          workout_session_id?: string | null
+        }
+        Relationships: []
+      }
+      social_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          reaction_type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          reason: string
+          reporter_user_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason: string
+          reporter_user_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          reason?: string
+          reporter_user_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
+      social_stories: {
+        Row: {
+          author_user_id: string
+          caption: string | null
+          created_at: string
+          deleted_at: string | null
+          expires_at: string
+          id: string
+          scope_id: string | null
+          scope_type: string
+          stats_card_data: Json | null
+          story_type: string
+        }
+        Insert: {
+          author_user_id: string
+          caption?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          scope_id?: string | null
+          scope_type?: string
+          stats_card_data?: Json | null
+          story_type?: string
+        }
+        Update: {
+          author_user_id?: string
+          caption?: string | null
+          created_at?: string
+          deleted_at?: string | null
+          expires_at?: string
+          id?: string
+          scope_id?: string | null
+          scope_type?: string
+          stats_card_data?: Json | null
+          story_type?: string
+        }
+        Relationships: []
+      }
+      social_user_bans: {
+        Row: {
+          ban_type: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          lifted_at: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          ban_type: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          lifted_at?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          ban_type?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          lifted_at?: string | null
+          reason?: string | null
           user_id?: string
         }
         Relationships: []
