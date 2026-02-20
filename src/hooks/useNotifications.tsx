@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
@@ -41,176 +42,196 @@ export interface NotificationPreferences {
 
 export function useNotifications() {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<UserNotification[]>([]);
-  const [preferences, setPreferences] = useState<NotificationPreferences | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchNotifications = useCallback(async () => {
-    if (!user) {
-      setNotifications([]);
-      setUnreadCount(0);
-      return;
-    }
-
-    try {
+  // --- Notifications query ---
+  const {
+    data: notifications = [],
+    isLoading: notificationsLoading,
+    refetch: refetchNotifications,
+  } = useQuery<UserNotification[]>({
+    queryKey: ["notifications", user?.id],
+    queryFn: async () => {
+      if (!user) return [];
       const { data, error } = await supabase
         .from("user_notifications")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(50);
-
       if (error) throw error;
-      
-      const typedData = (data || []).map((n: Record<string, unknown>) => ({
+      return (data || []).map((n: Record<string, unknown>) => ({
         id: n.id as string,
         user_id: n.user_id as string,
         title: n.title as string,
         body: n.body as string,
-        type: (n.type as string) || 'system',
+        type: (n.type as string) || "system",
         entity_type: n.entity_type as string | null,
         entity_id: n.entity_id as string | null,
         action_url: n.action_url as string | null,
         read_at: n.read_at as string | null,
         created_at: n.created_at as string,
       })) as UserNotification[];
-      setNotifications(typedData);
-      setUnreadCount(typedData.filter(n => !n.read_at).length);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    }
-  }, [user]);
+    },
+    enabled: !!user,
+    staleTime: 30 * 1000, // 30 seconds
+  });
 
-  const fetchPreferences = useCallback(async () => {
-    if (!user) {
-      setPreferences(null);
-      setIsLoading(false);
-      return;
-    }
+  const unreadCount = notifications.filter((n) => !n.read_at).length;
 
-    try {
+  // --- Preferences query ---
+  const {
+    data: preferences = null,
+    isLoading: preferencesLoading,
+  } = useQuery<NotificationPreferences | null>({
+    queryKey: ["notification-preferences", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from("notification_preferences")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-
       if (error) throw error;
-      
-      if (data) {
-        setPreferences(data as NotificationPreferences);
-      } else {
-        // Create default preferences
-        const { data: newPrefs, error: insertError } = await supabase
-          .from("notification_preferences")
-          .insert({ user_id: user.id })
-          .select()
-          .single();
-        
-        if (!insertError && newPrefs) {
-          setPreferences(newPrefs as NotificationPreferences);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching notification preferences:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
+      if (data) return data as NotificationPreferences;
+      // Create defaults if none exist
+      const { data: newPrefs, error: insertError } = await supabase
+        .from("notification_preferences")
+        .insert({ user_id: user.id })
+        .select()
+        .single();
+      if (insertError) throw insertError;
+      return newPrefs as NotificationPreferences;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchNotifications();
-    fetchPreferences();
-  }, [fetchNotifications, fetchPreferences]);
+  const isLoading = notificationsLoading || preferencesLoading;
 
-  // Real-time subscription
+  // --- Real-time subscription ---
   useEffect(() => {
     if (!user) return;
-
     const channel = supabase
-      .channel('user_notifications')
+      .channel("user_notifications")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'user_notifications',
+          event: "INSERT",
+          schema: "public",
+          table: "user_notifications",
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          const newNotification = payload.new as UserNotification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
+          queryClient.setQueryData<UserNotification[]>(
+            ["notifications", user.id],
+            (old = []) => [payload.new as UserNotification, ...old]
+          );
         }
       )
       .subscribe();
-
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, queryClient]);
 
-  const markAsRead = async (notificationId: string) => {
-    if (!user) return;
-
-    try {
+  // --- Mutations ---
+  const markAsReadMutation = useMutation({
+    mutationFn: async (notificationId: string) => {
+      if (!user) throw new Error("Not authenticated");
+      const readAt = new Date().toISOString();
       const { error } = await supabase
         .from("user_notifications")
-        .update({ read_at: new Date().toISOString() })
+        .update({ read_at: readAt })
         .eq("id", notificationId)
         .eq("user_id", user.id);
-
       if (error) throw error;
-
-      setNotifications(prev =>
-        prev.map(n =>
-          n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n
-        )
+      return { notificationId, readAt };
+    },
+    onMutate: async (notificationId) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications", user?.id] });
+      const previous = queryClient.getQueryData<UserNotification[]>(["notifications", user?.id]);
+      const readAt = new Date().toISOString();
+      queryClient.setQueryData<UserNotification[]>(
+        ["notifications", user?.id],
+        (old = []) => old.map((n) => (n.id === notificationId ? { ...n, read_at: readAt } : n))
       );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
-  };
+      return { previous };
+    },
+    onError: (_err, _id, context) => {
+      queryClient.setQueryData(["notifications", user?.id], context?.previous);
+    },
+  });
 
-  const markAllAsRead = async () => {
-    if (!user) return;
-
-    try {
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("Not authenticated");
+      const readAt = new Date().toISOString();
       const { error } = await supabase
         .from("user_notifications")
-        .update({ read_at: new Date().toISOString() })
+        .update({ read_at: readAt })
         .eq("user_id", user.id)
         .is("read_at", null);
-
       if (error) throw error;
-
-      setNotifications(prev =>
-        prev.map(n => ({ ...n, read_at: n.read_at || new Date().toISOString() }))
+      return new Date().toISOString();
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["notifications", user?.id] });
+      const previous = queryClient.getQueryData<UserNotification[]>(["notifications", user?.id]);
+      const readAt = new Date().toISOString();
+      queryClient.setQueryData<UserNotification[]>(
+        ["notifications", user?.id],
+        (old = []) => old.map((n) => ({ ...n, read_at: n.read_at || readAt }))
       );
-      setUnreadCount(0);
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-    }
-  };
+      return { previous };
+    },
+    onError: (_err, _v, context) => {
+      queryClient.setQueryData(["notifications", user?.id], context?.previous);
+    },
+  });
 
-  const updatePreferences = async (updates: Partial<NotificationPreferences>) => {
-    if (!user || !preferences) return;
-
-    try {
+  const updatePreferencesMutation = useMutation({
+    mutationFn: async (updates: Partial<NotificationPreferences>) => {
+      if (!user) throw new Error("Not authenticated");
       const { error } = await supabase
         .from("notification_preferences")
         .update(updates)
         .eq("user_id", user.id);
-
       if (error) throw error;
+      return updates;
+    },
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey: ["notification-preferences", user?.id] });
+      const previous = queryClient.getQueryData<NotificationPreferences | null>([
+        "notification-preferences",
+        user?.id,
+      ]);
+      queryClient.setQueryData<NotificationPreferences | null>(
+        ["notification-preferences", user?.id],
+        (old) => (old ? { ...old, ...updates } : old)
+      );
+      return { previous };
+    },
+    onError: (_err, _updates, context) => {
+      queryClient.setQueryData(["notification-preferences", user?.id], context?.previous);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notification-preferences", user?.id] });
+    },
+  });
 
-      setPreferences(prev => prev ? { ...prev, ...updates } : null);
-    } catch (error) {
-      console.error("Error updating notification preferences:", error);
-    }
-  };
+  const markAsRead = useCallback(
+    (notificationId: string) => markAsReadMutation.mutateAsync(notificationId),
+    [markAsReadMutation]
+  );
+  const markAllAsRead = useCallback(
+    () => markAllAsReadMutation.mutateAsync(),
+    [markAllAsReadMutation]
+  );
+  const updatePreferences = useCallback(
+    (updates: Partial<NotificationPreferences>) => updatePreferencesMutation.mutateAsync(updates),
+    [updatePreferencesMutation]
+  );
 
   return {
     notifications,
@@ -220,7 +241,7 @@ export function useNotifications() {
     markAsRead,
     markAllAsRead,
     updatePreferences,
-    refetch: fetchNotifications,
+    refetch: refetchNotifications,
   };
 }
 
@@ -229,13 +250,13 @@ export async function createNotification(
   userId: string,
   title: string,
   body: string,
-  type: string = 'system',
+  type: string = "system",
   entityType?: string,
   entityId?: string,
   actionUrl?: string
 ) {
   try {
-    const { data, error } = await supabase.rpc('create_notification', {
+    const { data, error } = await supabase.rpc("create_notification", {
       _user_id: userId,
       _title: title,
       _body: body,
@@ -244,7 +265,6 @@ export async function createNotification(
       _entity_id: entityId || null,
       _action_url: actionUrl || null,
     });
-
     if (error) throw error;
     return data;
   } catch (error) {

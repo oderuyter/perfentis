@@ -7,6 +7,7 @@ import { workouts, type Workout } from "@/data/workouts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useWorkoutState, loadSavedWorkout, clearSavedWorkout } from "@/hooks/useWorkoutState";
+import { useWorkoutHeartbeat } from "@/hooks/useWorkoutSync";
 import { useWorkoutHistory } from "@/hooks/useWorkoutHistory";
 import { usePersonalRecords, type PersonalRecord } from "@/hooks/usePersonalRecords";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,6 +69,10 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
 
   const { saveWorkoutSession } = useWorkoutHistory();
   const { checkAndSavePRs } = usePersonalRecords();
+
+  // Background 30-second heartbeat: upserts `status='active'` to the DB so the
+  // session survives localStorage being cleared or the device crashing.
+  useWorkoutHeartbeat(state);
   const [newPRs, setNewPRs] = useState<PersonalRecord[]>([]);
 
   // Overlays

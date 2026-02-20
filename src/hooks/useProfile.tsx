@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { toast } from "sonner";
@@ -52,53 +53,63 @@ export interface UserProfile {
 
 export function useProfile() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  const fetchProfile = useCallback(async () => {
-    if (!user) {
-      setProfile(null);
-      setIsLoading(false);
-      return;
-    }
-
-    try {
+  const { data: profile = null, isLoading } = useQuery<UserProfile | null>({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => {
+      if (!user) return null;
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
         .maybeSingle();
-
       if (error) throw error;
-      setProfile(data as UserProfile | null);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
+      return data as UserProfile | null;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user || !profile) return;
-
-    try {
+  const updateProfileMutation = useMutation({
+    mutationFn: async (updates: Partial<UserProfile>) => {
+      if (!user) throw new Error("Not authenticated");
       const { error } = await supabase
         .from("profiles")
         .update(updates)
         .eq("user_id", user.id);
-
       if (error) throw error;
-
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
-    } catch (error) {
-      console.error("Error updating profile:", error);
+      return updates;
+    },
+    onMutate: async (updates) => {
+      // Optimistic update
+      await queryClient.cancelQueries({ queryKey: ["profile", user?.id] });
+      const previous = queryClient.getQueryData<UserProfile | null>(["profile", user?.id]);
+      queryClient.setQueryData<UserProfile | null>(
+        ["profile", user?.id],
+        (old) => (old ? { ...old, ...updates } : old)
+      );
+      return { previous };
+    },
+    onError: (_err, _updates, context) => {
+      // Rollback
+      queryClient.setQueryData(["profile", user?.id], context?.previous);
       toast.error("Failed to save preferences");
-    }
-  };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile", user?.id] });
+    },
+  });
 
-  return { profile, isLoading, updateProfile, refetch: fetchProfile };
+  const updateProfile = useCallback(
+    (updates: Partial<UserProfile>) => updateProfileMutation.mutateAsync(updates),
+    [updateProfileMutation]
+  );
+
+  return {
+    profile,
+    isLoading,
+    updateProfile,
+    refetch: () => queryClient.invalidateQueries({ queryKey: ["profile", user?.id] }),
+  };
 }
