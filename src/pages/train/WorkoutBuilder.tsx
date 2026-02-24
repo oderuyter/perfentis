@@ -19,15 +19,16 @@ import { toast } from "sonner";
 import { useWorkoutTemplates } from "@/hooks/useWorkoutTemplates";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { WorkoutStructureEditor } from "@/components/workout/WorkoutStructureEditor";
+import { UnifiedBlockBuilder } from "@/components/workout/UnifiedBlockBuilder";
+import {
+  type WorkoutBlock,
+  parseExerciseDataToBlocks,
+  blocksToLegacyItems,
+} from "@/types/workout-blocks";
 import {
   type WorkoutStructureItem,
-  type ExerciseItem,
-  type SupersetBlock,
   isSuperset,
   isExercise,
-  legacyToStructuredItems,
-  generateItemId,
 } from "@/types/superset";
 import type { WorkoutType, DifficultyLevel, WorkoutStructureData } from "@/types/workout-templates";
 
@@ -46,7 +47,7 @@ export default function WorkoutBuilder() {
   const [duration, setDuration] = useState("45");
   const [workoutType, setWorkoutType] = useState<WorkoutType>("mixed");
   const [difficulty, setDifficulty] = useState<DifficultyLevel | "">("");
-  const [structuredItems, setStructuredItems] = useState<WorkoutStructureItem[]>([]);
+  const [structuredBlocks, setStructuredBlocks] = useState<WorkoutBlock[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(!isNew);
 
@@ -77,10 +78,10 @@ export default function WorkoutBuilder() {
         setWorkoutType(data.workout_type as WorkoutType);
         setDifficulty((data.difficulty_level as DifficultyLevel) || "");
         
-        // Parse exercise_data - convert legacy format to structured items
+        // Parse exercise_data - convert to unified blocks
         if (data.exercise_data && Array.isArray(data.exercise_data)) {
-          const items = legacyToStructuredItems(data.exercise_data);
-          setStructuredItems(items);
+          const blocks = parseExerciseDataToBlocks(data.exercise_data);
+          setStructuredBlocks(blocks);
         }
       }
     } catch (error) {
@@ -93,12 +94,7 @@ export default function WorkoutBuilder() {
 
   // Count total exercises (including inside supersets)
   const getTotalExerciseCount = () => {
-    return structuredItems.reduce((count, item) => {
-      if (isSuperset(item)) {
-        return count + item.items.length;
-      }
-      return count + 1;
-    }, 0);
+    return structuredBlocks.reduce((count, block) => count + block.items.length, 0);
   };
 
   const handleSave = async () => {
@@ -114,47 +110,8 @@ export default function WorkoutBuilder() {
 
     setSaving(true);
     try {
-      // Convert structured items back to exercise_data format
-      // This preserves the superset structure in the JSONB
-      const exerciseData: WorkoutStructureData[] = structuredItems.map((item, index) => {
-        if (isSuperset(item)) {
-          return {
-            type: 'superset' as const,
-            id: item.id,
-            name: item.name,
-            rounds: item.rounds || 1,
-            rest_after_round_seconds: item.rest_after_round_seconds || 90,
-            rest_between_exercises_seconds: item.rest_between_exercises_seconds || 0,
-            items: item.items.map((ex, i) => ({
-              type: 'exercise' as const,
-              exercise_id: ex.exercise_id,
-              name: ex.name,
-              sets: ex.sets,
-              reps: typeof ex.reps === 'string' ? parseInt(ex.reps) || 0 : (ex.reps || 0),
-              reps_min: ex.reps_min,
-              reps_max: ex.reps_max,
-              rest_seconds: ex.rest_seconds || 90,
-              notes: ex.notes,
-              exercise_type: ex.exercise_type,
-              order_index: i,
-            })),
-            order_index: index,
-          };
-        }
-        return {
-          type: 'exercise' as const,
-          exercise_id: item.exercise_id,
-          name: item.name,
-          sets: item.sets,
-          reps: typeof item.reps === 'string' ? parseInt(item.reps as string) || 0 : (item.reps || 0),
-          reps_min: item.reps_min,
-          reps_max: item.reps_max,
-          rest_seconds: item.rest_seconds || 90,
-          notes: item.notes,
-          exercise_type: item.exercise_type,
-          order_index: index,
-        };
-      });
+      // Convert blocks back to JSONB format for storage
+      const exerciseData = blocksToLegacyItems(structuredBlocks);
 
       if (isNew) {
         await createTemplate.mutateAsync({
@@ -322,10 +279,10 @@ export default function WorkoutBuilder() {
           </CardContent>
         </Card>
 
-        {/* Exercises - Now with superset support */}
-        <WorkoutStructureEditor
-          items={structuredItems}
-          onChange={setStructuredItems}
+        {/* Exercises - Unified Block Builder */}
+        <UnifiedBlockBuilder
+          blocks={structuredBlocks}
+          onChange={setStructuredBlocks}
           title="Exercises"
         />
       </motion.div>

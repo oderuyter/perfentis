@@ -289,6 +289,60 @@ export type Database = {
         }
         Relationships: []
       }
+      block_instances: {
+        Row: {
+          block_id: string
+          context_json: Json
+          created_at: string
+          elapsed_seconds: number | null
+          ended_at: string | null
+          id: string
+          started_at: string | null
+          status: string
+          updated_at: string
+          workout_session_id: string
+        }
+        Insert: {
+          block_id: string
+          context_json?: Json
+          created_at?: string
+          elapsed_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          workout_session_id: string
+        }
+        Update: {
+          block_id?: string
+          context_json?: Json
+          created_at?: string
+          elapsed_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          workout_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "block_instances_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "workout_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "block_instances_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bodyweight_logs: {
         Row: {
           created_at: string
@@ -3467,6 +3521,7 @@ export type Database = {
       exercise_logs: {
         Row: {
           athlete_notes: string | null
+          block_instance_id: string | null
           coach_prescribed_notes: string | null
           created_at: string
           exercise_id: string
@@ -3479,6 +3534,7 @@ export type Database = {
         }
         Insert: {
           athlete_notes?: string | null
+          block_instance_id?: string | null
           coach_prescribed_notes?: string | null
           created_at?: string
           exercise_id: string
@@ -3491,6 +3547,7 @@ export type Database = {
         }
         Update: {
           athlete_notes?: string | null
+          block_instance_id?: string | null
           coach_prescribed_notes?: string | null
           created_at?: string
           exercise_id?: string
@@ -3502,6 +3559,13 @@ export type Database = {
           session_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "exercise_logs_block_instance_id_fkey"
+            columns: ["block_instance_id"]
+            isOneToOne: false
+            referencedRelation: "block_instances"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "exercise_logs_session_id_fkey"
             columns: ["session_id"]
@@ -7528,6 +7592,9 @@ export type Database = {
       }
       set_logs: {
         Row: {
+          block_instance_id: string | null
+          block_minute_index: number | null
+          block_round_index: number | null
           completed_reps: number | null
           completed_weight: number | null
           created_at: string
@@ -7536,6 +7603,7 @@ export type Database = {
           id: string
           is_completed: boolean | null
           load_guidance: string | null
+          partner_user_id: string | null
           rest_duration: number | null
           rpe: number | null
           set_number: number
@@ -7546,6 +7614,9 @@ export type Database = {
           tempo: string | null
         }
         Insert: {
+          block_instance_id?: string | null
+          block_minute_index?: number | null
+          block_round_index?: number | null
           completed_reps?: number | null
           completed_weight?: number | null
           created_at?: string
@@ -7554,6 +7625,7 @@ export type Database = {
           id?: string
           is_completed?: boolean | null
           load_guidance?: string | null
+          partner_user_id?: string | null
           rest_duration?: number | null
           rpe?: number | null
           set_number: number
@@ -7564,6 +7636,9 @@ export type Database = {
           tempo?: string | null
         }
         Update: {
+          block_instance_id?: string | null
+          block_minute_index?: number | null
+          block_round_index?: number | null
           completed_reps?: number | null
           completed_weight?: number | null
           created_at?: string
@@ -7572,6 +7647,7 @@ export type Database = {
           id?: string
           is_completed?: boolean | null
           load_guidance?: string | null
+          partner_user_id?: string | null
           rest_duration?: number | null
           rpe?: number | null
           set_number?: number
@@ -7582,6 +7658,13 @@ export type Database = {
           tempo?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "set_logs_block_instance_id_fkey"
+            columns: ["block_instance_id"]
+            isOneToOne: false
+            referencedRelation: "block_instances"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "set_logs_exercise_log_id_fkey"
             columns: ["exercise_log_id"]
@@ -8546,6 +8629,111 @@ export type Database = {
         }
         Relationships: []
       }
+      workout_block_items: {
+        Row: {
+          block_id: string
+          created_at: string
+          exercise_id: string | null
+          exercise_name_override: string | null
+          id: string
+          item_notes: string | null
+          order_index: number
+          target_json: Json | null
+          updated_at: string
+        }
+        Insert: {
+          block_id: string
+          created_at?: string
+          exercise_id?: string | null
+          exercise_name_override?: string | null
+          id?: string
+          item_notes?: string | null
+          order_index?: number
+          target_json?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          block_id?: string
+          created_at?: string
+          exercise_id?: string | null
+          exercise_name_override?: string | null
+          id?: string
+          item_notes?: string | null
+          order_index?: number
+          target_json?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_block_items_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "workout_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_blocks: {
+        Row: {
+          block_type: string
+          created_at: string
+          id: string
+          order_index: number
+          parent_block_id: string | null
+          settings_json: Json
+          title: string | null
+          updated_at: string
+          workout_session_id: string | null
+          workout_template_id: string | null
+        }
+        Insert: {
+          block_type: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          parent_block_id?: string | null
+          settings_json?: Json
+          title?: string | null
+          updated_at?: string
+          workout_session_id?: string | null
+          workout_template_id?: string | null
+        }
+        Update: {
+          block_type?: string
+          created_at?: string
+          id?: string
+          order_index?: number
+          parent_block_id?: string | null
+          settings_json?: Json
+          title?: string | null
+          updated_at?: string
+          workout_session_id?: string | null
+          workout_template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_blocks_parent_block_id_fkey"
+            columns: ["parent_block_id"]
+            isOneToOne: false
+            referencedRelation: "workout_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_blocks_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_blocks_workout_template_id_fkey"
+            columns: ["workout_template_id"]
+            isOneToOne: false
+            referencedRelation: "workout_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workout_sessions: {
         Row: {
           avg_hr: number | null
@@ -8832,6 +9020,44 @@ export type Database = {
             columns: ["parent_template_id"]
             isOneToOne: false
             referencedRelation: "workout_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ygig_invitations: {
+        Row: {
+          accepted_at: string | null
+          block_instance_id: string
+          created_at: string
+          id: string
+          invitee_user_id: string
+          inviter_user_id: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          block_instance_id: string
+          created_at?: string
+          id?: string
+          invitee_user_id: string
+          inviter_user_id: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          block_instance_id?: string
+          created_at?: string
+          id?: string
+          invitee_user_id?: string
+          inviter_user_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ygig_invitations_block_instance_id_fkey"
+            columns: ["block_instance_id"]
+            isOneToOne: false
+            referencedRelation: "block_instances"
             referencedColumns: ["id"]
           },
         ]
