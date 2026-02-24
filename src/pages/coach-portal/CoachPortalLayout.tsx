@@ -18,7 +18,8 @@ import {
   Briefcase,
   User,
   Inbox,
-  UserPlus
+  UserPlus,
+  Monitor
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,6 +45,7 @@ const navItems: NavItem[] = [
   { to: "/coach-portal/progress", icon: TrendingUp, label: "Progress" },
   { to: "/coach-portal/affiliations", icon: Building2, label: "Gym Affiliations" },
   { to: "/coach-portal/financials", icon: Wallet, label: "Financials" },
+  { to: "/coach-portal/displays", icon: Monitor, label: "Displays" },
   { to: "/coach-portal/settings", icon: Settings, label: "Settings" },
 ];
 

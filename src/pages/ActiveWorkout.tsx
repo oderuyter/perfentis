@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save, Trash2, Share2, Target } from "lucide-react";
+import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save, Trash2, Share2, Target, Monitor } from "lucide-react";
 
 import { useParams, useNavigate } from "react-router-dom";
 import { workouts, type Workout } from "@/data/workouts";
@@ -30,6 +30,8 @@ import { EmomTimer } from "@/components/workout/EmomTimer";
 import { AmrapTimer } from "@/components/workout/AmrapTimer";
 import { YgigPanel } from "@/components/workout/YgigPanel";
 import { computeSessionE1RM } from "@/hooks/useOneRepMax";
+import { useDisplayBroadcast } from "@/hooks/useDisplayBroadcast";
+import { SendToDisplaySheet } from "@/components/workout/SendToDisplaySheet";
 import { toast } from "sonner";
 import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
 import type { WorkoutBlock, EmomSettings, AmrapSettings, YgigSettings } from "@/types/workout-blocks";
@@ -135,6 +137,11 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const [showResumePrompt, setShowResumePrompt] = useState(!!resumeState);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [showOneRM, setShowOneRM] = useState(false);
+  const [showSendToDisplay, setShowSendToDisplay] = useState(false);
+  const [connectedDisplayId, setConnectedDisplayId] = useState<string | null>(null);
+
+  // Display broadcast
+  const { sendState, sendTick, sendSetComplete, sendSessionEnd } = useDisplayBroadcast(connectedDisplayId);
 
   // Build stats card data for post-workout sharing
   const statsCardData = useMemo(() => {
@@ -432,13 +439,21 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
           <p className="text-xs text-muted-foreground">{state.currentExerciseIndex + 1} of {state.exercises.filter(e => !e.skipped).length}</p>
           <p className="font-medium text-sm">{formatTime(state.elapsedTime)}</p>
         </button>
-        <button onClick={() => setShowHROverlay(true)} className={cn(
-          "h-10 px-3 rounded-full flex items-center gap-1.5",
-          hr.status === "connected" ? "bg-green-500/10" : "bg-accent-subtle"
-        )}>
-          <Heart className={cn("h-4 w-4", hr.status === "connected" ? "text-red-500" : "text-muted-foreground")} />
-          <span className="text-sm font-medium tabular-nums">{hr.status === "connected" && hr.currentBPM > 0 ? hr.currentBPM : '—'}</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowSendToDisplay(true)} className={cn(
+            "h-10 w-10 rounded-full flex items-center justify-center",
+            connectedDisplayId ? "bg-emerald-500/10" : "bg-muted"
+          )} title="Send to Display">
+            <Monitor className={cn("h-4 w-4", connectedDisplayId ? "text-emerald-500" : "text-muted-foreground")} />
+          </button>
+          <button onClick={() => setShowHROverlay(true)} className={cn(
+            "h-10 px-3 rounded-full flex items-center gap-1.5",
+            hr.status === "connected" ? "bg-green-500/10" : "bg-accent-subtle"
+          )}>
+            <Heart className={cn("h-4 w-4", hr.status === "connected" ? "text-red-500" : "text-muted-foreground")} />
+            <span className="text-sm font-medium tabular-nums">{hr.status === "connected" && hr.currentBPM > 0 ? hr.currentBPM : '—'}</span>
+          </button>
+        </div>
       </header>
 
       {/* Main Content */}
@@ -726,6 +741,15 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
             sessionSets={currentExercise.sets}
           />
         )}
+        <SendToDisplaySheet
+          open={showSendToDisplay}
+          onClose={() => setShowSendToDisplay(false)}
+          workoutState={state}
+          onConnected={(displayId, sessionId) => {
+            setConnectedDisplayId(displayId);
+            sendState(state);
+          }}
+        />
       </AnimatePresence>
     </div>
   );

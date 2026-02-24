@@ -1901,6 +1901,150 @@ export type Database = {
         }
         Relationships: []
       }
+      display_participants: {
+        Row: {
+          display_session_id: string
+          id: string
+          joined_at: string
+          last_seen_at: string
+          role_in_session: string
+          share_level: string
+          status: string
+          user_id: string
+          workout_session_id: string | null
+        }
+        Insert: {
+          display_session_id: string
+          id?: string
+          joined_at?: string
+          last_seen_at?: string
+          role_in_session?: string
+          share_level?: string
+          status?: string
+          user_id: string
+          workout_session_id?: string | null
+        }
+        Update: {
+          display_session_id?: string
+          id?: string
+          joined_at?: string
+          last_seen_at?: string
+          role_in_session?: string
+          share_level?: string
+          status?: string
+          user_id?: string
+          workout_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_participants_display_session_id_fkey"
+            columns: ["display_session_id"]
+            isOneToOne: false
+            referencedRelation: "display_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_participants_workout_session_id_fkey"
+            columns: ["workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      display_sessions: {
+        Row: {
+          controlling_user_id: string | null
+          created_at: string
+          current_workout_session_id: string | null
+          display_id: string
+          ended_at: string | null
+          id: string
+          join_code: string | null
+          settings_json: Json
+          started_at: string | null
+          status: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          controlling_user_id?: string | null
+          created_at?: string
+          current_workout_session_id?: string | null
+          display_id: string
+          ended_at?: string | null
+          id?: string
+          join_code?: string | null
+          settings_json?: Json
+          started_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          controlling_user_id?: string | null
+          created_at?: string
+          current_workout_session_id?: string | null
+          display_id?: string
+          ended_at?: string | null
+          id?: string
+          join_code?: string | null
+          settings_json?: Json
+          started_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_sessions_current_workout_session_id_fkey"
+            columns: ["current_workout_session_id"]
+            isOneToOne: false
+            referencedRelation: "workout_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_sessions_display_id_fkey"
+            columns: ["display_id"]
+            isOneToOne: false
+            referencedRelation: "displays"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      displays: {
+        Row: {
+          created_at: string
+          display_token: string
+          id: string
+          is_active: boolean
+          name: string
+          owner_id: string
+          owner_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_token?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          owner_id: string
+          owner_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_token?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          owner_id?: string
+          owner_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       edge_function_rate_limits: {
         Row: {
           actor_key: string
@@ -9285,6 +9429,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_display_join_code: { Args: never; Returns: string }
       generate_membership_number: { Args: { _gym_id: string }; Returns: string }
       generate_pass_token: { Args: never; Returns: string }
       get_athlete_current_workout: {
