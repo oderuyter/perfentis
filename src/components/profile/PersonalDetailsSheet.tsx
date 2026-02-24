@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, User, MapPin, Building2, Globe, Instagram, Youtube, Twitter } from "lucide-react";
+import { X, User, MapPin, Building2, Globe, Instagram, Youtube, Twitter, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,9 @@ export function PersonalDetailsSheet({ isOpen, onClose }: PersonalDetailsSheetPr
     last_name: "",
     display_name: "",
     telephone: "",
+    sex: "",
+    height_cm: "",
+    bodyweight_kg: "",
     instagram_handle: "",
     tiktok_handle: "",
     youtube_handle: "",
@@ -47,6 +50,9 @@ export function PersonalDetailsSheet({ isOpen, onClose }: PersonalDetailsSheetPr
         last_name: profile.last_name || "",
         display_name: profile.display_name || "",
         telephone: profile.telephone || "",
+        sex: profile.sex || "",
+        height_cm: profile.height_cm?.toString() || "",
+        bodyweight_kg: profile.bodyweight_kg?.toString() || "",
         instagram_handle: profile.instagram_handle || "",
         tiktok_handle: profile.tiktok_handle || "",
         youtube_handle: profile.youtube_handle || "",
@@ -77,7 +83,13 @@ export function PersonalDetailsSheet({ isOpen, onClose }: PersonalDetailsSheetPr
         return;
       }
 
-      await updateProfile(formData);
+      const { sex, height_cm, bodyweight_kg, ...rest } = formData;
+      await updateProfile({
+        ...rest,
+        sex: sex || null,
+        height_cm: height_cm ? parseFloat(height_cm) : null,
+        bodyweight_kg: bodyweight_kg ? parseFloat(bodyweight_kg) : null,
+      } as any);
       toast.success("Personal details saved");
       onClose();
     } catch (error) {
@@ -160,6 +172,59 @@ export function PersonalDetailsSheet({ isOpen, onClose }: PersonalDetailsSheetPr
                     onChange={(e) => updateField("telephone", e.target.value)}
                     placeholder="+1 234 567 8900"
                   />
+                </div>
+              </section>
+
+              <Separator />
+
+              {/* Body Stats */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Scale className="h-4 w-4" />
+                  <span>Body Stats</span>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Sex</Label>
+                  <div className="flex gap-2">
+                    {["male", "female"].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => updateField("sex", formData.sex === s ? "" : s)}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
+                          formData.sex === s
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-muted/50 text-muted-foreground border-border hover:border-primary/40"
+                        }`}
+                      >
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Height (cm)</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={formData.height_cm}
+                      onChange={(e) => updateField("height_cm", e.target.value)}
+                      placeholder="175"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Bodyweight (kg)</Label>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={formData.bodyweight_kg}
+                      onChange={(e) => updateField("bodyweight_kg", e.target.value)}
+                      placeholder="80"
+                    />
+                  </div>
                 </div>
               </section>
 

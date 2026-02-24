@@ -289,6 +289,36 @@ export type Database = {
         }
         Relationships: []
       }
+      bodyweight_logs: {
+        Row: {
+          created_at: string
+          id: string
+          logged_at: string
+          notes: string | null
+          source: string
+          user_id: string
+          weight_kg: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logged_at?: string
+          notes?: string | null
+          source?: string
+          user_id: string
+          weight_kg: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logged_at?: string
+          notes?: string | null
+          source?: string
+          user_id?: string
+          weight_kg?: number
+        }
+        Relationships: []
+      }
       capabilities: {
         Row: {
           created_at: string
@@ -6276,6 +6306,7 @@ export type Database = {
           date_of_birth: string | null
           display_name: string | null
           first_name: string | null
+          height_cm: number | null
           hr_zone1_max: number | null
           hr_zone2_max: number | null
           hr_zone3_max: number | null
@@ -6326,6 +6357,7 @@ export type Database = {
           date_of_birth?: string | null
           display_name?: string | null
           first_name?: string | null
+          height_cm?: number | null
           hr_zone1_max?: number | null
           hr_zone2_max?: number | null
           hr_zone3_max?: number | null
@@ -6376,6 +6408,7 @@ export type Database = {
           date_of_birth?: string | null
           display_name?: string | null
           first_name?: string | null
+          height_cm?: number | null
           hr_zone1_max?: number | null
           hr_zone2_max?: number | null
           hr_zone3_max?: number | null
