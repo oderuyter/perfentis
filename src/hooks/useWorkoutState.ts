@@ -205,7 +205,9 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
       
       const exercises = [...prev.exercises];
       const currentExercise = exercises[prev.currentExerciseIndex];
+      if (!currentExercise) return prev;
       const currentSet = currentExercise.sets[prev.currentSetIndex];
+      if (!currentSet) return prev;
       
       // Mark set as completed
       currentSet.completed = true;
