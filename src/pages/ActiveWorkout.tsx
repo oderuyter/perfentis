@@ -13,6 +13,7 @@ import { usePersonalRecords, type PersonalRecord } from "@/hooks/usePersonalReco
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
+import { useBlockExecution } from "@/hooks/useBlockExecution";
 import { SetEditor } from "@/components/workout/SetEditor";
 import { ExerciseHistorySheet } from "@/components/workout/ExerciseHistorySheet";
 import { SwapExerciseSheet } from "@/components/workout/SwapExerciseSheet";
@@ -24,9 +25,15 @@ import { SaveAsTemplateDialog } from "@/components/workout/SaveAsTemplateDialog"
 import { CreatePostSheet } from "@/components/social/CreatePostSheet";
 import { HRPanel } from "@/components/workout/HRPanel";
 import { OneRMPanel } from "@/components/workout/OneRMPanel";
+import { BlockExecutionHeader } from "@/components/workout/BlockExecutionHeader";
+import { EmomTimer } from "@/components/workout/EmomTimer";
+import { AmrapTimer } from "@/components/workout/AmrapTimer";
+import { YgigPanel } from "@/components/workout/YgigPanel";
 import { computeSessionE1RM } from "@/hooks/useOneRepMax";
 import { toast } from "sonner";
 import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
+import type { WorkoutBlock, EmomSettings, AmrapSettings, YgigSettings } from "@/types/workout-blocks";
+import { parseExerciseDataToBlocks } from "@/types/workout-blocks";
 
 function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -49,6 +56,18 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const workout = templateWorkout || (isFreeform ? null : workouts.find(w => w.id === id));
   const savedState = loadSavedWorkout();
   const workoutId = templateWorkout?.id || id;
+
+  // Parse blocks from template workout exercise_data if available
+  const workoutBlocks = useMemo<WorkoutBlock[]>(() => {
+    if (!templateWorkout) return [];
+    try {
+      const rawData = (templateWorkout as any).exercise_data;
+      if (Array.isArray(rawData)) {
+        return parseExerciseDataToBlocks(rawData);
+      }
+    } catch {}
+    return [];
+  }, [templateWorkout]);
   const resumeState = isFreeform 
     ? (savedState?.workoutId === 'freeform' ? savedState : null)
     : (savedState?.workoutId === workoutId ? savedState : null);
@@ -74,6 +93,28 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
 
   const { saveWorkoutSession } = useWorkoutHistory();
   const { checkAndSavePRs } = usePersonalRecords();
+
+  // Block execution state for EMOM/AMRAP/YGIG
+  const blockExecution = useBlockExecution({ blocks: workoutBlocks, sessionId: undefined });
+
+  // Determine if the current exercise belongs to a block
+  const currentBlockContext = useMemo(() => {
+    if (workoutBlocks.length === 0 || !state) return null;
+    // Find which block the current exercise belongs to by matching exercise name/order
+    const currentEx = state.exercises[state.currentExerciseIndex];
+    if (!currentEx) return null;
+    
+    let globalIndex = 0;
+    for (const block of workoutBlocks) {
+      for (let i = 0; i < block.items.length; i++) {
+        if (globalIndex === state.currentExerciseIndex) {
+          return { block, itemIndex: i };
+        }
+        globalIndex++;
+      }
+    }
+    return null;
+  }, [workoutBlocks, state?.currentExerciseIndex]);
 
   // Background 30-second heartbeat: upserts `status='active'` to the DB so the
   // session survives localStorage being cleared or the device crashing.
@@ -426,6 +467,56 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
             </motion.div>
           ) : state.phase === "exercise" && currentExercise ? (
             <motion.div key="exercise" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col">
+              {/* Block execution context */}
+              {currentBlockContext && currentBlockContext.block.type !== 'single' && (
+                <div className="space-y-3 mb-4">
+                  <BlockExecutionHeader
+                    block={currentBlockContext.block}
+                    currentItemIndex={currentBlockContext.itemIndex}
+                  />
+                  {currentBlockContext.block.type === 'emom' && (
+                    <EmomTimer
+                      settings={currentBlockContext.block.settings as EmomSettings}
+                      exerciseCount={currentBlockContext.block.items.length}
+                      onMinuteChange={(minute, exIdx) => {
+                        blockExecution.updateBlockState(currentBlockContext.block.id, { currentRound: minute });
+                      }}
+                      onComplete={() => {
+                        blockExecution.completeBlock(currentBlockContext.block.id);
+                        toast.success("EMOM complete!");
+                      }}
+                    />
+                  )}
+                  {currentBlockContext.block.type === 'amrap' && (
+                    <AmrapTimer
+                      settings={currentBlockContext.block.settings as AmrapSettings}
+                      onComplete={(score) => {
+                        blockExecution.completeBlock(currentBlockContext.block.id, {
+                          roundsCompleted: score.rounds,
+                          repsInCurrentRound: score.reps,
+                        });
+                        toast.success(`AMRAP complete! ${score.rounds} rounds + ${score.reps} reps`);
+                      }}
+                    />
+                  )}
+                  {currentBlockContext.block.type === 'ygig' && user && (
+                    <YgigPanel
+                      settings={currentBlockContext.block.settings as YgigSettings}
+                      currentUserId={user.id}
+                      currentUserName={profile?.display_name || undefined}
+                      participants={[
+                        { userId: user.id, displayName: profile?.display_name || 'You' },
+                        ...(blockExecution.getBlockState(currentBlockContext.block.id)?.participants?.filter(id => id !== user.id).map(id => ({ userId: id, displayName: 'Partner' })) || [])
+                      ]}
+                      activeParticipantUserId={blockExecution.getBlockState(currentBlockContext.block.id)?.activeParticipantUserId || user.id}
+                      turnIndex={blockExecution.getBlockState(currentBlockContext.block.id)?.turnIndex || 0}
+                      onAddPartner={(partner) => blockExecution.addYgigPartner(currentBlockContext.block.id, partner)}
+                      onCompleteTurn={() => blockExecution.completeYgigTurn(currentBlockContext.block.id)}
+                    />
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="text-sm text-muted-foreground">Set {state.currentSetIndex + 1} of {currentExercise.sets.length}</p>

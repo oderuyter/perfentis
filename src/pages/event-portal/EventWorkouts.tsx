@@ -35,6 +35,12 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
+import { UnifiedBlockBuilder } from "@/components/workout/UnifiedBlockBuilder";
+import {
+  type WorkoutBlock,
+  parseExerciseDataToBlocks,
+  blocksToLegacyItems,
+} from "@/types/workout-blocks";
 
 interface Workout {
   id: string;
@@ -69,6 +75,26 @@ const emptyWorkout: Partial<Workout> = {
   stage_day: 1,
   is_published: false,
 };
+
+function EventWorkoutBlockEditor({ exerciseData, onChange }: { exerciseData: any; onChange: (data: any) => void }) {
+  const [blocks, setBlocks] = useState<WorkoutBlock[]>(() =>
+    parseExerciseDataToBlocks(Array.isArray(exerciseData) ? exerciseData : [])
+  );
+
+  const handleBlocksChange = (newBlocks: WorkoutBlock[]) => {
+    setBlocks(newBlocks);
+    onChange(blocksToLegacyItems(newBlocks));
+  };
+
+  return (
+    <UnifiedBlockBuilder
+      blocks={blocks}
+      onChange={handleBlocksChange}
+      title="Workout Exercises"
+      allowFreeText
+    />
+  );
+}
 
 export default function EventWorkouts() {
   const { selectedEventId } = useOutletContext<ContextType>();
@@ -415,6 +441,15 @@ export default function EventWorkouts() {
                   }
                   placeholder="Describe movement standards, equipment requirements..."
                   rows={3}
+                />
+              </div>
+
+              {/* Structured Exercise Builder */}
+              <div className="space-y-2">
+                <Label>Exercises (structured)</Label>
+                <EventWorkoutBlockEditor
+                  exerciseData={editing?.exercise_data}
+                  onChange={(data) => setEditing((prev) => ({ ...prev, exercise_data: data }))}
                 />
               </div>
 
