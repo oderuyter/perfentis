@@ -129,37 +129,27 @@ export function OneRMPanel({ exerciseId, exerciseName, onClose, sessionSets }: O
             </div>
           ) : (
             <div>
-              {/* Table Header */}
-              <div className="flex items-center px-2 py-2 border-b border-border/50">
-                <span className="flex-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Weight</span>
-                <span className="flex-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Reps</span>
-              </div>
-
-              {/* Table Rows */}
-              <div className="divide-y divide-border/30">
-                {tableRows.map(row => (
-                  <div
-                    key={row.reps}
-                    className={cn(
-                      'flex items-center px-2 py-3',
-                      row.reps === 1 && 'bg-primary/5'
-                    )}
-                  >
-                    <span className={cn(
-                      'flex-1 text-base font-semibold tabular-nums',
-                      row.reps === 1 && 'text-primary'
-                    )}>
-                      {row.weight}{weightUnit}
-                    </span>
-                    <span className={cn(
-                      'flex-1 text-base font-semibold tabular-nums text-right',
-                      row.reps === 1 && 'text-primary'
-                    )}>
-                      {row.reps}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {/* Table */}
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border/50">
+                    <th className="py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-left">Reps</th>
+                    <th className="py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Weight</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {tableRows.map(row => (
+                    <tr key={row.reps} className={cn(row.reps === 1 && 'bg-primary/5')}>
+                      <td className={cn('py-2.5 px-3 text-base font-semibold tabular-nums', row.reps === 1 && 'text-primary')}>
+                        {row.reps}
+                      </td>
+                      <td className={cn('py-2.5 px-3 text-base font-semibold tabular-nums text-right', row.reps === 1 && 'text-primary')}>
+                        {row.weight}{weightUnit}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
