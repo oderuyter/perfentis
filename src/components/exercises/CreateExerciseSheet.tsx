@@ -336,14 +336,14 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
                     <div className="space-y-2">
                       <Label>Sub-muscle (optional)</Label>
                       <Select
-                        value={primarySubgroupId || ''}
-                        onValueChange={(v) => setPrimarySubgroupId(v || null)}
+                        value={primarySubgroupId || '__none__'}
+                        onValueChange={(v) => setPrimarySubgroupId(v === '__none__' ? null : v)}
                       >
                         <SelectTrigger className="h-11">
                           <SelectValue placeholder="Select sub-muscle..." />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="__none__">None</SelectItem>
                           {subgroups.map(sg => (
                             <SelectItem key={sg.id} value={sg.id}>{sg.name}</SelectItem>
                           ))}
