@@ -1,30 +1,58 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Monitor, Plus, Copy, ExternalLink, RefreshCw, Pencil, Trash2, Power, Play } from "lucide-react";
+import { Monitor, Plus, Copy, ExternalLink, RefreshCw, Pencil, Trash2, Power, Play, Square, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useDisplays, type Display } from "@/hooks/useDisplays";
+import { useDisplays, type Display, type DisplaySession } from "@/hooks/useDisplays";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export default function GymDisplays() {
   const { selectedGymId } = useOutletContext<{ selectedGymId: string | null }>();
-  const { displays, isLoading, addDisplay, updateDisplay, regenerateToken, deleteDisplay, startSession } = useDisplays("gym", selectedGymId);
+  const { displays, isLoading, addDisplay, updateDisplay, regenerateToken, deleteDisplay, startSession, endSession } = useDisplays("gym", selectedGymId);
   const [newName, setNewName] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [sessionTitle, setSessionTitle] = useState("");
   const [startingFor, setStartingFor] = useState<string | null>(null);
+  const [activeSessions, setActiveSessions] = useState<Record<string, DisplaySession>>({});
+
+  // Fetch active sessions for all displays
+  useEffect(() => {
+    if (!displays.length) return;
+    const fetchSessions = async () => {
+      const { data } = await supabase
+        .from("display_sessions")
+        .select("*")
+        .in("display_id", displays.map(d => d.id))
+        .in("status", ["idle", "active"])
+        .order("created_at", { ascending: false });
+      if (data) {
+        const map: Record<string, DisplaySession> = {};
+        for (const s of data) {
+          if (!map[s.display_id]) map[s.display_id] = s as unknown as DisplaySession;
+        }
+        setActiveSessions(map);
+      }
+    };
+    fetchSessions();
+  }, [displays]);
 
   const getDisplayUrl = (token: string) => `${window.location.origin}/display/${token}`;
 
   const handleCopy = (token: string) => {
     navigator.clipboard.writeText(getDisplayUrl(token));
     toast.success("URL copied to clipboard");
+  };
+
+  const handleCopyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success("Join code copied");
   };
 
   const handleAdd = async () => {
@@ -42,9 +70,21 @@ export default function GymDisplays() {
 
   const handleStartSession = async (displayId: string) => {
     if (!sessionTitle.trim()) return;
-    await startSession(displayId, sessionTitle.trim());
+    const session = await startSession(displayId, sessionTitle.trim());
+    if (session) {
+      setActiveSessions(prev => ({ ...prev, [displayId]: session }));
+    }
     setSessionTitle("");
     setStartingFor(null);
+  };
+
+  const handleEndSession = async (displayId: string, sessionId: string) => {
+    await endSession(sessionId);
+    setActiveSessions(prev => {
+      const next = { ...prev };
+      delete next[displayId];
+      return next;
+    });
   };
 
   if (!selectedGymId) {
@@ -126,10 +166,34 @@ export default function GymDisplays() {
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setEditingId(display.id); setEditName(display.name); }}>
                     <Pencil className="h-3.5 w-3.5" /> Rename
                   </Button>
-                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setStartingFor(display.id); setSessionTitle(""); }}>
-                    <Play className="h-3.5 w-3.5" /> Start Session
-                  </Button>
+                  {activeSessions[display.id] ? (
+                    <Button size="sm" variant="outline" className="gap-1.5 text-destructive border-destructive/30" onClick={() => handleEndSession(display.id, activeSessions[display.id].id)}>
+                      <Square className="h-3.5 w-3.5" /> End Session
+                    </Button>
+                  ) : (
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setStartingFor(display.id); setSessionTitle(""); }}>
+                      <Play className="h-3.5 w-3.5" /> Start Session
+                    </Button>
+                  )}
                 </div>
+                {/* Active Session Info with Join Code */}
+                {activeSessions[display.id] && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Active Session</p>
+                      <p className="text-sm font-medium">{activeSessions[display.id].title || "Untitled"}</p>
+                    </div>
+                    {activeSessions[display.id].join_code && (
+                      <div className="flex items-center gap-2 cursor-pointer" onClick={() => handleCopyCode(activeSessions[display.id].join_code!)}>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Join Code</p>
+                          <p className="text-xl font-mono font-bold tracking-widest">{activeSessions[display.id].join_code}</p>
+                        </div>
+                        <Copy className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-2 pt-1 border-t border-border">
                   <Button size="sm" variant="ghost" className="gap-1.5 text-muted-foreground" onClick={() => regenerateToken(display.id)}>
                     <RefreshCw className="h-3.5 w-3.5" /> Regenerate URL
