@@ -122,6 +122,7 @@ import AdminUserDetail from "./pages/admin-portal/AdminUserDetail";
 import AdminRewards from "./pages/admin-portal/AdminRewards";
 import AdminSupplierSubmissions from "./pages/admin-portal/AdminSupplierSubmissions";
 import GymOffers from "./pages/gym-portal/GymOffers";
+import GymDisplays from "./pages/gym-portal/GymDisplays";
 import Rewards from "./pages/Rewards";
 import ImportWizard from "./pages/ImportWizard";
 import AdminExerciseSubmissions from "./pages/admin-portal/AdminExerciseSubmissions";
@@ -135,6 +136,8 @@ import AdminEmailTemplates from "./pages/admin-portal/AdminEmailTemplates";
 import AdminEmailTemplateEditor from "./pages/admin-portal/AdminEmailTemplateEditor";
 import NutritionLibrary from "./pages/NutritionLibrary";
 import RunTracker from "./pages/RunTracker";
+import CoachDisplays from "./pages/coach-portal/CoachDisplays";
+import DisplayScreen from "./pages/DisplayScreen";
 
 const queryClient = new QueryClient();
 
@@ -228,6 +231,7 @@ function AppRoutes() {
         <Route path="inbox" element={<GymInbox />} />
         <Route path="crm" element={<GymCRM />} />
         <Route path="offers" element={<GymOffers />} />
+        <Route path="displays" element={<GymDisplays />} />
       </Route>
       <Route path="/coach-portal" element={<ProtectedRoute><CoachPortalLayout /></ProtectedRoute>}>
         <Route index element={<CoachDashboard />} />
@@ -246,6 +250,7 @@ function AppRoutes() {
         <Route path="settings" element={<CoachSettings />} />
         <Route path="inbox" element={<CoachInbox />} />
         <Route path="crm" element={<CoachCRM />} />
+        <Route path="displays" element={<CoachDisplays />} />
       </Route>
       <Route path="/event-portal" element={<ProtectedRoute><EventPortalLayout /></ProtectedRoute>}>
         <Route index element={<EventDashboard />} />
@@ -317,6 +322,7 @@ function AppRoutes() {
         <Route path="email-templates/:templateId" element={<AdminEmailTemplateEditor />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
+      <Route path="/display/:token" element={<DisplayScreen />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
       <Route path="/workout/template/:templateId/active" element={<ProtectedRoute><TemplateActiveWorkout /></ProtectedRoute>} />
       <Route path="/workout/split/:splitId/:workoutId/active" element={<ProtectedRoute><TemplateActiveWorkout /></ProtectedRoute>} />
