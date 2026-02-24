@@ -432,7 +432,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
                   <h1 className="text-xl font-semibold">{currentExercise.name}</h1>
                 </div>
                 <div className="flex gap-2">
-                  {currentExercise.exerciseType !== 'cardio' && (() => {
+                  {(currentExercise.exerciseType === 'weight_reps' || currentExercise.exerciseType === 'strength' || !currentExercise.exerciseType) && currentExercise.exerciseType !== 'cardio' && currentExercise.exerciseType !== 'reps' && currentExercise.exerciseType !== 'duration' && currentExercise.exerciseType !== 'reps_duration' && (() => {
                     const liveE1RM = computeSessionE1RM(currentExercise.sets);
                     return (
                       <button onClick={() => setShowOneRM(true)} className="h-9 px-2.5 rounded-full bg-primary/10 flex items-center gap-1.5" title="1RM Calculator">
@@ -467,6 +467,29 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
                       </p>
                       <p className="text-2xl text-muted-foreground mt-2 text-center">
                         {currentSet?.completedDistance ? `${(currentSet.completedDistance / 1000).toFixed(2)} km` : '— km'}
+                      </p>
+                    </>
+                  ) : currentExercise.exerciseType === 'reps' ? (
+                    <>
+                      <p className="text-5xl font-bold tracking-tight text-center text-accent-foreground">
+                        {currentSet?.completedReps ?? currentSet?.targetReps ?? '—'}
+                      </p>
+                      <p className="text-2xl text-muted-foreground mt-2 text-center">reps</p>
+                    </>
+                  ) : currentExercise.exerciseType === 'duration' ? (
+                    <>
+                      <p className="text-5xl font-bold tracking-tight text-center text-accent-foreground">
+                        {currentSet?.completedTime ? formatTime(currentSet.completedTime) : (currentSet?.targetTime ? formatTime(currentSet.targetTime) : '0:00')}
+                      </p>
+                      <p className="text-2xl text-muted-foreground mt-2 text-center">duration</p>
+                    </>
+                  ) : currentExercise.exerciseType === 'reps_duration' ? (
+                    <>
+                      <p className="text-5xl font-bold tracking-tight text-center text-accent-foreground">
+                        {currentSet?.completedReps ?? currentSet?.targetReps ?? '—'} reps
+                      </p>
+                      <p className="text-2xl text-muted-foreground mt-2 text-center">
+                        {currentSet?.completedTime ? formatTime(currentSet.completedTime) : (currentSet?.targetTime ? formatTime(currentSet.targetTime) : '0:00')}
                       </p>
                     </>
                   ) : (

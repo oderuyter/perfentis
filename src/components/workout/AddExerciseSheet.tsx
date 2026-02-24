@@ -11,7 +11,7 @@ import { ExerciseDetailSheet } from '@/components/exercises/ExerciseDetailSheet'
 import type { Exercise } from '@/types/exercise';
 
 interface AddExerciseSheetProps {
-  onAdd: (exercise: { id: string; name: string; sets?: number; version?: number; exerciseType?: 'strength' | 'cardio' }) => void;
+  onAdd: (exercise: { id: string; name: string; sets?: number; version?: number; exerciseType?: 'strength' | 'cardio'; recordType?: string }) => void;
   onClose: () => void;
   multiSelect?: boolean;
 }
@@ -39,6 +39,7 @@ export function AddExerciseSheet({ onAdd, onClose, multiSelect = false }: AddExe
       sets: 3,
       version: exercise.version,
       exerciseType: exercise.type,
+      recordType: exercise.record_type,
     });
     if (!multiSelect) {
       onClose();
