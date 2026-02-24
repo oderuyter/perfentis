@@ -1,10 +1,17 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, Dumbbell, Activity, Check, Camera, X, Clock, Hash, Weight } from 'lucide-react';
+import { ChevronDown, Dumbbell, Activity, Check, Camera, X, Clock, Hash, Weight, Search, Plus, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMuscleTaxonomy } from '@/hooks/useMuscleTaxonomy';
@@ -39,7 +46,7 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { muscleGroups, getSubgroupsForGroup } = useMuscleTaxonomy();
-  const { approvedEquipment } = useEquipmentLibrary();
+  const { approvedEquipment, createEquipment, isCreating: isCreatingEquipment } = useEquipmentLibrary();
   
   const [step, setStep] = useState<'type' | 'record_type' | 'details'>('type');
   const [type, setType] = useState<ExerciseType | null>(null);
@@ -51,6 +58,12 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
   const [primarySubgroupId, setPrimarySubgroupId] = useState<string | null>(null);
   const [secondaryEntries, setSecondaryEntries] = useState<{ muscle_group_id: string; muscle_subgroup_id?: string }[]>([]);
   const [selectedEquipmentIds, setSelectedEquipmentIds] = useState<string[]>([]);
+  const [showSecondaryPicker, setShowSecondaryPicker] = useState(false);
+  
+  // Equipment search
+  const [equipmentSearch, setEquipmentSearch] = useState('');
+  const [showNewEquipment, setShowNewEquipment] = useState(false);
+  const [newEquipmentName, setNewEquipmentName] = useState('');
   
   const [modality, setModality] = useState<CardioModality | null>(null);
   const [instructions, setInstructions] = useState('');
@@ -60,6 +73,15 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
   const [isUploading, setIsUploading] = useState(false);
 
   const subgroups = primaryGroupId ? getSubgroupsForGroup(primaryGroupId) : [];
+
+  // Equipment filtering
+  const filteredEquipment = useMemo(() => {
+    if (!equipmentSearch.trim()) return approvedEquipment;
+    const q = equipmentSearch.toLowerCase();
+    return approvedEquipment.filter(e => e.name.toLowerCase().includes(q));
+  }, [approvedEquipment, equipmentSearch]);
+
+  const noEquipmentMatch = equipmentSearch.trim().length > 1 && filteredEquipment.length === 0;
 
   const handleSelectType = (selectedType: ExerciseType) => {
     setType(selectedType);
@@ -82,12 +104,19 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
     );
   };
 
-  const toggleSecondary = (groupId: string) => {
-    setSecondaryEntries(prev => {
-      const exists = prev.find(e => e.muscle_group_id === groupId);
-      if (exists) return prev.filter(e => e.muscle_group_id !== groupId);
-      return [...prev, { muscle_group_id: groupId }];
-    });
+  const handleAddNewEquipment = async () => {
+    if (!newEquipmentName.trim()) return;
+    try {
+      const result = await createEquipment({ name: newEquipmentName.trim() });
+      if (result?.id) {
+        setSelectedEquipmentIds(prev => [...prev, result.id]);
+      }
+      setNewEquipmentName('');
+      setShowNewEquipment(false);
+      setEquipmentSearch('');
+    } catch {
+      // error handled by hook
+    }
   };
 
   const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,6 +177,8 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
     type === 'cardio' || (type === 'strength' && primaryGroupId)
   );
 
+  const selectedGroupName = primaryGroupId ? muscleGroups.find(g => g.id === primaryGroupId)?.name : null;
+
   return (
     <>
       <motion.div
@@ -162,7 +193,7 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[130] shadow-elevated max-h-[80vh] overflow-hidden flex flex-col"
+        className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[130] shadow-elevated max-h-[85vh] overflow-hidden flex flex-col"
       >
         <div className="p-4 pb-0 relative flex-shrink-0">
           <button onClick={onClose} className="absolute top-3 left-1/2 -translate-x-1/2 p-1">
@@ -279,91 +310,181 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
               
               {type === 'strength' && (
                 <>
-                  {/* Primary muscle group (DB-driven) */}
+                  {/* Primary Muscle Group — Dropdown */}
                   <div className="space-y-2">
                     <Label>Primary Muscle Group *</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {muscleGroups.map(group => (
-                        <button
-                          key={group.id}
-                          onClick={() => {
-                            setPrimaryGroupId(primaryGroupId === group.id ? null : group.id);
-                            setPrimarySubgroupId(null);
-                          }}
-                          className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                            primaryGroupId === group.id
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-muted/50 text-muted-foreground border-border/50'
-                          }`}
-                        >
-                          {group.name}
-                        </button>
-                      ))}
-                    </div>
+                    <Select
+                      value={primaryGroupId || ''}
+                      onValueChange={(v) => {
+                        setPrimaryGroupId(v || null);
+                        setPrimarySubgroupId(null);
+                      }}
+                    >
+                      <SelectTrigger className="h-11">
+                        <SelectValue placeholder="Select muscle group..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {muscleGroups.map(group => (
+                          <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {/* Primary subgroup */}
+                  {/* Primary Subgroup — Dropdown (only if group selected) */}
                   {subgroups.length > 0 && (
                     <div className="space-y-2">
-                      <Label>Subgroup (optional)</Label>
-                      <div className="flex flex-wrap gap-2">
-                        {subgroups.map(sg => (
-                          <button
-                            key={sg.id}
-                            onClick={() => setPrimarySubgroupId(primarySubgroupId === sg.id ? null : sg.id)}
-                            className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
-                              primarySubgroupId === sg.id
-                                ? 'bg-primary text-primary-foreground border-primary'
-                                : 'bg-muted/50 text-muted-foreground border-border/50'
-                            }`}
-                          >
-                            {sg.name}
-                          </button>
-                        ))}
-                      </div>
+                      <Label>Sub-muscle (optional)</Label>
+                      <Select
+                        value={primarySubgroupId || ''}
+                        onValueChange={(v) => setPrimarySubgroupId(v || null)}
+                      >
+                        <SelectTrigger className="h-11">
+                          <SelectValue placeholder="Select sub-muscle..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">None</SelectItem>
+                          {subgroups.map(sg => (
+                            <SelectItem key={sg.id} value={sg.id}>{sg.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
 
-                  {/* Secondary muscles */}
+                  {/* Secondary Muscles — Compact multi-select */}
                   <div className="space-y-2">
                     <Label>Secondary Muscles (optional)</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {muscleGroups.filter(g => g.id !== primaryGroupId).map(group => (
-                        <button
-                          key={group.id}
-                          onClick={() => toggleSecondary(group.id)}
-                          className={`px-2.5 py-1 rounded-full text-xs border transition-colors flex items-center gap-1.5 ${
-                            secondaryEntries.some(e => e.muscle_group_id === group.id)
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-muted/50 text-muted-foreground border-border/50'
-                          }`}
-                        >
-                          {secondaryEntries.some(e => e.muscle_group_id === group.id) && <Check className="h-3 w-3" />}
-                          {group.name}
-                        </button>
-                      ))}
-                    </div>
+                    {secondaryEntries.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {secondaryEntries.map(entry => {
+                          const groupName = muscleGroups.find(g => g.id === entry.muscle_group_id)?.name || '';
+                          return (
+                            <Badge
+                              key={entry.muscle_group_id}
+                              variant="secondary"
+                              className="gap-1 cursor-pointer hover:bg-destructive/10"
+                              onClick={() => setSecondaryEntries(prev => prev.filter(e => e.muscle_group_id !== entry.muscle_group_id))}
+                            >
+                              {groupName}
+                              <X className="h-3 w-3" />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <Popover open={showSecondaryPicker} onOpenChange={setShowSecondaryPicker}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="text-muted-foreground">
+                          <Plus className="h-3.5 w-3.5 mr-1.5" />
+                          Add secondary muscles
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 p-2" align="start">
+                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                          {muscleGroups.filter(g => g.id !== primaryGroupId && !secondaryEntries.some(e => e.muscle_group_id === g.id)).map(group => (
+                            <button
+                              key={group.id}
+                              onClick={() => {
+                                setSecondaryEntries(prev => [...prev, { muscle_group_id: group.id }]);
+                              }}
+                              className="w-full text-left px-3 py-2 rounded-md text-sm hover:bg-muted transition-colors"
+                            >
+                              {group.name}
+                            </button>
+                          ))}
+                          {muscleGroups.filter(g => g.id !== primaryGroupId && !secondaryEntries.some(e => e.muscle_group_id === g.id)).length === 0 && (
+                            <p className="text-xs text-muted-foreground px-3 py-2">All groups added</p>
+                          )}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   
-                  {/* Equipment (DB-driven) */}
+                  {/* Equipment — Typeahead with chips */}
                   <div className="space-y-2">
                     <Label>Equipment (optional)</Label>
-                    <div className="flex flex-wrap gap-2">
-                      {approvedEquipment.map(eq => (
-                        <button
-                          key={eq.id}
-                          onClick={() => toggleEquipment(eq.id)}
-                          className={`px-2.5 py-1 rounded-full text-xs border transition-colors flex items-center gap-1.5 ${
-                            selectedEquipmentIds.includes(eq.id)
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-muted/50 text-muted-foreground border-border/50'
-                          }`}
-                        >
-                          {selectedEquipmentIds.includes(eq.id) && <Check className="h-3 w-3" />}
-                          {eq.name}
-                        </button>
-                      ))}
+                    {selectedEquipmentIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2">
+                        {selectedEquipmentIds.map(id => {
+                          const eq = approvedEquipment.find(e => e.id === id);
+                          return (
+                            <Badge
+                              key={id}
+                              variant="secondary"
+                              className="gap-1 cursor-pointer hover:bg-destructive/10"
+                              onClick={() => toggleEquipment(id)}
+                            >
+                              {eq?.name || id}
+                              <X className="h-3 w-3" />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                    
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search equipment..."
+                        value={equipmentSearch}
+                        onChange={(e) => { setEquipmentSearch(e.target.value); setShowNewEquipment(false); }}
+                        className="pl-9 h-10"
+                      />
                     </div>
+
+                    {equipmentSearch.trim() && (
+                      <div className="border border-border/50 rounded-lg max-h-36 overflow-y-auto">
+                        {filteredEquipment.filter(e => !selectedEquipmentIds.includes(e.id)).map(eq => (
+                          <button
+                            key={eq.id}
+                            onClick={() => { toggleEquipment(eq.id); setEquipmentSearch(''); }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors flex items-center justify-between"
+                          >
+                            {eq.name}
+                            <Plus className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                        ))}
+                        {noEquipmentMatch && !showNewEquipment && (
+                          <div className="px-3 py-2">
+                            <p className="text-xs text-muted-foreground mb-1.5">No equipment found</p>
+                            <button
+                              onClick={() => { setNewEquipmentName(equipmentSearch.trim()); setShowNewEquipment(true); }}
+                              className="text-xs text-primary underline"
+                            >
+                              Can't find it? Submit new equipment
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Inline new equipment submission */}
+                    {showNewEquipment && (
+                      <div className="p-3 border border-border/50 rounded-lg bg-muted/20 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <AlertCircle className="h-4 w-4 text-yellow-500 flex-shrink-0" />
+                          <p className="text-xs text-muted-foreground">This equipment will be available only to you until approved by admin.</p>
+                        </div>
+                        <Input
+                          value={newEquipmentName}
+                          onChange={(e) => setNewEquipmentName(e.target.value)}
+                          placeholder="Equipment name"
+                          className="h-9 text-sm"
+                        />
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => setShowNewEquipment(false)}>Cancel</Button>
+                          <Button
+                            size="sm"
+                            className="flex-1"
+                            disabled={!newEquipmentName.trim() || isCreatingEquipment}
+                            onClick={handleAddNewEquipment}
+                          >
+                            {isCreatingEquipment ? 'Submitting...' : 'Submit'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </>
               )}
@@ -371,42 +492,40 @@ export function CreateExerciseSheet({ onClose, onCreate, isCreating }: CreateExe
               {type === 'cardio' && (
                 <div className="space-y-2">
                   <Label>Modality (optional)</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {cardioModalities.map(mod => (
-                      <button
-                        key={mod}
-                        onClick={() => setModality(modality === mod ? null : mod)}
-                        className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
-                          modality === mod
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-muted/50 text-muted-foreground border-border/50'
-                        }`}
-                      >
-                        {MODALITY_LABELS[mod]}
-                      </button>
-                    ))}
-                  </div>
+                  <Select
+                    value={modality || ''}
+                    onValueChange={(v) => setModality(v as CardioModality || null)}
+                  >
+                    <SelectTrigger className="h-11">
+                      <SelectValue placeholder="Select modality..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">None</SelectItem>
+                      {cardioModalities.map(mod => (
+                        <SelectItem key={mod} value={mod}>{MODALITY_LABELS[mod]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
 
               {/* Difficulty */}
               <div className="space-y-2">
                 <Label>Difficulty (optional)</Label>
-                <div className="flex gap-2">
-                  {(['beginner', 'intermediate', 'advanced'] as const).map(d => (
-                    <button
-                      key={d}
-                      onClick={() => setDifficulty(difficulty === d ? null : d)}
-                      className={`px-3 py-1.5 rounded-full text-sm border transition-colors capitalize ${
-                        difficulty === d
-                          ? 'bg-primary text-primary-foreground border-primary'
-                          : 'bg-muted/50 text-muted-foreground border-border/50'
-                      }`}
-                    >
-                      {d}
-                    </button>
-                  ))}
-                </div>
+                <Select
+                  value={difficulty || ''}
+                  onValueChange={(v) => setDifficulty(v as any || null)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Select difficulty..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="beginner">Beginner</SelectItem>
+                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                    <SelectItem value="advanced">Advanced</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               {/* Instructions */}

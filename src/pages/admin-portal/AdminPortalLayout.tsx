@@ -64,6 +64,7 @@ const navItems: NavItem[] = [
   { to: "/admin-portal/run-clubs", icon: Footprints, label: "Run Clubs" },
   { to: "/admin-portal/workouts", icon: Dumbbell, label: "Workouts & Programs" },
   { to: "/admin-portal/exercises", icon: BookOpen, label: "Exercise Library" },
+  { to: "/admin-portal/exercise-import", icon: FileUp, label: "Exercise Import" },
   { to: "/admin-portal/playlists", icon: Music, label: "Playlists" },
   { to: "/admin-portal/rewards", icon: Gift, label: "Rewards & Offers" },
   { to: "/admin-portal/exercise-submissions", icon: Dumbbell, label: "Exercise Submissions" },
