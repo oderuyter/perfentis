@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save, Trash2, Share2 } from "lucide-react";
+import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save, Trash2, Share2, Target } from "lucide-react";
 
 import { useParams, useNavigate } from "react-router-dom";
 import { workouts, type Workout } from "@/data/workouts";
@@ -23,6 +23,8 @@ import { AdvancedMetrics } from "@/components/workout/AdvancedMetrics";
 import { SaveAsTemplateDialog } from "@/components/workout/SaveAsTemplateDialog";
 import { CreatePostSheet } from "@/components/social/CreatePostSheet";
 import { HRPanel } from "@/components/workout/HRPanel";
+import { OneRMPanel } from "@/components/workout/OneRMPanel";
+import { computeSessionE1RM } from "@/hooks/useOneRepMax";
 import { toast } from "sonner";
 import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
 
@@ -91,6 +93,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(!!resumeState);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [showOneRM, setShowOneRM] = useState(false);
 
   // Build stats card data for post-workout sharing
   const statsCardData = useMemo(() => {
@@ -429,6 +432,17 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
                   <h1 className="text-xl font-semibold">{currentExercise.name}</h1>
                 </div>
                 <div className="flex gap-2">
+                  {currentExercise.exerciseType !== 'cardio' && (() => {
+                    const liveE1RM = computeSessionE1RM(currentExercise.sets);
+                    return (
+                      <button onClick={() => setShowOneRM(true)} className="h-9 px-2.5 rounded-full bg-primary/10 flex items-center gap-1.5" title="1RM Calculator">
+                        <Target className="h-3.5 w-3.5 text-primary" />
+                        <span className="text-xs font-semibold text-primary tabular-nums">
+                          {liveE1RM > 0 ? `${Math.round(liveE1RM)}` : '1RM'}
+                        </span>
+                      </button>
+                    );
+                  })()}
                   <button onClick={() => setShowHistory(true)} className="h-9 w-9 rounded-full bg-muted flex items-center justify-center">
                     <History className="h-4 w-4" />
                   </button>
@@ -590,6 +604,14 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         {showRestEdit && <RestTimerEdit currentDuration={state.restDuration} onUpdate={editRestDuration} onClose={() => setShowRestEdit(false)} />}
         {showExerciseNav && <ExerciseNav exercises={state.exercises} currentIndex={state.currentExerciseIndex} onSelect={(i) => goToExercise(i)} onRemove={removeExercise} onReorder={reorderExercise} onClose={() => setShowExerciseNav(false)} />}
         {showAdvanced && <AdvancedMetrics rpe={currentSet?.rpe ?? null} tempo={currentSet?.tempo ?? null} note={currentSet?.note ?? null} onUpdate={(updates) => updateSet(state.currentExerciseIndex, state.currentSetIndex, updates)} onClose={() => setShowAdvanced(false)} />}
+        {showOneRM && currentExercise && (
+          <OneRMPanel
+            exerciseId={currentExercise.exerciseId}
+            exerciseName={currentExercise.name}
+            onClose={() => setShowOneRM(false)}
+            sessionSets={currentExercise.sets}
+          />
+        )}
       </AnimatePresence>
     </div>
   );
