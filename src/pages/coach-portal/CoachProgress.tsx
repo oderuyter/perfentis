@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCoachClients } from "@/hooks/useCoach";
+import { CoachStrengthScoreCard } from "@/components/coach/CoachStrengthScoreCard";
 import { format, subDays, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
 interface Coach {
@@ -36,6 +37,7 @@ interface Coach {
 
 interface ClientWorkoutData {
   clientId: string;
+  clientUserId: string;
   clientName: string;
   avatarUrl: string | null;
   planName: string | null;
@@ -145,6 +147,7 @@ export default function CoachProgress() {
 
           clientProgress.push({
             clientId: client.id,
+            clientUserId: clientUserId,
             clientName: profile?.display_name || 'Unknown',
             avatarUrl: profile?.avatar_url || null,
             planName: activeAssignment?.training_plans?.name || null,
@@ -403,6 +406,11 @@ export default function CoachProgress() {
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Strength Score */}
+              {selectedClient?.clientUserId && (
+                <CoachStrengthScoreCard clientUserId={selectedClient.clientUserId} />
+              )}
 
               {/* Plan Progress */}
               {selectedClient?.planName && (

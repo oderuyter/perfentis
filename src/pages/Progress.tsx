@@ -13,6 +13,7 @@ import { useWorkoutStreak } from "@/hooks/useWorkoutStreak";
 import { ImportRunSheet } from "@/components/run/ImportRunSheet";
 import { HealthDataTiles } from "@/components/progress/HealthDataTiles";
 import { OneRMTile } from "@/components/progress/OneRMTile";
+import { StrengthScoreTile } from "@/components/progress/StrengthScoreTile";
 
 export default function Progress() {
   const {
@@ -107,6 +108,11 @@ export default function Progress() {
             longestStreak={longestStreak}
             milestones={milestones}
           />
+        </motion.div>
+
+        {/* Strength Score Tile */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.085 }}>
+          <StrengthScoreTile />
         </motion.div>
 
         {/* 1RM Tile */}

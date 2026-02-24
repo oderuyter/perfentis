@@ -6271,6 +6271,7 @@ export type Database = {
           address_postcode: string | null
           admin_notes: string | null
           avatar_url: string | null
+          bodyweight_kg: number | null
           created_at: string
           date_of_birth: string | null
           display_name: string | null
@@ -6291,6 +6292,7 @@ export type Database = {
           privacy_analytics: boolean | null
           privacy_insights: boolean | null
           resting_hr: number | null
+          sex: string | null
           social_share_after_workout: boolean
           status: string | null
           telephone: string | null
@@ -6319,6 +6321,7 @@ export type Database = {
           address_postcode?: string | null
           admin_notes?: string | null
           avatar_url?: string | null
+          bodyweight_kg?: number | null
           created_at?: string
           date_of_birth?: string | null
           display_name?: string | null
@@ -6339,6 +6342,7 @@ export type Database = {
           privacy_analytics?: boolean | null
           privacy_insights?: boolean | null
           resting_hr?: number | null
+          sex?: string | null
           social_share_after_workout?: boolean
           status?: string | null
           telephone?: string | null
@@ -6367,6 +6371,7 @@ export type Database = {
           address_postcode?: string | null
           admin_notes?: string | null
           avatar_url?: string | null
+          bodyweight_kg?: number | null
           created_at?: string
           date_of_birth?: string | null
           display_name?: string | null
@@ -6387,6 +6392,7 @@ export type Database = {
           privacy_analytics?: boolean | null
           privacy_insights?: boolean | null
           resting_hr?: number | null
+          sex?: string | null
           social_share_after_workout?: boolean
           status?: string | null
           telephone?: string | null
