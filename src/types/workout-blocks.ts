@@ -27,6 +27,7 @@ export interface AmrapSettings {
 }
 
 export interface YgigSettings {
+  rounds?: number;
   max_participants: number;
   turn_mode: 'set_based' | 'timed';
   invite_required: boolean;
@@ -170,6 +171,7 @@ export function createYgigBlock(orderIndex: number): WorkoutBlock {
     title: 'You Go, I Go',
     order_index: orderIndex,
     settings: {
+      rounds: 3,
       max_participants: 2,
       turn_mode: 'set_based',
       invite_required: true,
