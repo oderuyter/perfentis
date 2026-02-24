@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, CreditCard, Users, MessageCircle, Trophy, Settings, HelpCircle, ChevronRight, Building2, GraduationCap, Flag, ShieldCheck, Music, Inbox, Footprints, Gift } from "lucide-react";
+import { Menu, X, CreditCard, Users, MessageCircle, Trophy, Settings, HelpCircle, ChevronRight, Building2, GraduationCap, Flag, ShieldCheck, Music, Inbox, Footprints, Gift, Dumbbell } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
@@ -49,6 +49,11 @@ const allDrawerItems: DrawerItem[] = [{
   label: "Run Club Portal",
   description: "Manage your run clubs",
   requiresRunClubAccess: true
+}, {
+  to: "/exercises",
+  icon: Dumbbell,
+  label: "Exercises",
+  description: "Browse & create exercises"
 }, {
   to: "/inbox",
   icon: Inbox,

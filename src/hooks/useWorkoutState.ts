@@ -3,6 +3,7 @@ import {
   ActiveWorkoutState, 
   ActiveExercise, 
   ExerciseSet,
+  ExerciseSetType,
   getHRZone 
 } from '@/types/workout';
 import { type Exercise, type Workout } from '@/data/workouts';
@@ -348,11 +349,16 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
   }, []);
 
   // Add exercise and optionally navigate to it
-  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string; exerciseType?: 'strength' | 'cardio' }, navigateTo: boolean = false) => {
+  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string; exerciseType?: 'strength' | 'cardio'; recordType?: string }, navigateTo: boolean = false) => {
     setState(prev => {
       if (!prev) return null;
 
       const isCardio = exercise.exerciseType === 'cardio';
+      
+      // Map record_type to exerciseType for the SetEditor
+      const resolvedExerciseType: ExerciseSetType = exercise.recordType 
+        ? (exercise.recordType as ExerciseSetType) 
+        : (isCardio ? 'cardio' : 'weight_reps');
 
       const newExercise: ActiveExercise = {
         exerciseId: exercise.id,
@@ -382,7 +388,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
         swappedFrom: null,
         addedMidWorkout: true,
         muscleGroup: exercise.muscleGroup,
-        exerciseType: exercise.exerciseType,
+        exerciseType: resolvedExerciseType,
       };
       
       const newExercises = [...prev.exercises, newExercise];
