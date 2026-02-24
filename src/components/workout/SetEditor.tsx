@@ -15,7 +15,7 @@ interface SetEditorProps {
 }
 
 export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet, exerciseType = 'strength' }: SetEditorProps) {
-  // If cardio, use the CardioSetEditor
+  // Cardio type uses CardioSetEditor
   if (exerciseType === 'cardio') {
     return (
       <CardioSetEditor
@@ -27,7 +27,43 @@ export function SetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet, exe
     );
   }
 
-  // Strength set editor
+  // Duration-only exercises use a simplified duration editor
+  if (exerciseType === 'duration') {
+    return (
+      <DurationSetEditor
+        sets={sets}
+        currentSetIndex={currentSetIndex}
+        onUpdateSet={onUpdateSet}
+        onSelectSet={onSelectSet}
+      />
+    );
+  }
+
+  // Reps-only exercises
+  if (exerciseType === 'reps') {
+    return (
+      <RepsOnlySetEditor
+        sets={sets}
+        currentSetIndex={currentSetIndex}
+        onUpdateSet={onUpdateSet}
+        onSelectSet={onSelectSet}
+      />
+    );
+  }
+
+  // reps_duration exercises
+  if (exerciseType === 'reps_duration') {
+    return (
+      <RepsDurationSetEditor
+        sets={sets}
+        currentSetIndex={currentSetIndex}
+        onUpdateSet={onUpdateSet}
+        onSelectSet={onSelectSet}
+      />
+    );
+  }
+
+  // Default: weight_reps / strength
   return (
     <StrengthSetEditor
       sets={sets}
@@ -365,6 +401,128 @@ function InlineEditor({ weight, reps, weightUnit, weightStep, onUpdate, onCancel
           Save
         </button>
       </div>
+    </div>
+  );
+}
+
+// Reps-only set editor (e.g. Push-ups)
+function RepsOnlySetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: StrengthSetEditorProps) {
+  useEffect(() => {}, [currentSetIndex]);
+  return (
+    <div className="space-y-2">
+      {sets.map((set, index) => {
+        const isCompleted = set.completed;
+        const isCurrent = index === currentSetIndex;
+        const isRemaining = index > currentSetIndex && !isCompleted;
+        const reps = set.completedReps ?? parseInt(set.targetReps?.match(/\d+/)?.[0] || '0');
+        return (
+          <motion.div key={index} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+            className={cn("rounded-xl p-3 border transition-all", isCompleted && "bg-accent-subtle/50 border-accent/30", isCurrent && !isCompleted && "gradient-card-accent border-accent shadow-md ring-2 ring-accent/20", isRemaining && "bg-muted/30 border-border/30 opacity-60", !isCurrent && "cursor-pointer active:scale-[0.98]")}
+            onClick={() => { if (!isCurrent && !isCompleted) onSelectSet(index); }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0", isCompleted && "bg-accent text-accent-foreground", isCurrent && !isCompleted && "bg-accent text-accent-foreground shadow-sm", isRemaining && "bg-muted text-muted-foreground")}>
+                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+              </div>
+              {!isCurrent && <span className={cn("font-semibold text-sm", isRemaining && "text-muted-foreground")}>{reps} reps</span>}
+            </div>
+            {isCurrent && !isCompleted && (
+              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Reps</span>
+                <div className="flex-1 flex items-center justify-center gap-2 bg-background/80 rounded-xl p-1 shadow-sm border border-border/50">
+                  <button onClick={() => onUpdateSet(index, { completedReps: Math.max(0, reps - 1) })} className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg active:scale-95"><Minus className="h-5 w-5" /></button>
+                  <div className="flex-1 text-center"><input type="number" inputMode="numeric" value={reps} onChange={e => onUpdateSet(index, { completedReps: parseInt(e.target.value) || 0 })} className="w-full text-center bg-transparent text-xl font-bold focus:outline-none" /><span className="text-xs text-muted-foreground">reps</span></div>
+                  <button onClick={() => onUpdateSet(index, { completedReps: reps + 1 })} className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg active:scale-95"><Plus className="h-5 w-5" /></button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Duration-only set editor (e.g. Plank)
+function DurationSetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: StrengthSetEditorProps) {
+  useEffect(() => {}, [currentSetIndex]);
+  return (
+    <div className="space-y-2">
+      {sets.map((set, index) => {
+        const isCompleted = set.completed;
+        const isCurrent = index === currentSetIndex;
+        const isRemaining = index > currentSetIndex && !isCompleted;
+        const timeVal = set.completedTime ?? set.targetTime ?? 0;
+        return (
+          <motion.div key={index} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+            className={cn("rounded-xl p-3 border transition-all", isCompleted && "bg-accent-subtle/50 border-accent/30", isCurrent && !isCompleted && "gradient-card-accent border-accent shadow-md ring-2 ring-accent/20", isRemaining && "bg-muted/30 border-border/30 opacity-60", !isCurrent && "cursor-pointer active:scale-[0.98]")}
+            onClick={() => { if (!isCurrent && !isCompleted) onSelectSet(index); }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0", isCompleted && "bg-accent text-accent-foreground", isCurrent && !isCompleted && "bg-accent text-accent-foreground shadow-sm", isRemaining && "bg-muted text-muted-foreground")}>
+                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+              </div>
+              {!isCurrent && <span className={cn("font-semibold text-sm", isRemaining && "text-muted-foreground")}>{timeVal}s</span>}
+            </div>
+            {isCurrent && !isCompleted && (
+              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Time</span>
+                <div className="flex-1 flex items-center justify-center gap-2 bg-background/80 rounded-xl p-1 shadow-sm border border-border/50">
+                  <button onClick={() => onUpdateSet(index, { completedTime: Math.max(0, timeVal - 5) })} className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg active:scale-95"><Minus className="h-5 w-5" /></button>
+                  <div className="flex-1 text-center"><input type="number" inputMode="numeric" value={timeVal} onChange={e => onUpdateSet(index, { completedTime: parseInt(e.target.value) || 0 })} className="w-full text-center bg-transparent text-xl font-bold focus:outline-none" /><span className="text-xs text-muted-foreground">seconds</span></div>
+                  <button onClick={() => onUpdateSet(index, { completedTime: timeVal + 5 })} className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg active:scale-95"><Plus className="h-5 w-5" /></button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+// Reps + Duration set editor
+function RepsDurationSetEditor({ sets, currentSetIndex, onUpdateSet, onSelectSet }: StrengthSetEditorProps) {
+  useEffect(() => {}, [currentSetIndex]);
+  return (
+    <div className="space-y-2">
+      {sets.map((set, index) => {
+        const isCompleted = set.completed;
+        const isCurrent = index === currentSetIndex;
+        const isRemaining = index > currentSetIndex && !isCompleted;
+        const reps = set.completedReps ?? parseInt(set.targetReps?.match(/\d+/)?.[0] || '0');
+        const time = set.completedTime ?? set.targetTime ?? 0;
+        return (
+          <motion.div key={index} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}
+            className={cn("rounded-xl p-3 border transition-all", isCompleted && "bg-accent-subtle/50 border-accent/30", isCurrent && !isCompleted && "gradient-card-accent border-accent shadow-md ring-2 ring-accent/20", isRemaining && "bg-muted/30 border-border/30 opacity-60", !isCurrent && "cursor-pointer active:scale-[0.98]")}
+            onClick={() => { if (!isCurrent && !isCompleted) onSelectSet(index); }}>
+            <div className="flex items-center gap-3 mb-2">
+              <div className={cn("h-8 w-8 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0", isCompleted && "bg-accent text-accent-foreground", isCurrent && !isCompleted && "bg-accent text-accent-foreground shadow-sm", isRemaining && "bg-muted text-muted-foreground")}>
+                {isCompleted ? <Check className="h-4 w-4" /> : index + 1}
+              </div>
+              {!isCurrent && <span className={cn("font-semibold text-sm", isRemaining && "text-muted-foreground")}>{reps} reps · {time}s</span>}
+            </div>
+            {isCurrent && !isCompleted && (
+              <div className="space-y-3" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Reps</span>
+                  <div className="flex-1 flex items-center justify-center gap-2 bg-background/80 rounded-xl p-1 shadow-sm border border-border/50">
+                    <button onClick={() => onUpdateSet(index, { completedReps: Math.max(0, reps - 1) })} className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg active:scale-95"><Minus className="h-5 w-5" /></button>
+                    <div className="flex-1 text-center"><input type="number" inputMode="numeric" value={reps} onChange={e => onUpdateSet(index, { completedReps: parseInt(e.target.value) || 0 })} className="w-full text-center bg-transparent text-xl font-bold focus:outline-none" /><span className="text-xs text-muted-foreground">reps</span></div>
+                    <button onClick={() => onUpdateSet(index, { completedReps: reps + 1 })} className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg active:scale-95"><Plus className="h-5 w-5" /></button>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground uppercase w-12 flex-shrink-0">Time</span>
+                  <div className="flex-1 flex items-center justify-center gap-2 bg-background/80 rounded-xl p-1 shadow-sm border border-border/50">
+                    <button onClick={() => onUpdateSet(index, { completedTime: Math.max(0, time - 5) })} className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg active:scale-95"><Minus className="h-5 w-5" /></button>
+                    <div className="flex-1 text-center"><input type="number" inputMode="numeric" value={time} onChange={e => onUpdateSet(index, { completedTime: parseInt(e.target.value) || 0 })} className="w-full text-center bg-transparent text-xl font-bold focus:outline-none" /><span className="text-xs text-muted-foreground">seconds</span></div>
+                    <button onClick={() => onUpdateSet(index, { completedTime: time + 5 })} className="h-11 w-11 flex items-center justify-center hover:bg-muted rounded-lg active:scale-95"><Plus className="h-5 w-5" /></button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        );
+      })}
     </div>
   );
 }

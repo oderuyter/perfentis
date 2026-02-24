@@ -1,6 +1,6 @@
 // Extended workout types for active workout state management
 
-export type ExerciseSetType = 'strength' | 'cardio';
+export type ExerciseSetType = 'strength' | 'cardio' | 'reps' | 'duration' | 'reps_duration' | 'weight_reps';
 
 export interface ExerciseSet {
   setNumber: number;

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, Dumbbell, Activity, User, Edit2, Trash2, Calendar, TrendingUp, Weight, Target } from 'lucide-react';
+import { ChevronDown, Dumbbell, Activity, User, Edit2, Trash2, Calendar, TrendingUp, Target, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Exercise } from '@/types/exercise';
-import { MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS, MODALITY_LABELS } from '@/types/exercise';
+import { MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS, MODALITY_LABELS, RECORD_TYPE_LABELS } from '@/types/exercise';
 import { getExerciseImage } from '@/utils/equipmentImages';
 import { useExerciseHistory } from '@/hooks/useExerciseHistory';
 import { useOneRepMax, roundWeight } from '@/hooks/useOneRepMax';
@@ -57,6 +57,8 @@ export function ExerciseDetailSheet({
   const isStrength = exercise.type === 'strength';
   const canEdit = isCustom && onEdit;
   const canDelete = isCustom && onDelete;
+  const isPending = exercise.status === 'pending';
+  const isRejected = exercise.status === 'rejected';
   
   const exerciseImage = getExerciseImage(exercise);
 
@@ -88,10 +90,7 @@ export function ExerciseDetailSheet({
         className="fixed bottom-0 left-0 right-0 bg-card rounded-t-3xl z-[130] shadow-elevated max-h-[80vh] overflow-hidden flex flex-col"
       >
         <div className="p-4 pb-0 relative flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="absolute top-3 left-1/2 -translate-x-1/2 p-1"
-          >
+          <button onClick={onClose} className="absolute top-3 left-1/2 -translate-x-1/2 p-1">
             <ChevronDown className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
@@ -102,11 +101,7 @@ export function ExerciseDetailSheet({
             <div className="flex items-start gap-4 mb-4">
               {exerciseImage ? (
                 <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted/50 flex-shrink-0">
-                  <img 
-                    src={exerciseImage} 
-                    alt={exercise.name}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={exerciseImage} alt={exercise.name} className="w-full h-full object-cover" />
                 </div>
               ) : (
                 <div className={`w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 ${
@@ -119,15 +114,31 @@ export function ExerciseDetailSheet({
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-xl font-semibold truncate">{exercise.name}</h3>
                   {isCustom && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-medium text-muted-foreground flex-shrink-0">
-                      <User className="h-2.5 w-2.5" />
-                      Custom
+                    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
+                      isPending ? 'bg-yellow-500/10 text-yellow-600' :
+                      isRejected ? 'bg-destructive/10 text-destructive' :
+                      'bg-secondary/50 text-muted-foreground'
+                    }`}>
+                      {isPending ? <><Clock className="h-2.5 w-2.5" /> Pending</> :
+                       isRejected ? <><AlertCircle className="h-2.5 w-2.5" /> Private</> :
+                       <><User className="h-2.5 w-2.5" /> Custom</>}
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground capitalize">
-                  {isStrength ? 'Strength' : 'Cardio'}
-                </p>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground capitalize">
+                    {isStrength ? 'Strength' : 'Cardio'}
+                  </span>
+                  <span className="text-muted-foreground/50">·</span>
+                  <span className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium text-muted-foreground">
+                    {RECORD_TYPE_LABELS[exercise.record_type]}
+                  </span>
+                </div>
+                {exercise.difficulty && (
+                  <span className="inline-block mt-1 px-1.5 py-0.5 bg-muted rounded text-[10px] font-medium text-muted-foreground capitalize">
+                    {exercise.difficulty}
+                  </span>
+                )}
                 {stats.lastPerformed && (
                   <p className="text-xs text-muted-foreground mt-1">
                     Last performed {formatDistanceToNow(new Date(stats.lastPerformed), { addSuffix: true })}
@@ -147,16 +158,28 @@ export function ExerciseDetailSheet({
               
               <TabsContent value="details" className="mt-0">
                 <div className="space-y-4">
-                  {isStrength && exercise.primary_muscle && (
+                  {/* Muscle Groups (DB-driven with fallback) */}
+                  {isStrength && (exercise.muscle_group_name || exercise.primary_muscle) && (
                     <div>
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                         Muscle Groups
                       </p>
                       <div className="flex flex-wrap gap-2">
                         <span className="px-2.5 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                          {MUSCLE_GROUP_LABELS[exercise.primary_muscle]}
+                          {exercise.muscle_group_name || MUSCLE_GROUP_LABELS[exercise.primary_muscle!]}
                         </span>
-                        {exercise.secondary_muscles?.map(muscle => (
+                        {exercise.muscle_subgroup_name && (
+                          <span className="px-2.5 py-1 bg-primary/5 text-primary/80 rounded-full text-xs">
+                            {exercise.muscle_subgroup_name}
+                          </span>
+                        )}
+                        {exercise.secondary_muscle_entries?.map((entry: any, i: number) => (
+                          <span key={i} className="px-2.5 py-1 bg-muted rounded-full text-sm text-muted-foreground">
+                            {entry.group_name || 'Secondary'}
+                          </span>
+                        ))}
+                        {/* Legacy secondary muscles fallback */}
+                        {(!exercise.secondary_muscle_entries || exercise.secondary_muscle_entries.length === 0) && exercise.secondary_muscles?.map(muscle => (
                           <span key={muscle} className="px-2.5 py-1 bg-muted rounded-full text-sm text-muted-foreground">
                             {MUSCLE_GROUP_LABELS[muscle]}
                           </span>
@@ -165,49 +188,43 @@ export function ExerciseDetailSheet({
                     </div>
                   )}
                   
-                  {isStrength && exercise.equipment && exercise.equipment.length > 0 && (
+                  {/* Equipment (DB-driven with fallback) */}
+                  {isStrength && ((exercise.equipment_names && exercise.equipment_names.length > 0) || (exercise.equipment && exercise.equipment.length > 0)) && (
                     <div>
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
                         Equipment
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {exercise.equipment.map(eq => (
-                          <span key={eq} className="px-2.5 py-1 bg-muted rounded-full text-sm">
-                            {EQUIPMENT_LABELS[eq]}
-                          </span>
-                        ))}
+                        {(exercise.equipment_names && exercise.equipment_names.length > 0)
+                          ? exercise.equipment_names.map(name => (
+                              <span key={name} className="px-2.5 py-1 bg-muted rounded-full text-sm">{name}</span>
+                            ))
+                          : exercise.equipment?.map(eq => (
+                              <span key={eq} className="px-2.5 py-1 bg-muted rounded-full text-sm">{EQUIPMENT_LABELS[eq]}</span>
+                            ))
+                        }
                       </div>
                     </div>
                   )}
                   
                   {!isStrength && exercise.modality && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                        Modality
-                      </p>
-                      <span className="px-2.5 py-1 bg-accent/50 rounded-full text-sm">
-                        {MODALITY_LABELS[exercise.modality]}
-                      </span>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Modality</p>
+                      <span className="px-2.5 py-1 bg-accent/50 rounded-full text-sm">{MODALITY_LABELS[exercise.modality]}</span>
                     </div>
                   )}
                   
                   {exercise.instructions && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                        Instructions
-                      </p>
-                      <p className="text-sm text-foreground/80 leading-relaxed">
-                        {exercise.instructions}
-                      </p>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Instructions</p>
+                      <p className="text-sm text-foreground/80 leading-relaxed">{exercise.instructions}</p>
                     </div>
                   )}
                   
                   {/* Quick Stats */}
                   {stats.totalSessions > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                        Your Stats
-                      </p>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Your Stats</p>
                       <div className="grid grid-cols-3 gap-2">
                         <div className="bg-muted/30 rounded-lg p-3 text-center">
                           <p className="text-lg font-bold">{stats.totalSessions}</p>
@@ -228,11 +245,9 @@ export function ExerciseDetailSheet({
                   )}
 
                   {/* 1RM Section */}
-                  {isStrength && resultsByRange['3m'].hasData && (
+                  {isStrength && exercise.record_type === 'weight_reps' && resultsByRange['3m'].hasData && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                        Estimated 1RM
-                      </p>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Estimated 1RM</p>
                       <button
                         onClick={() => setShowOneRM(true)}
                         className="w-full bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between hover:bg-primary/10 transition-colors"
@@ -253,15 +268,13 @@ export function ExerciseDetailSheet({
                     </div>
                   )}
 
-                  {/* Strength Level Badge (if canonical lift) */}
+                  {/* Strength Level Badge */}
                   {canonicalLift && strengthResult.hasScore && (() => {
                     const liftData = strengthResult.lifts.find(l => l.canonical === canonicalLift);
                     if (!liftData) return null;
                     return (
                       <div>
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-                          Strength Level
-                        </p>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Strength Level</p>
                         <button
                           onClick={() => setShowStrengthDrawer(true)}
                           className="w-full bg-muted/30 border border-border/40 rounded-xl p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
@@ -311,14 +324,9 @@ export function ExerciseDetailSheet({
                             </div>
                           )}
                         </div>
-                        
-                        {/* Sets */}
                         <div className="flex flex-wrap gap-1.5 mt-2">
                           {entry.sets.map((set) => (
-                            <div 
-                              key={set.set_number}
-                              className="px-2 py-1 bg-background/50 rounded text-xs"
-                            >
+                            <div key={set.set_number} className="px-2 py-1 bg-background/50 rounded text-xs">
                               {isStrength ? (
                                 <span>
                                   {set.completed_weight || 0} × {set.completed_reps || 0}
@@ -330,7 +338,6 @@ export function ExerciseDetailSheet({
                             </div>
                           ))}
                         </div>
-                        
                         {isStrength && entry.total_volume > 0 && (
                           <div className="flex items-center gap-1 mt-2 pt-2 border-t border-border/30">
                             <TrendingUp className="h-3 w-3 text-muted-foreground" />
@@ -349,65 +356,43 @@ export function ExerciseDetailSheet({
             {/* Actions */}
             <div className="flex gap-3 mt-6 pt-4 border-t border-border/50">
               {canEdit && (
-                <Button
-                  variant="outline"
-                  onClick={onEdit}
-                  className="flex-1"
-                >
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Edit
+                <Button variant="outline" onClick={onEdit} className="flex-1">
+                  <Edit2 className="h-4 w-4 mr-2" /> Edit
                 </Button>
               )}
               {canDelete && (
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="text-destructive hover:text-destructive"
-                >
+                <Button variant="outline" onClick={() => setShowDeleteConfirm(true)} className="text-destructive hover:text-destructive">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               )}
               {showAddButton && onAdd && (
-                <Button onClick={onAdd} className="flex-1">
-                  Add to Workout
-                </Button>
+                <Button onClick={onAdd} className="flex-1">Add to Workout</Button>
               )}
             </div>
           </div>
         </div>
       </motion.div>
       
-      {/* 1RM Panel */}
       {showOneRM && (
-        <OneRMPanel
-          exerciseId={exercise.exercise_id}
-          exerciseName={exercise.name}
-          onClose={() => setShowOneRM(false)}
-        />
+        <OneRMPanel exerciseId={exercise.exercise_id} exerciseName={exercise.name} onClose={() => setShowOneRM(false)} />
       )}
 
-      {/* Strength Score Drawer */}
-      <StrengthScoreDrawer
-        open={showStrengthDrawer}
-        onOpenChange={setShowStrengthDrawer}
-        range={strengthRange}
-        onRangeChange={setStrengthRange}
-      />
+      <StrengthScoreDrawer open={showStrengthDrawer} onOpenChange={setShowStrengthDrawer} range={strengthRange} onRangeChange={setStrengthRange} />
       
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Exercise?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Exercise</AlertDialogTitle>
             <AlertDialogDescription>
               This will remove "{exercise.name}" from your library. Your workout history will be preserved.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDelete}
-              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
