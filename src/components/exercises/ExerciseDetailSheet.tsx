@@ -9,6 +9,9 @@ import { getExerciseImage } from '@/utils/equipmentImages';
 import { useExerciseHistory } from '@/hooks/useExerciseHistory';
 import { useOneRepMax, roundWeight } from '@/hooks/useOneRepMax';
 import { OneRMPanel } from '@/components/workout/OneRMPanel';
+import { getCanonicalLift } from '@/hooks/useStrengthScore';
+import { useStrengthScore } from '@/hooks/useStrengthScore';
+import { StrengthScoreDrawer } from '@/components/progress/StrengthScoreDrawer';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   AlertDialog,
@@ -42,9 +45,13 @@ export function ExerciseDetailSheet({
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const [showOneRM, setShowOneRM] = useState(false);
+  const [showStrengthDrawer, setShowStrengthDrawer] = useState(false);
+  const [strengthRange, setStrengthRange] = useState<'3m' | 'lifetime'>('3m');
   
   const { history, stats, isLoading: isLoadingHistory } = useExerciseHistory(exercise.exercise_id);
   const { resultsByRange, units } = useOneRepMax(exercise.exercise_id);
+  const canonicalLift = getCanonicalLift(exercise.name);
+  const { result: strengthResult } = useStrengthScore(strengthRange);
   
   const isCustom = exercise.source === 'user';
   const isStrength = exercise.type === 'strength';
@@ -245,6 +252,29 @@ export function ExerciseDetailSheet({
                       </button>
                     </div>
                   )}
+
+                  {/* Strength Level Badge (if canonical lift) */}
+                  {canonicalLift && strengthResult.hasScore && (() => {
+                    const liftData = strengthResult.lifts.find(l => l.canonical === canonicalLift);
+                    if (!liftData) return null;
+                    return (
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                          Strength Level
+                        </p>
+                        <button
+                          onClick={() => setShowStrengthDrawer(true)}
+                          className="w-full bg-muted/30 border border-border/40 rounded-xl p-3 flex items-center justify-between hover:bg-muted/50 transition-colors"
+                        >
+                          <div>
+                            <p className="text-sm font-semibold">{liftData.label}</p>
+                            <p className="text-xs text-muted-foreground">Lift Score: {Math.round(liftData.liftScore)}</p>
+                          </div>
+                          <span className="text-xs font-medium text-primary">View Breakdown →</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               </TabsContent>
               
@@ -355,6 +385,14 @@ export function ExerciseDetailSheet({
           onClose={() => setShowOneRM(false)}
         />
       )}
+
+      {/* Strength Score Drawer */}
+      <StrengthScoreDrawer
+        open={showStrengthDrawer}
+        onOpenChange={setShowStrengthDrawer}
+        range={strengthRange}
+        onRangeChange={setStrengthRange}
+      />
       
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
