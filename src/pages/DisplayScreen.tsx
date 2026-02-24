@@ -80,50 +80,30 @@ export default function DisplayScreen() {
   const channelRef = useRef<any>(null);
   const tickerRef = useRef<ReturnType<typeof setInterval>>();
 
-  // Fetch display info directly via Supabase client
+  // Fetch display info via backend function (works for public display URLs)
   const fetchDisplay = useCallback(async () => {
     if (!token) return;
+
     try {
-      // Look up display by token
-      const { data: display, error: dErr } = await supabase
-        .from("displays")
-        .select("id, name, owner_type, owner_id, is_active")
-        .eq("display_token", token)
-        .maybeSingle();
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const res = await fetch(
+        `${supabaseUrl}/functions/v1/display-lookup?token=${encodeURIComponent(token)}`,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
 
-      if (dErr || !display) {
-        setError("Display not found");
+      const payload = await res.json().catch(() => ({}));
+
+      if (!res.ok || !payload?.display) {
+        setError(payload?.error || "Display not found");
         setLoading(false);
         return;
       }
 
-      if (!display.is_active) {
-        setError("Display is inactive");
-        setLoading(false);
-        return;
-      }
-
-      // Get owner name
-      let ownerName = "Display";
-      if (display.owner_type === "gym") {
-        const { data: gym } = await supabase.from("gyms").select("name").eq("id", display.owner_id).maybeSingle();
-        if (gym) ownerName = gym.name;
-      } else if (display.owner_type === "coach") {
-        const { data: coach } = await supabase.from("coaches").select("display_name").eq("id", display.owner_id).maybeSingle();
-        if (coach) ownerName = coach.display_name;
-      }
-
-      // Get active session
-      const { data: sessions } = await supabase
-        .from("display_sessions")
-        .select("id, status, title, started_at, settings_json, join_code, current_workout_session_id")
-        .eq("display_id", display.id)
-        .in("status", ["idle", "active"])
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      setDisplay({ id: display.id, name: display.name, owner_type: display.owner_type, owner_name: ownerName });
-      setSession(sessions?.[0] || null);
+      setDisplay(payload.display as DisplayInfo);
+      setSession((payload.session || null) as SessionInfo | null);
+      setError(null);
       setLoading(false);
     } catch {
       setError("Failed to connect to display");
@@ -134,6 +114,17 @@ export default function DisplayScreen() {
   useEffect(() => {
     fetchDisplay();
   }, [fetchDisplay]);
+
+  // Poll display/session snapshot for idle screen updates (e.g. join code changes)
+  useEffect(() => {
+    if (!token) return;
+
+    const interval = setInterval(() => {
+      fetchDisplay();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [token, fetchDisplay]);
 
   // Subscribe to realtime broadcast channel for this display
   useEffect(() => {
