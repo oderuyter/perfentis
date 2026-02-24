@@ -214,8 +214,9 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
       currentSet.completedAt = new Date().toISOString();
       // Only auto-fill reps for strength exercises
       if (currentExercise.exerciseType !== 'cardio' && currentSet.completedReps === null) {
-        // Parse target reps (handle ranges like "8-10")
-        const repsMatch = currentSet.targetReps.match(/\d+/);
+        // Parse target reps (handle ranges like "8-10"), targetReps may be number or string
+        const targetStr = String(currentSet.targetReps || '');
+        const repsMatch = targetStr.match(/\d+/);
         currentSet.completedReps = repsMatch ? parseInt(repsMatch[0]) : 0;
       }
       
