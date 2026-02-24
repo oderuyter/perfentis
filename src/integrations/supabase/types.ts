@@ -2061,6 +2061,45 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment: {
+        Row: {
+          admin_notes: string | null
+          category: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          category?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       event_assets: {
         Row: {
           alt_text: string | null
@@ -3351,6 +3390,42 @@ export type Database = {
           },
         ]
       }
+      exercise_equipment: {
+        Row: {
+          created_at: string
+          equipment_id: string
+          exercise_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          equipment_id: string
+          exercise_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          equipment_id?: string
+          exercise_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_equipment_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_equipment_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_goals: {
         Row: {
           created_at: string
@@ -3436,6 +3511,52 @@ export type Database = {
           },
         ]
       }
+      exercise_secondary_muscles: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          muscle_group_id: string
+          muscle_subgroup_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          muscle_group_id: string
+          muscle_subgroup_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          muscle_group_id?: string
+          muscle_subgroup_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_secondary_muscles_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_secondary_muscles_muscle_group_id_fkey"
+            columns: ["muscle_group_id"]
+            isOneToOne: false
+            referencedRelation: "muscle_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_secondary_muscles_muscle_subgroup_id_fkey"
+            columns: ["muscle_subgroup_id"]
+            isOneToOne: false
+            referencedRelation: "muscle_subgroups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercise_submissions: {
         Row: {
           approved_exercise_id: string | null
@@ -3495,20 +3616,27 @@ export type Database = {
       }
       exercises: {
         Row: {
+          admin_notes: string | null
           created_at: string
+          difficulty: string | null
           equipment: Database["public"]["Enums"]["equipment_type"][] | null
           exercise_id: string
           id: string
+          image_secondary_url: string | null
           image_url: string | null
           instructions: string | null
           is_active: boolean
           modality: Database["public"]["Enums"]["cardio_modality"] | null
           name: string
           primary_muscle: Database["public"]["Enums"]["muscle_group"] | null
+          primary_muscle_group_id: string | null
+          primary_muscle_subgroup_id: string | null
+          record_type: Database["public"]["Enums"]["exercise_record_type"]
           secondary_muscles:
             | Database["public"]["Enums"]["muscle_group"][]
             | null
           source: Database["public"]["Enums"]["exercise_source"]
+          status: Database["public"]["Enums"]["exercise_status"]
           supports_distance: boolean | null
           supports_intervals: boolean | null
           supports_one_rm_percent: boolean | null
@@ -3517,26 +3645,35 @@ export type Database = {
           supports_tempo: boolean | null
           supports_time: boolean | null
           supports_weight: boolean | null
+          tags: string[] | null
           type: Database["public"]["Enums"]["exercise_type"]
           updated_at: string
           user_id: string | null
           version: number
+          video_url: string | null
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
+          difficulty?: string | null
           equipment?: Database["public"]["Enums"]["equipment_type"][] | null
           exercise_id?: string
           id?: string
+          image_secondary_url?: string | null
           image_url?: string | null
           instructions?: string | null
           is_active?: boolean
           modality?: Database["public"]["Enums"]["cardio_modality"] | null
           name: string
           primary_muscle?: Database["public"]["Enums"]["muscle_group"] | null
+          primary_muscle_group_id?: string | null
+          primary_muscle_subgroup_id?: string | null
+          record_type?: Database["public"]["Enums"]["exercise_record_type"]
           secondary_muscles?:
             | Database["public"]["Enums"]["muscle_group"][]
             | null
           source?: Database["public"]["Enums"]["exercise_source"]
+          status?: Database["public"]["Enums"]["exercise_status"]
           supports_distance?: boolean | null
           supports_intervals?: boolean | null
           supports_one_rm_percent?: boolean | null
@@ -3545,26 +3682,35 @@ export type Database = {
           supports_tempo?: boolean | null
           supports_time?: boolean | null
           supports_weight?: boolean | null
+          tags?: string[] | null
           type: Database["public"]["Enums"]["exercise_type"]
           updated_at?: string
           user_id?: string | null
           version?: number
+          video_url?: string | null
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
+          difficulty?: string | null
           equipment?: Database["public"]["Enums"]["equipment_type"][] | null
           exercise_id?: string
           id?: string
+          image_secondary_url?: string | null
           image_url?: string | null
           instructions?: string | null
           is_active?: boolean
           modality?: Database["public"]["Enums"]["cardio_modality"] | null
           name?: string
           primary_muscle?: Database["public"]["Enums"]["muscle_group"] | null
+          primary_muscle_group_id?: string | null
+          primary_muscle_subgroup_id?: string | null
+          record_type?: Database["public"]["Enums"]["exercise_record_type"]
           secondary_muscles?:
             | Database["public"]["Enums"]["muscle_group"][]
             | null
           source?: Database["public"]["Enums"]["exercise_source"]
+          status?: Database["public"]["Enums"]["exercise_status"]
           supports_distance?: boolean | null
           supports_intervals?: boolean | null
           supports_one_rm_percent?: boolean | null
@@ -3573,12 +3719,29 @@ export type Database = {
           supports_tempo?: boolean | null
           supports_time?: boolean | null
           supports_weight?: boolean | null
+          tags?: string[] | null
           type?: Database["public"]["Enums"]["exercise_type"]
           updated_at?: string
           user_id?: string | null
           version?: number
+          video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "exercises_primary_muscle_group_id_fkey"
+            columns: ["primary_muscle_group_id"]
+            isOneToOne: false
+            referencedRelation: "muscle_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_primary_muscle_subgroup_id_fkey"
+            columns: ["primary_muscle_subgroup_id"]
+            isOneToOne: false
+            referencedRelation: "muscle_subgroups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       external_data_records: {
         Row: {
@@ -5188,6 +5351,65 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      muscle_groups: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      muscle_subgroups: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          muscle_group_id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          muscle_group_id: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          muscle_group_id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "muscle_subgroups_muscle_group_id_fkey"
+            columns: ["muscle_group_id"]
+            isOneToOne: false
+            referencedRelation: "muscle_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -8953,7 +9175,14 @@ export type Database = {
         | "box"
         | "cardio_machine"
         | "none"
+      exercise_record_type:
+        | "weight_reps"
+        | "reps"
+        | "cardio"
+        | "reps_duration"
+        | "duration"
       exercise_source: "system" | "user"
+      exercise_status: "approved" | "pending" | "rejected"
       exercise_type: "strength" | "cardio"
       muscle_group:
         | "chest"
@@ -9155,7 +9384,15 @@ export const Constants = {
         "cardio_machine",
         "none",
       ],
+      exercise_record_type: [
+        "weight_reps",
+        "reps",
+        "cardio",
+        "reps_duration",
+        "duration",
+      ],
       exercise_source: ["system", "user"],
+      exercise_status: ["approved", "pending", "rejected"],
       exercise_type: ["strength", "cardio"],
       muscle_group: [
         "chest",
