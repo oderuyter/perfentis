@@ -159,13 +159,14 @@ export default function TemplateActiveWorkout() {
     index += converted.length;
   }
 
-  const workout: Workout = {
+  const workout: Workout & { exercise_data?: any[] } = {
     id: resolvedData.id,
     name: (resolvedData as any).title || 'Workout',
     type: (resolvedData as any).workout_type || 'mixed',
     duration: (resolvedData as any).estimated_duration_minutes || 45,
     description: (resolvedData as any).description || undefined,
     exercises,
+    exercise_data: exerciseData,
   };
 
   return <ActiveWorkout templateWorkout={workout} />;

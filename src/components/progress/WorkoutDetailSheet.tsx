@@ -131,6 +131,7 @@ export const WorkoutDetailSheet = ({
 }: WorkoutDetailSheetProps) => {
   const [exercises, setExercises] = useState<ExerciseLog[]>([]);
   const [hrPoints, setHrPoints] = useState<HRChartPoint[]>([]);
+  const [blockInstances, setBlockInstances] = useState<Array<{ id: string; block_id: string; status: string; context_json: any }>>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -143,10 +144,19 @@ export const WorkoutDetailSheet = ({
     if (!workout) return;
     setLoading(true);
     try {
-      await Promise.all([fetchExerciseDetails(), fetchHRSamples()]);
+      await Promise.all([fetchExerciseDetails(), fetchHRSamples(), fetchBlockInstances()]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchBlockInstances = async () => {
+    if (!workout) return;
+    const { data } = await supabase
+      .from("block_instances")
+      .select("id, block_id, status, context_json")
+      .eq("workout_session_id", workout.id);
+    setBlockInstances(data || []);
   };
 
   const fetchExerciseDetails = async () => {
@@ -380,6 +390,49 @@ export const WorkoutDetailSheet = ({
               )}
 
               {/* ── Exercises ── */}
+              {/* ── Block Instances Summary ── */}
+              {blockInstances.length > 0 && (
+                <section className="space-y-2">
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                    Workout Blocks
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {blockInstances.map((bi) => {
+                      const ctx = bi.context_json || {};
+                      const blockType = ctx.blockType || 'single';
+                      const IconMap: Record<string, typeof Dumbbell> = {
+                        single: Dumbbell, superset: Layers, emom: Timer, amrap: Zap, ygig: Users,
+                      };
+                      const Icon = IconMap[blockType] || Dumbbell;
+                      return (
+                        <div key={bi.id} className="flex items-center gap-1.5 bg-muted/30 border border-border/30 rounded-lg px-3 py-2">
+                          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs font-medium">{ctx.title || blockType.toUpperCase()}</span>
+                          {blockType === 'amrap' && ctx.roundsCompleted != null && (
+                            <Badge variant="secondary" className="text-[10px] ml-1">
+                              {ctx.roundsCompleted}r + {ctx.repsInCurrentRound || 0}
+                            </Badge>
+                          )}
+                          {blockType === 'emom' && ctx.totalRounds && (
+                            <Badge variant="secondary" className="text-[10px] ml-1">
+                              {ctx.totalRounds} min
+                            </Badge>
+                          )}
+                          {blockType === 'ygig' && ctx.participants && (
+                            <Badge variant="secondary" className="text-[10px] ml-1">
+                              {ctx.participants.length} partners
+                            </Badge>
+                          )}
+                          <Badge variant={bi.status === 'completed' ? 'default' : 'outline'} className="text-[10px] ml-1">
+                            {bi.status}
+                          </Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              )}
+
               <section>
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">
                   Exercises ({exercises.length})
