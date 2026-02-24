@@ -85,8 +85,13 @@ export default function DisplayScreen() {
     if (!token) return;
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const res = await fetch(`${supabaseUrl}/functions/v1/display-lookup?token=${token}`, {
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "apikey": anonKey,
+          "Authorization": `Bearer ${anonKey}`,
+        },
       });
       const data = await res.json();
       if (!res.ok) {
