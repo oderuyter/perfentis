@@ -14,6 +14,7 @@ import { ImportRunSheet } from "@/components/run/ImportRunSheet";
 import { HealthDataTiles } from "@/components/progress/HealthDataTiles";
 import { OneRMTile } from "@/components/progress/OneRMTile";
 import { StrengthScoreTile } from "@/components/progress/StrengthScoreTile";
+import { BodyStatsCard } from "@/components/progress/BodyStatsCard";
 
 export default function Progress() {
   const {
@@ -99,6 +100,11 @@ export default function Progress() {
         {/* Health Data Tiles (from integrations) */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}>
           <HealthDataTiles />
+        </motion.div>
+
+        {/* Body Stats */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.075 }}>
+          <BodyStatsCard />
         </motion.div>
 
         {/* Streak Card */}

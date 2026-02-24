@@ -51,8 +51,9 @@ export interface UserProfile {
   privacy_insights: boolean | null;
   // Social settings
   social_share_after_workout: boolean | null;
-  // Strength score fields
+  // Body stats & strength score fields
   bodyweight_kg: number | null;
+  height_cm: number | null;
   sex: string | null;
 }
 
