@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Play, Edit, Share, Trash2, MoreHorizontal, Clock, Dumbbell, Target, Users, Layers } from "lucide-react";
+import { ArrowLeft, Play, Edit, Share, Trash2, MoreHorizontal, Clock, Dumbbell, Target, Users, Layers, Timer, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,28 +104,55 @@ export default function WorkoutTemplateDetail() {
     </div>
   );
 
-  // Render workout item (exercise or superset)
+  // Block type config for display
+  const BLOCK_DISPLAY: Record<string, { icon: typeof Dumbbell; label: string; borderClass: string; bgClass: string; iconBg: string }> = {
+    superset: { icon: Layers, label: 'Superset', borderClass: 'border-primary/20', bgClass: 'bg-primary/5', iconBg: 'bg-primary/15' },
+    emom: { icon: Timer, label: 'EMOM', borderClass: 'border-amber-500/20', bgClass: 'bg-amber-500/5', iconBg: 'bg-amber-500/15' },
+    amrap: { icon: Zap, label: 'AMRAP', borderClass: 'border-red-500/20', bgClass: 'bg-red-500/5', iconBg: 'bg-red-500/15' },
+    ygig: { icon: Users, label: 'YGIG', borderClass: 'border-blue-500/20', bgClass: 'bg-blue-500/5', iconBg: 'bg-blue-500/15' },
+  };
+
+  // Render workout item (exercise or block)
   const renderWorkoutItem = (item: WorkoutStructureData, index: number) => {
-    if (isTemplateSupersetBlock(item)) {
+    const blockType = (item as any).type as string;
+    const isBlock = blockType && BLOCK_DISPLAY[blockType];
+
+    if (isBlock) {
+      const display = BLOCK_DISPLAY[blockType];
+      const Icon = display.icon;
+      const blockItems = (item as any).items || [];
+      const blockSettings = (item as any).settings || {};
+      const blockName = (item as any).name || display.label;
+
+      // Build summary text
+      let summary = `${blockItems.length} exercises`;
+      if (blockType === 'superset') {
+        const rounds = (item as any).rounds || 1;
+        if (rounds > 1) summary += ` • ${rounds} rounds`;
+        if ((item as any).rest_after_round_seconds) summary += ` • ${(item as any).rest_after_round_seconds}s rest`;
+      } else if (blockType === 'emom') {
+        summary += ` • ${blockSettings.rounds || 10} rounds`;
+      } else if (blockType === 'amrap') {
+        summary += ` • ${Math.floor((blockSettings.time_cap_seconds || 600) / 60)} min cap`;
+      } else if (blockType === 'ygig') {
+        summary += ` • ${blockSettings.rounds || 3} rounds • ${blockSettings.max_participants || 2} partners`;
+      }
+
       return (
-        <Card key={item.id} className="glass-card border-primary/20 bg-primary/5">
+        <Card key={(item as any).id || index} className={`glass-card ${display.borderClass} ${display.bgClass}`}>
           <CardContent className="p-4">
             <div className="flex items-center gap-3 mb-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                <Layers className="h-5 w-5 text-primary" />
+              <div className={`h-10 w-10 rounded-lg ${display.iconBg} flex items-center justify-center shrink-0`}>
+                <Icon className="h-5 w-5 text-foreground/70" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium">{item.name || 'Superset'}</p>
-                <p className="text-sm text-muted-foreground">
-                  {item.items.length} exercises
-                  {(item.rounds || 1) > 1 && ` • ${item.rounds} rounds`}
-                  {item.rest_after_round_seconds && ` • ${item.rest_after_round_seconds}s rest`}
-                </p>
+                <p className="font-medium">{blockName}</p>
+                <p className="text-sm text-muted-foreground">{summary}</p>
               </div>
-              <Badge variant="secondary" className="shrink-0">Superset</Badge>
+              <Badge variant="secondary" className="shrink-0">{display.label}</Badge>
             </div>
-            <div className="space-y-2 pl-2 border-l-2 border-primary/20 ml-5">
-              {item.items.map((ex, i) => renderExercise(ex, i, true))}
+            <div className={`space-y-2 pl-2 border-l-2 ${display.borderClass} ml-5`}>
+              {blockItems.map((ex: any, i: number) => renderExercise(ex as WorkoutTemplateExercise, i, true))}
             </div>
           </CardContent>
         </Card>
@@ -133,12 +160,13 @@ export default function WorkoutTemplateDetail() {
     }
 
     // Regular exercise
+    const exItem = item as WorkoutTemplateExercise;
     return (
-      <Card key={`${item.exercise_id}-${index}`} className="glass-card">
+      <Card key={`${exItem.exercise_id}-${index}`} className="glass-card">
         <CardContent className="p-4">
-          {renderExercise(item, index)}
-          {item.notes && (
-            <p className="text-sm text-muted-foreground mt-2 pl-13">{item.notes}</p>
+          {renderExercise(exItem, index)}
+          {exItem.notes && (
+            <p className="text-sm text-muted-foreground mt-2 pl-13">{exItem.notes}</p>
           )}
         </CardContent>
       </Card>

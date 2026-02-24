@@ -234,7 +234,7 @@ export function UnifiedBlockBuilder({ blocks, onChange, title = "Exercises", rea
                             <p className="text-xs text-muted-foreground">
                               {block.type === 'emom' && `${(block.settings as EmomSettings).rounds} rounds`}
                               {block.type === 'amrap' && `${Math.floor((block.settings as AmrapSettings).time_cap_seconds / 60)} min cap`}
-                              {block.type === 'ygig' && `${(block.settings as YgigSettings).max_participants} partners`}
+                              {block.type === 'ygig' && `${(block.settings as YgigSettings as any).rounds || 3} rounds • ${(block.settings as YgigSettings).max_participants} partners`}
                               {block.type === 'superset' && `${(block.settings as SupersetSettings).rounds || 1} round${((block.settings as SupersetSettings).rounds || 1) > 1 ? 's' : ''}`}
                               {block.type === 'single' && block.items[0] && `${block.items[0].sets || 3}×${block.items[0].reps || '—'}`}
                             </p>
@@ -279,28 +279,86 @@ export function UnifiedBlockBuilder({ blocks, onChange, title = "Exercises", rea
                           <Collapsible open={isExpanded}>
                             <CollapsibleContent>
                               <div className="p-3 pt-0 space-y-2">
-                                {block.items.map((item, itemIndex) => (
-                                  <div key={item.id} className="flex items-center gap-2 p-2 rounded-lg bg-background/80">
-                                    {!readOnly && (
-                                      <div className="flex flex-col gap-0.5">
-                                        <button onClick={() => moveBlockItem(block.id, itemIndex, 'up')} disabled={itemIndex === 0} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"><ChevronUp className="h-3 w-3" /></button>
-                                        <button onClick={() => moveBlockItem(block.id, itemIndex, 'down')} disabled={itemIndex === block.items.length - 1} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"><ChevronDown className="h-3 w-3" /></button>
+                                {block.items.map((item, itemIndex) => {
+                                  // Determine the label for "sets" based on block type
+                                  const isRoundBased = block.type === 'superset' || block.type === 'emom' || block.type === 'ygig';
+                                  const setsLabel = isRoundBased ? 'Rounds' : 'Sets';
+                                  // For round-based blocks, sets = rounds from settings
+                                  const displaySets = isRoundBased
+                                    ? (block.type === 'superset' ? (block.settings as SupersetSettings).rounds
+                                      : block.type === 'emom' ? (block.settings as EmomSettings).rounds
+                                      : block.type === 'ygig' ? (block.settings as YgigSettings).rounds ?? item.sets
+                                      : item.sets)
+                                    : item.sets;
+
+                                  return (
+                                    <div key={item.id} className="rounded-lg bg-background/80 p-2 space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        {!readOnly && (
+                                          <div className="flex flex-col gap-0.5">
+                                            <button onClick={() => moveBlockItem(block.id, itemIndex, 'up')} disabled={itemIndex === 0} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"><ChevronUp className="h-3 w-3" /></button>
+                                            <button onClick={() => moveBlockItem(block.id, itemIndex, 'down')} disabled={itemIndex === block.items.length - 1} className="p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-30"><ChevronDown className="h-3 w-3" /></button>
+                                          </div>
+                                        )}
+                                        <Badge variant="outline" className="h-6 w-6 p-0 flex items-center justify-center text-xs">{String.fromCharCode(65 + itemIndex)}</Badge>
+                                        <div className="flex-1 min-w-0">
+                                          <p className="text-sm font-medium truncate">{item.name}</p>
+                                          {item.item_notes && <p className="text-xs text-muted-foreground truncate">{item.item_notes}</p>}
+                                        </div>
+                                        {!readOnly && (
+                                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeBlockItem(block.id, item.id)}><Trash2 className="h-3 w-3 text-muted-foreground" /></Button>
+                                        )}
                                       </div>
-                                    )}
-                                    <Badge variant="outline" className="h-6 w-6 p-0 flex items-center justify-center text-xs">{String.fromCharCode(65 + itemIndex)}</Badge>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium truncate">{item.name}</p>
-                                      {item.item_notes && <p className="text-xs text-muted-foreground truncate">{item.item_notes}</p>}
+                                      {/* Per-exercise editing row */}
+                                      {!readOnly && (
+                                        <div className="flex items-center gap-2 pl-8 text-xs">
+                                          {block.type === 'amrap' ? (
+                                            <>
+                                              <div className="flex items-center gap-1">
+                                                <Label className="text-xs text-muted-foreground">Reps</Label>
+                                                <Input type="number" min={1} className="h-7 w-14 text-xs" value={typeof item.reps === 'number' ? item.reps : ''} onChange={(e) => updateBlockItem(block.id, item.id, { reps: parseInt(e.target.value) || undefined })} />
+                                              </div>
+                                              {item.exercise_type !== 'cardio' && (
+                                                <div className="flex items-center gap-1">
+                                                  <Label className="text-xs text-muted-foreground">Load</Label>
+                                                  <Input type="text" className="h-7 w-20 text-xs" placeholder="e.g. 60kg" value={item.load_guidance || ''} onChange={(e) => updateBlockItem(block.id, item.id, { load_guidance: e.target.value || undefined })} />
+                                                </div>
+                                              )}
+                                            </>
+                                          ) : (
+                                            <>
+                                              <div className="flex items-center gap-1">
+                                                <Label className="text-xs text-muted-foreground">{setsLabel}</Label>
+                                                {isRoundBased ? (
+                                                  <span className="h-7 px-2 flex items-center text-xs text-muted-foreground">{displaySets}</span>
+                                                ) : (
+                                                  <Input type="number" min={1} className="h-7 w-14 text-xs" value={item.sets || 3} onChange={(e) => updateBlockItem(block.id, item.id, { sets: parseInt(e.target.value) || 1 })} />
+                                                )}
+                                              </div>
+                                              <div className="flex items-center gap-1">
+                                                <Label className="text-xs text-muted-foreground">Reps</Label>
+                                                <Input type="number" min={1} className="h-7 w-14 text-xs" value={typeof item.reps === 'number' ? item.reps : ''} onChange={(e) => updateBlockItem(block.id, item.id, { reps: parseInt(e.target.value) || undefined })} />
+                                              </div>
+                                              <div className="flex items-center gap-1">
+                                                <Label className="text-xs text-muted-foreground">Rest</Label>
+                                                <Input type="number" min={0} step={15} className="h-7 w-16 text-xs" value={item.rest_seconds || ''} onChange={(e) => updateBlockItem(block.id, item.id, { rest_seconds: parseInt(e.target.value) || undefined })} />
+                                              </div>
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
+                                      {readOnly && (
+                                        <div className="flex items-center gap-1 pl-8 text-xs text-muted-foreground">
+                                          {block.type === 'amrap' ? (
+                                            <span>{item.reps || '—'} reps{item.load_guidance ? ` @ ${item.load_guidance}` : ''}</span>
+                                          ) : (
+                                            <span>{displaySets || '—'}×{item.reps || '—'}{item.rest_seconds ? ` • ${item.rest_seconds}s rest` : ''}</span>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
-                                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                      <span>{item.sets || '—'}×</span>
-                                      <span>{item.reps || '—'}</span>
-                                    </div>
-                                    {!readOnly && (
-                                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeBlockItem(block.id, item.id)}><Trash2 className="h-3 w-3 text-muted-foreground" /></Button>
-                                    )}
-                                  </div>
-                                ))}
+                                  );
+                                })}
                                 {!readOnly && (
                                   <Button variant="outline" size="sm" className="w-full gap-1" onClick={() => { setAddingToBlockId(block.id); setShowAddExercise(true); }}>
                                     <Plus className="h-3 w-3" />Add Exercise
@@ -324,7 +382,7 @@ export function UnifiedBlockBuilder({ blocks, onChange, title = "Exercises", rea
                     <Plus className="h-4 w-4" />Add Block
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56">
+                <DropdownMenuContent className="w-56" side="top" align="center">
                   <DropdownMenuItem onClick={() => addBlock('single')}><Dumbbell className="h-4 w-4 mr-2" />Exercise</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => addBlock('superset')}><Layers className="h-4 w-4 mr-2" />Superset</DropdownMenuItem>
@@ -449,6 +507,10 @@ function BlockSettingsPopover({ block, onUpdateSettings }: { block: WorkoutBlock
         <PopoverTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><Settings className="h-4 w-4 text-muted-foreground" /></Button></PopoverTrigger>
         <PopoverContent className="w-64" align="end">
           <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs">Rounds</Label>
+              <Input type="number" min={1} max={20} className="h-8" value={(s as any).rounds || 3} onChange={(e) => onUpdateSettings({ rounds: parseInt(e.target.value) || 3 })} />
+            </div>
             <div className="space-y-2">
               <Label className="text-xs">Max participants</Label>
               <Select value={s.max_participants.toString()} onValueChange={(v) => onUpdateSettings({ max_participants: parseInt(v) })}>
