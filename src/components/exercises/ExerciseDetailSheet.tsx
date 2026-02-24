@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, Dumbbell, Activity, User, Edit2, Trash2, Calendar, TrendingUp, Weight } from 'lucide-react';
+import { ChevronDown, Dumbbell, Activity, User, Edit2, Trash2, Calendar, TrendingUp, Weight, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Exercise } from '@/types/exercise';
 import { MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS, MODALITY_LABELS } from '@/types/exercise';
 import { getExerciseImage } from '@/utils/equipmentImages';
 import { useExerciseHistory } from '@/hooks/useExerciseHistory';
+import { useOneRepMax, roundWeight } from '@/hooks/useOneRepMax';
+import { OneRMPanel } from '@/components/workout/OneRMPanel';
 import { format, formatDistanceToNow } from 'date-fns';
 import {
   AlertDialog,
@@ -39,8 +41,10 @@ export function ExerciseDetailSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
+  const [showOneRM, setShowOneRM] = useState(false);
   
   const { history, stats, isLoading: isLoadingHistory } = useExerciseHistory(exercise.exercise_id);
+  const { resultsByRange, units } = useOneRepMax(exercise.exercise_id);
   
   const isCustom = exercise.source === 'user';
   const isStrength = exercise.type === 'strength';
@@ -209,10 +213,36 @@ export function ExerciseDetailSheet({
                         {isStrength && stats.bestWeight > 0 && (
                           <div className="bg-muted/30 rounded-lg p-3 text-center">
                             <p className="text-lg font-bold">{stats.bestWeight}</p>
-                            <p className="text-xs text-muted-foreground">Best (lbs)</p>
+                            <p className="text-xs text-muted-foreground">Best (kg)</p>
                           </div>
                         )}
                       </div>
+                    </div>
+                  )}
+
+                  {/* 1RM Section */}
+                  {isStrength && resultsByRange['3m'].hasData && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+                        Estimated 1RM
+                      </p>
+                      <button
+                        onClick={() => setShowOneRM(true)}
+                        className="w-full bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-center justify-between hover:bg-primary/10 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Target className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-lg font-bold">
+                              {roundWeight(resultsByRange['3m'].e1rm, units)}{units === 'metric' ? 'kg' : 'lbs'}
+                            </p>
+                            <p className="text-xs text-muted-foreground">3-month e1RM</p>
+                          </div>
+                        </div>
+                        <span className="text-xs font-medium text-primary">View Table →</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -316,6 +346,15 @@ export function ExerciseDetailSheet({
           </div>
         </div>
       </motion.div>
+      
+      {/* 1RM Panel */}
+      {showOneRM && (
+        <OneRMPanel
+          exerciseId={exercise.exercise_id}
+          exerciseName={exercise.name}
+          onClose={() => setShowOneRM(false)}
+        />
+      )}
       
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>

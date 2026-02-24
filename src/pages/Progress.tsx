@@ -12,6 +12,7 @@ import { ExerciseGoalsSection } from "@/components/progress/ExerciseGoalsSection
 import { useWorkoutStreak } from "@/hooks/useWorkoutStreak";
 import { ImportRunSheet } from "@/components/run/ImportRunSheet";
 import { HealthDataTiles } from "@/components/progress/HealthDataTiles";
+import { OneRMTile } from "@/components/progress/OneRMTile";
 
 export default function Progress() {
   const {
@@ -106,6 +107,11 @@ export default function Progress() {
             longestStreak={longestStreak}
             milestones={milestones}
           />
+        </motion.div>
+
+        {/* 1RM Tile */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.09 }}>
+          <OneRMTile />
         </motion.div>
 
         {/* Activity Calendar */}
