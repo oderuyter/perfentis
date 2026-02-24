@@ -108,27 +108,52 @@ export default function TemplateActiveWorkout() {
     );
   }
 
-  // Convert template data to Workout format, flattening supersets
+  // Convert template data to Workout format, flattening all block types
   const convertItemToExercises = (item: any, baseIndex: number): Exercise[] => {
-    if (item.type === 'superset' && item.items) {
+    const blockType = item.type as string;
+    
+    // Handle all multi-exercise block types (superset, emom, amrap, ygig)
+    if (blockType && ['superset', 'emom', 'amrap', 'ygig'].includes(blockType) && Array.isArray(item.items)) {
+      const blockName = item.name || item.title || blockType.toUpperCase();
+      const blockSettings = item.settings || {};
+      
       return item.items.map((ex: any, i: number) => {
         const reps = ex.reps_min && ex.reps_max && ex.reps_min !== ex.reps_max
           ? `${ex.reps_min}-${ex.reps_max}`
           : String(ex.reps || ex.reps_min || 10);
 
+        // Determine sets based on block type
+        let sets = ex.sets || 3;
+        if (blockType === 'superset') {
+          sets = ex.sets || item.rounds || 1;
+        } else if (blockType === 'emom') {
+          sets = blockSettings.rounds || item.rounds || 10;
+        } else if (blockType === 'ygig') {
+          sets = blockSettings.rounds || 3;
+        } else if (blockType === 'amrap') {
+          // AMRAP: use exercise-defined sets, default 1
+          sets = ex.sets || 1;
+        }
+
+        // Determine rest
+        let restDuration = ex.rest_seconds || 0;
+        if (blockType === 'superset') {
+          restDuration = item.rest_between_exercises_seconds || ex.rest_seconds || 0;
+        }
+
         return {
           id: ex.exercise_id || `ex-${baseIndex}-${i}`,
-          name: `${item.name || 'Superset'}: ${ex.name}`,
-          sets: ex.sets,
+          name: `${blockName}: ${ex.name}`,
+          sets,
           reps,
           notes: ex.notes,
           exerciseType: ex.exercise_type || 'strength',
-          restDuration: item.rest_between_exercises_seconds || 0,
+          restDuration,
         } as Exercise;
       });
     }
 
-    // Regular exercise
+    // Regular single exercise
     const reps = item.reps_min && item.reps_max && item.reps_min !== item.reps_max
       ? `${item.reps_min}-${item.reps_max}`
       : String(item.reps || item.reps_min || 10);
@@ -136,7 +161,7 @@ export default function TemplateActiveWorkout() {
     const exercise: Exercise = {
       id: item.exercise_id || `ex-${baseIndex}`,
       name: item.name,
-      sets: item.sets,
+      sets: item.sets || 3,
       reps,
       notes: item.notes,
       exerciseType: item.exercise_type || 'strength',
