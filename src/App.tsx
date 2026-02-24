@@ -128,6 +128,7 @@ import AdminExerciseSubmissions from "./pages/admin-portal/AdminExerciseSubmissi
 import AdminEquipment from "./pages/admin-portal/AdminEquipment";
 import AdminMuscles from "./pages/admin-portal/AdminMuscles";
 import AdminNutrition from "./pages/admin-portal/AdminNutrition";
+import AdminExerciseImport from "./pages/admin-portal/AdminExerciseImport";
 import AdminExternalGymSubmissions from "./pages/admin-portal/AdminExternalGymSubmissions";
 import AdminConnectedDevices from "./pages/admin-portal/AdminConnectedDevices";
 import AdminEmailTemplates from "./pages/admin-portal/AdminEmailTemplates";
@@ -293,6 +294,7 @@ function AppRoutes() {
         <Route path="workout-moderation" element={<AdminWorkoutModeration />} />
         <Route path="split-moderation" element={<AdminSplitModeration />} />
         <Route path="exercises" element={<AdminExercises />} />
+        <Route path="exercise-import" element={<AdminExerciseImport />} />
         <Route path="playlists" element={<AdminPlaylists />} />
         <Route path="billing" element={<AdminBilling />} />
         <Route path="social" element={<AdminSocial />} />
