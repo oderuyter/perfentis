@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { corsHeaders, handleCorsPreFlight } from "../_shared/cors.ts";
+import { requireUser } from "../_shared/auth.ts";
 
 import * as XLSX from "npm:xlsx@0.18.5";
 
@@ -367,6 +368,9 @@ Deno.serve(async (req) => {
   const cors = corsHeaders(req);
 
   try {
+    // ── Authentication ──
+    const _user = await requireUser(req);
+
     // ── Payload size guard ──
     const contentLength = parseInt(req.headers.get("content-length") || "0", 10);
     if (contentLength > MAX_PAYLOAD_BYTES) {
@@ -434,9 +438,17 @@ Deno.serve(async (req) => {
     });
   } catch (error) {
     console.error("Parse import error:", error);
+    const message = error instanceof Error ? error.message : "Unknown parsing error";
+    // Don't leak auth errors as 500 – return 401
+    if (message === "No authorization header" || message === "Invalid authorization") {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...cors, "Content-Type": "application/json" } }
+      );
+    }
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown parsing error",
+        error: "Failed to parse file. Please check the format and try again.",
       }),
       {
         status: 500,

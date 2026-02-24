@@ -234,13 +234,37 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
         setNutrition(null);
       }
 
-      setPhotos((photosRes.data || []).map((p: any) => ({
-        id: p.id,
-        image_url: p.image_url,
-        note: p.note,
-        category: p.category || null,
-        created_at: p.created_at,
-      })));
+      // Generate signed URLs for private bucket photos
+      const rawPhotos = (photosRes.data || []) as any[];
+      const photosWithUrls = await Promise.all(
+        rawPhotos.map(async (p: any) => {
+          let displayUrl = p.image_url;
+          // If image_url is a storage path (not a full URL), generate a signed URL
+          if (p.image_url && !p.image_url.startsWith('http')) {
+            const { data: signedData } = await supabase.storage
+              .from('progress-photos')
+              .createSignedUrl(p.image_url, 3600); // 1 hour TTL
+            if (signedData?.signedUrl) displayUrl = signedData.signedUrl;
+          } else if (p.image_url?.includes('/storage/v1/object/public/progress-photos/')) {
+            // Legacy public URL – extract path and get signed URL
+            const pathMatch = p.image_url.split('/storage/v1/object/public/progress-photos/')[1];
+            if (pathMatch) {
+              const { data: signedData } = await supabase.storage
+                .from('progress-photos')
+                .createSignedUrl(decodeURIComponent(pathMatch), 3600);
+              if (signedData?.signedUrl) displayUrl = signedData.signedUrl;
+            }
+          }
+          return {
+            id: p.id,
+            image_url: displayUrl,
+            note: p.note,
+            category: p.category || null,
+            created_at: p.created_at,
+          };
+        })
+      );
+      setPhotos(photosWithUrls);
 
       setCounts({
         workouts: gymWorkouts.length,
@@ -367,11 +391,10 @@ export const DayDrawer = ({ open, onOpenChange, selectedDate }: DayDrawerProps) 
       return;
     }
 
-    const { data: urlData } = supabase.storage.from("progress-photos").getPublicUrl(path);
-
+    // Store the storage path (not a public URL) since bucket is now private
     const { error: insertError } = await supabase.from("progress_photos").insert({
       user_id: user.id,
-      image_url: urlData.publicUrl,
+      image_url: path,
       category: finalCategory || null,
       created_at: selectedDate?.toISOString() || new Date().toISOString(),
     } as any);
