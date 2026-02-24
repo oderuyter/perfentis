@@ -151,6 +151,12 @@ export default function GymDisplays() {
                     </>
                   )}
                 </div>
+                {editingId !== display.id && activeSessions[display.id]?.join_code && (
+                  <div className="mt-2">
+                    <p className="text-[11px] text-muted-foreground">Join Code</p>
+                    <p className="text-lg font-mono font-bold tracking-widest">{activeSessions[display.id].join_code}</p>
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="bg-muted rounded-lg p-2.5 text-xs font-mono break-all text-muted-foreground">

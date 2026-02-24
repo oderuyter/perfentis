@@ -253,27 +253,40 @@ export default function DisplayScreen() {
   // Idle state — no active session or session is idle
   if (!session || session.status === "idle") {
     return (
-      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white p-8">
-        <div className="text-center">
-          <div className="h-20 w-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
-            <Monitor className="h-10 w-10 text-white/60" />
+      <div className="min-h-screen bg-black text-white flex flex-col">
+        <header className="flex items-center justify-between px-8 py-4 border-b border-white/10">
+          <div className="flex items-center gap-4">
+            <h1 className="text-lg font-semibold text-white/80">{display?.owner_name}</h1>
+            <span className="text-white/30">·</span>
+            <span className="text-white/50">{display?.name}</span>
           </div>
-          <h1 className="text-4xl font-bold mb-2">{display?.owner_name}</h1>
-          <p className="text-xl text-white/50 mb-2">{display?.name}</p>
-          <div className="mt-8 flex items-center gap-2 text-white/30">
-            <div className="h-2 w-2 rounded-full bg-white/30 animate-pulse" />
-            <span className="text-sm">Waiting for broadcast…</span>
+          <div className="flex items-center gap-1.5 text-white/30 text-xs">
+            {connected ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
+            {connected ? "Connected" : "Connecting…"}
           </div>
-          {session?.join_code && (
-            <div className="mt-8 bg-white/5 border border-white/10 rounded-xl px-8 py-4">
+        </header>
+
+        {session?.join_code && (
+          <div className="px-8 pt-4">
+            <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-3 w-fit">
               <p className="text-xs text-white/40 mb-1">Join Code</p>
               <p className="text-3xl font-mono font-bold tracking-widest">{session.join_code}</p>
             </div>
-          )}
-        </div>
-        <div className="absolute bottom-4 right-4 flex items-center gap-1.5 text-white/20 text-xs">
-          {connected ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-          {connected ? "Connected" : "Connecting…"}
+          </div>
+        )}
+
+        <div className="flex-1 flex flex-col items-center justify-center p-8">
+          <div className="text-center">
+            <div className="h-20 w-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
+              <Monitor className="h-10 w-10 text-white/60" />
+            </div>
+            <h2 className="text-4xl font-bold mb-2">{display?.owner_name}</h2>
+            <p className="text-xl text-white/50 mb-2">{display?.name}</p>
+            <div className="mt-8 flex items-center justify-center gap-2 text-white/30">
+              <div className="h-2 w-2 rounded-full bg-white/30 animate-pulse" />
+              <span className="text-sm">Waiting for broadcast…</span>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -296,18 +309,19 @@ export default function DisplayScreen() {
           <span className="text-white/30">·</span>
           <span className="text-white/50">{session.title || display?.name}</span>
         </div>
-        <div className="flex items-center gap-4">
-          {session.join_code && (
-            <div className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 flex items-center gap-2">
-              <span className="text-xs text-white/40">JOIN</span>
-              <span className="font-mono font-bold text-sm">{session.join_code}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-1.5 text-white/30 text-xs">
-            {connected ? <Wifi className="h-3.5 w-3.5 text-emerald-400" /> : <WifiOff className="h-3.5 w-3.5 text-red-400" />}
-          </div>
+        <div className="flex items-center gap-1.5 text-white/30 text-xs">
+          {connected ? <Wifi className="h-3.5 w-3.5 text-emerald-400" /> : <WifiOff className="h-3.5 w-3.5 text-red-400" />}
         </div>
       </header>
+
+      {session.join_code && (
+        <div className="px-8 pt-4">
+          <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-3 w-fit">
+            <p className="text-xs text-white/40 mb-1">Join Code</p>
+            <p className="text-3xl font-mono font-bold tracking-widest">{session.join_code}</p>
+          </div>
+        </div>
+      )}
 
       {!workoutState ? (
         // Active session but no workout pushed yet
