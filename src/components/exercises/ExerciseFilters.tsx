@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, X, Filter } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import type { ExerciseFilters as Filters, ExerciseType, MuscleGroup, EquipmentType } from '@/types/exercise';
-import { MUSCLE_GROUP_LABELS, EQUIPMENT_LABELS } from '@/types/exercise';
+import { useMuscleTaxonomy } from '@/hooks/useMuscleTaxonomy';
+import { useEquipmentLibrary } from '@/hooks/useEquipmentLibrary';
+import type { ExerciseFilters as Filters } from '@/types/exercise';
+import { RECORD_TYPE_LABELS, ExerciseRecordType } from '@/types/exercise';
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger,
 } from '@/components/ui/collapsible';
 
 interface ExerciseFiltersProps {
@@ -15,21 +15,26 @@ interface ExerciseFiltersProps {
   onClearFilters: () => void;
 }
 
-const muscleGroups: MuscleGroup[] = [
-  'chest', 'back', 'shoulders', 'biceps', 'triceps', 'forearms',
-  'quadriceps', 'hamstrings', 'glutes', 'calves', 'abs', 'lower_back'
-];
-
-const equipmentTypes: EquipmentType[] = [
-  'barbell', 'dumbbell', 'kettlebell', 'cable', 'machine', 
-  'bodyweight', 'resistance_band', 'pull_up_bar', 'bench'
-];
-
 export function ExerciseFiltersBar({ filters, onUpdateFilters, onClearFilters }: ExerciseFiltersProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { muscleGroups, muscleSubgroups, getSubgroupsForGroup } = useMuscleTaxonomy();
+  const { approvedEquipment } = useEquipmentLibrary();
   
-  const hasActiveFilters = filters.type || filters.muscleGroup || filters.equipment;
-  const activeFilterCount = [filters.type, filters.muscleGroup, filters.equipment].filter(Boolean).length;
+  const hasActiveFilters = filters.type || filters.muscleGroupId || filters.equipmentId || filters.muscleGroup || filters.equipment || filters.recordType;
+  const activeFilterCount = [filters.type, filters.muscleGroupId || filters.muscleGroup, filters.equipmentId || filters.equipment, filters.recordType].filter(Boolean).length;
+  
+  // Get subgroups for selected muscle group
+  const selectedGroupSubgroups = filters.muscleGroupId 
+    ? getSubgroupsForGroup(filters.muscleGroupId) 
+    : [];
+
+  // Get display names
+  const selectedGroupName = filters.muscleGroupId
+    ? muscleGroups.find(g => g.id === filters.muscleGroupId)?.name
+    : null;
+  const selectedEquipmentName = filters.equipmentId
+    ? approvedEquipment.find(e => e.id === filters.equipmentId)?.name
+    : null;
   
   return (
     <div className="space-y-2">
@@ -47,19 +52,20 @@ export function ExerciseFiltersBar({ filters, onUpdateFilters, onClearFilters }:
           isActive={filters.type === 'cardio'}
           onClick={() => onUpdateFilters({ 
             type: filters.type === 'cardio' ? null : 'cardio',
+            muscleGroupId: null,
             muscleGroup: null,
+            equipmentId: null,
             equipment: null,
           })}
         />
         
         <div className="flex-1" />
         
-        {/* More filters toggle */}
         {filters.type !== 'cardio' && (
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs border transition-colors ${
-              isExpanded || filters.muscleGroup || filters.equipment
+              isExpanded || filters.muscleGroupId || filters.equipmentId || filters.muscleGroup || filters.equipment || filters.recordType
                 ? 'bg-primary/10 text-primary border-primary/30'
                 : 'bg-muted/50 text-muted-foreground border-border/50 hover:border-border'
             }`}
@@ -90,17 +96,18 @@ export function ExerciseFiltersBar({ filters, onUpdateFilters, onClearFilters }:
       {filters.type !== 'cardio' && (
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleContent className="space-y-3 pt-2">
-            {/* Muscle group filter */}
+            {/* Muscle group filter (DB-driven) */}
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Muscle Group</p>
               <div className="flex flex-wrap gap-1.5">
-                {muscleGroups.map(muscle => (
+                {muscleGroups.map(group => (
                   <FilterChip
-                    key={muscle}
-                    label={MUSCLE_GROUP_LABELS[muscle]}
-                    isActive={filters.muscleGroup === muscle}
+                    key={group.id}
+                    label={group.name}
+                    isActive={filters.muscleGroupId === group.id}
                     onClick={() => onUpdateFilters({ 
-                      muscleGroup: filters.muscleGroup === muscle ? null : muscle 
+                      muscleGroupId: filters.muscleGroupId === group.id ? null : group.id,
+                      muscleGroup: null,
                     })}
                     size="sm"
                   />
@@ -108,17 +115,36 @@ export function ExerciseFiltersBar({ filters, onUpdateFilters, onClearFilters }:
               </div>
             </div>
             
-            {/* Equipment filter - now independent */}
+            {/* Equipment filter (DB-driven) */}
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Equipment</p>
               <div className="flex flex-wrap gap-1.5">
-                {equipmentTypes.map(eq => (
+                {approvedEquipment.map(eq => (
                   <FilterChip
-                    key={eq}
-                    label={EQUIPMENT_LABELS[eq]}
-                    isActive={filters.equipment === eq}
+                    key={eq.id}
+                    label={eq.name}
+                    isActive={filters.equipmentId === eq.id}
                     onClick={() => onUpdateFilters({ 
-                      equipment: filters.equipment === eq ? null : eq 
+                      equipmentId: filters.equipmentId === eq.id ? null : eq.id,
+                      equipment: null,
+                    })}
+                    size="sm"
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Record type filter */}
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Record Type</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(Object.entries(RECORD_TYPE_LABELS) as [ExerciseRecordType, string][]).map(([key, label]) => (
+                  <FilterChip
+                    key={key}
+                    label={label}
+                    isActive={filters.recordType === key}
+                    onClick={() => onUpdateFilters({ 
+                      recordType: filters.recordType === key ? null : key,
                     })}
                     size="sm"
                   />
@@ -130,24 +156,35 @@ export function ExerciseFiltersBar({ filters, onUpdateFilters, onClearFilters }:
       )}
       
       {/* Active filter badges - shown when collapsed */}
-      {!isExpanded && (filters.muscleGroup || filters.equipment) && filters.type !== 'cardio' && (
+      {!isExpanded && (filters.muscleGroupId || filters.equipmentId || filters.recordType) && filters.type !== 'cardio' && (
         <div className="flex flex-wrap gap-1.5">
-          {filters.muscleGroup && (
+          {selectedGroupName && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-              {MUSCLE_GROUP_LABELS[filters.muscleGroup]}
+              {selectedGroupName}
               <button 
-                onClick={() => onUpdateFilters({ muscleGroup: null })}
+                onClick={() => onUpdateFilters({ muscleGroupId: null })}
                 className="hover:text-primary/70"
               >
                 <X className="h-3 w-3" />
               </button>
             </span>
           )}
-          {filters.equipment && (
+          {selectedEquipmentName && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
-              {EQUIPMENT_LABELS[filters.equipment]}
+              {selectedEquipmentName}
               <button 
-                onClick={() => onUpdateFilters({ equipment: null })}
+                onClick={() => onUpdateFilters({ equipmentId: null })}
+                className="hover:text-primary/70"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          )}
+          {filters.recordType && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs">
+              {RECORD_TYPE_LABELS[filters.recordType]}
+              <button 
+                onClick={() => onUpdateFilters({ recordType: null })}
                 className="hover:text-primary/70"
               >
                 <X className="h-3 w-3" />

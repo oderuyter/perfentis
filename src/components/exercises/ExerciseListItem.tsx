@@ -1,6 +1,6 @@
-import { Dumbbell, Activity, User } from 'lucide-react';
-import type { Exercise, EquipmentType } from '@/types/exercise';
-import { EQUIPMENT_LABELS, MUSCLE_GROUP_LABELS } from '@/types/exercise';
+import { Dumbbell, Activity, User, Clock, AlertCircle } from 'lucide-react';
+import type { Exercise } from '@/types/exercise';
+import { RECORD_TYPE_LABELS } from '@/types/exercise';
 import { getExerciseImage } from '@/utils/equipmentImages';
 
 interface ExerciseListItemProps {
@@ -10,41 +10,30 @@ interface ExerciseListItemProps {
   onAdd?: () => void;
 }
 
-const equipmentIcons: Partial<Record<EquipmentType, string>> = {
-  barbell: '🏋️',
-  dumbbell: '💪',
-  kettlebell: '🔔',
-  cable: '🔗',
-  machine: '⚙️',
-  bodyweight: '🧍',
-  cardio_machine: '🏃',
-};
-
 export function ExerciseListItem({ exercise, onClick, showAddButton, onAdd }: ExerciseListItemProps) {
   const isCustom = exercise.source === 'user';
   const isStrength = exercise.type === 'strength';
+  const isPending = exercise.status === 'pending';
+  const isRejected = exercise.status === 'rejected';
   
-  // Get first 2 equipment icons
-  const equipmentDisplay = (exercise.equipment || [])
-    .slice(0, 2)
-    .map(eq => equipmentIcons[eq] || '•')
-    .join(' ');
-
   const exerciseImage = getExerciseImage(exercise);
+
+  // Build subtitle
+  const subtitle = isStrength 
+    ? exercise.muscle_group_name || exercise.primary_muscle || exercise.type
+    : exercise.modality || 'Cardio';
+
+  // Equipment display from DB names
+  const equipmentDisplay = (exercise.equipment_names || []).slice(0, 2).join(', ');
 
   return (
     <button
       onClick={onClick || onAdd}
       className="w-full bg-muted/30 rounded-xl p-3 border border-border/30 flex items-center gap-3 active:scale-[0.98] transition-transform text-left"
     >
-      {/* Image or Type icon */}
       {exerciseImage ? (
         <div className="w-9 h-9 rounded-lg overflow-hidden bg-muted/50 flex-shrink-0">
-          <img 
-            src={exerciseImage} 
-            alt={exercise.name}
-            className="w-full h-full object-cover"
-          />
+          <img src={exerciseImage} alt={exercise.name} className="w-full h-full object-cover" />
         </div>
       ) : (
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
@@ -54,34 +43,42 @@ export function ExerciseListItem({ exercise, onClick, showAddButton, onAdd }: Ex
         </div>
       )}
       
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="font-medium text-sm truncate">{exercise.name}</span>
           {isCustom && (
-            <span className="flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-secondary/50 rounded text-[10px] font-medium text-muted-foreground">
-              <User className="h-2.5 w-2.5" />
-              Custom
+            <span className={`flex-shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium ${
+              isPending ? 'bg-yellow-500/10 text-yellow-600' :
+              isRejected ? 'bg-destructive/10 text-destructive' :
+              'bg-secondary/50 text-muted-foreground'
+            }`}>
+              {isPending ? (
+                <><Clock className="h-2.5 w-2.5" /> Pending</>
+              ) : isRejected ? (
+                <><AlertCircle className="h-2.5 w-2.5" /> Private</>
+              ) : (
+                <><User className="h-2.5 w-2.5" /> Custom</>
+              )}
             </span>
           )}
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-muted-foreground capitalize">
-            {isStrength 
-              ? MUSCLE_GROUP_LABELS[exercise.primary_muscle!] || exercise.type
-              : exercise.modality || 'Cardio'
-            }
-          </span>
-          {isStrength && equipmentDisplay && (
+          <span className="text-xs text-muted-foreground capitalize">{subtitle}</span>
+          {exercise.muscle_subgroup_name && (
             <>
               <span className="text-muted-foreground/50">·</span>
-              <span className="text-xs">{equipmentDisplay}</span>
+              <span className="text-xs text-muted-foreground">{exercise.muscle_subgroup_name}</span>
+            </>
+          )}
+          {equipmentDisplay && (
+            <>
+              <span className="text-muted-foreground/50">·</span>
+              <span className="text-xs text-muted-foreground">{equipmentDisplay}</span>
             </>
           )}
         </div>
       </div>
       
-      {/* Add indicator */}
       {showAddButton && (
         <div className="text-primary text-lg">+</div>
       )}
