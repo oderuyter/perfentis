@@ -111,7 +111,7 @@ export default function WorkoutBuilder() {
     setSaving(true);
     try {
       // Convert blocks back to JSONB format for storage
-      const exerciseData = blocksToLegacyItems(structuredBlocks);
+      const exerciseData = blocksToLegacyItems(structuredBlocks) as unknown as WorkoutStructureData[];
 
       if (isNew) {
         await createTemplate.mutateAsync({

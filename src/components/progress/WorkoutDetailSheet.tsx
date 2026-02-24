@@ -2,8 +2,9 @@ import { useEffect, useState, useMemo } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
-import { Clock, Dumbbell, ArrowLeft, Heart, Activity } from "lucide-react";
+import { Clock, Dumbbell, ArrowLeft, Heart, Activity, Timer, Zap, Users, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import {
