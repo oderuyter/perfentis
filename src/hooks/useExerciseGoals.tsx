@@ -41,18 +41,28 @@ export function useExerciseGoals() {
 
     const exerciseMap = new Map((exercisesData || []).map((e: any) => [e.id, e.name]));
 
-    // Fetch current best for each exercise
+    // Fetch current best for each exercise via exercise_logs -> set_logs
     const enriched: ExerciseGoal[] = await Promise.all(
       goalsData.map(async (g: any) => {
-        const { data: prData } = await supabase
-          .from("set_logs" as any)
-          .select("completed_weight")
-          .eq("exercise_id", g.exercise_id)
-          .not("completed_weight", "is", null)
-          .order("completed_weight", { ascending: false })
-          .limit(1);
+        // First get all exercise_log ids for this exercise
+        const { data: logIds } = await supabase
+          .from("exercise_logs")
+          .select("id")
+          .eq("exercise_id", g.exercise_id);
 
-        const currentBest = (prData as any)?.[0]?.completed_weight || 0;
+        let currentBest = 0;
+        if (logIds && logIds.length > 0) {
+          const ids = logIds.map((l: any) => l.id);
+          const { data: setData } = await supabase
+            .from("set_logs")
+            .select("completed_weight")
+            .in("exercise_log_id", ids)
+            .not("completed_weight", "is", null)
+            .order("completed_weight", { ascending: false })
+            .limit(1);
+
+          currentBest = setData?.[0]?.completed_weight || 0;
+        }
 
         return {
           id: g.id,
