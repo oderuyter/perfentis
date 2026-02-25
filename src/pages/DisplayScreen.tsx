@@ -399,33 +399,37 @@ export default function DisplayScreen() {
           </motion.div>
         )}
 
-        {/* Rest Timer */}
-        <AnimatePresence>
-          {isResting && workoutState!.restRemaining !== undefined && (
+        {/* Rest Timer Banner / Elapsed since rest */}
+        <AnimatePresence mode="wait">
+          {isResting && workoutState!.restRemaining !== undefined ? (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-8 text-center"
+              key="rest-banner"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="rounded-xl border border-blue-500/30 bg-blue-500/5 px-6 py-3 flex items-center justify-between"
             >
-              <p className="text-sm text-blue-400 mb-2">REST</p>
-              <p className="text-7xl font-mono font-bold tabular-nums text-blue-400">
+              <p className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Rest</p>
+              <p className="text-3xl font-mono font-bold tabular-nums text-blue-400">
                 {formatTime(workoutState!.restRemaining)}
               </p>
             </motion.div>
-          )}
+          ) : restEndedAt && elapsedSinceRest > 0 ? (
+            <motion.div
+              key="elapsed-banner"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex items-center gap-2 text-white/40 text-sm"
+            >
+              <Clock className="h-4 w-4" />
+              <span>{formatTime(elapsedSinceRest)} since rest</span>
+            </motion.div>
+          ) : null}
         </AnimatePresence>
 
-        {/* Elapsed since rest ended */}
-        {!isResting && restEndedAt && elapsedSinceRest > 0 && (
-          <div className="flex items-center gap-2 text-white/40 text-sm">
-            <Clock className="h-4 w-4" />
-            <span>{formatTime(elapsedSinceRest)} since rest</span>
-          </div>
-        )}
-
         {/* Current Exercise Card */}
-        {currentEx && !isResting && (
+        {currentEx && (
           <motion.div
             key={workoutState!.currentExerciseIndex}
             initial={{ opacity: 0, x: 20 }}
