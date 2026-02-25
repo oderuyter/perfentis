@@ -190,7 +190,7 @@ function AppRoutes() {
         <Route path="/train/workout/new" element={<WorkoutBuilder />} />
         <Route path="/train/workout/:templateId" element={<WorkoutTemplateDetail />} />
         <Route path="/train/workout/:templateId/edit" element={<WorkoutBuilder />} />
-        <Route path="/workout/template/:templateId/active" element={<TemplateActiveWorkout />} />
+        {/* Template active workout routes are outside AppLayout - see line 327-328 */}
         <Route path="/exercises" element={<Exercises />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/profile" element={<Profile />} />
