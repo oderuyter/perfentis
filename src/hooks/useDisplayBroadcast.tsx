@@ -63,14 +63,14 @@ export function useDisplayBroadcast(displayId: string | null, shareLevel?: strin
     });
   }, []);
 
-  const sendTick = useCallback((elapsedTime: number, restRemaining?: number, phase?: string) => {
+  const sendTick = useCallback((elapsedTime: number, restRemaining?: number, phase?: string, blockContext?: any) => {
     if (!channelRef.current) return;
     channelRef.current.send({
       type: "broadcast",
       event: "workout_update",
       payload: {
         type: "timer_tick",
-        data: { elapsedTime, restRemaining, phase },
+        data: { elapsedTime, restRemaining, phase, blockContext },
       },
     });
   }, []);

@@ -52,6 +52,9 @@ interface WorkoutState {
     round: number;
     totalRounds: number;
     timeRemaining?: number;
+    intervalSeconds?: number; // EMOM: 60s per minute
+    timeCapSeconds?: number;  // AMRAP: total cap
+    startedAt?: string | null; // AMRAP: when started
   };
 }
 
@@ -81,9 +84,13 @@ export default function DisplayScreen() {
   const [participantCount, setParticipantCount] = useState(0);
   const [restEndedAt, setRestEndedAt] = useState<number | null>(null);
   const [elapsedSinceRest, setElapsedSinceRest] = useState(0);
+  const [localRestRemaining, setLocalRestRemaining] = useState<number | null>(null);
+  const [blockTimeRemaining, setBlockTimeRemaining] = useState<number | null>(null);
   const channelRef = useRef<any>(null);
   const tickerRef = useRef<ReturnType<typeof setInterval>>();
   const restTickerRef = useRef<ReturnType<typeof setInterval>>();
+  const restCountdownRef = useRef<ReturnType<typeof setInterval>>();
+  const blockTimerRef = useRef<ReturnType<typeof setInterval>>();
 
   // Fetch display info via backend function
   const fetchDisplay = useCallback(async () => {
@@ -150,6 +157,53 @@ export default function DisplayScreen() {
     return () => { if (restTickerRef.current) clearInterval(restTickerRef.current); };
   }, [restEndedAt, workoutState?.phase]);
 
+  // Local rest timer countdown - decrements every second between broadcast ticks
+  useEffect(() => {
+    if (workoutState?.phase === "rest" && workoutState.restRemaining != null) {
+      setLocalRestRemaining(workoutState.restRemaining);
+    } else {
+      setLocalRestRemaining(null);
+    }
+  }, [workoutState?.restRemaining, workoutState?.phase]);
+
+  useEffect(() => {
+    if (localRestRemaining == null || localRestRemaining <= 0) {
+      if (restCountdownRef.current) clearInterval(restCountdownRef.current);
+      return;
+    }
+    restCountdownRef.current = setInterval(() => {
+      setLocalRestRemaining(prev => (prev != null && prev > 0) ? prev - 1 : 0);
+    }, 1000);
+    return () => { if (restCountdownRef.current) clearInterval(restCountdownRef.current); };
+  }, [localRestRemaining != null && localRestRemaining > 0]); // only re-run when transitioning to/from active countdown
+
+  // Local block timer countdown (EMOM 1-min intervals, AMRAP total cap)
+  useEffect(() => {
+    const bc = workoutState?.blockContext;
+    if (!bc) { setBlockTimeRemaining(null); return; }
+    
+    if (bc.type === 'emom' && bc.intervalSeconds) {
+      // For EMOM, timeRemaining comes from broadcast; if not, start at intervalSeconds
+      setBlockTimeRemaining(bc.timeRemaining ?? bc.intervalSeconds);
+    } else if (bc.type === 'amrap' && bc.timeCapSeconds && bc.startedAt) {
+      const elapsed = (Date.now() - new Date(bc.startedAt).getTime()) / 1000;
+      setBlockTimeRemaining(Math.max(0, Math.floor(bc.timeCapSeconds - elapsed)));
+    } else if (bc.timeRemaining != null) {
+      setBlockTimeRemaining(bc.timeRemaining);
+    }
+  }, [workoutState?.blockContext?.type, workoutState?.blockContext?.round, workoutState?.blockContext?.startedAt, workoutState?.blockContext?.timeRemaining]);
+
+  useEffect(() => {
+    if (blockTimeRemaining == null || blockTimeRemaining <= 0) {
+      if (blockTimerRef.current) clearInterval(blockTimerRef.current);
+      return;
+    }
+    blockTimerRef.current = setInterval(() => {
+      setBlockTimeRemaining(prev => (prev != null && prev > 0) ? prev - 1 : 0);
+    }, 1000);
+    return () => { if (blockTimerRef.current) clearInterval(blockTimerRef.current); };
+  }, [blockTimeRemaining != null && blockTimeRemaining > 0]);
+
   // Subscribe to realtime broadcast channel
   useEffect(() => {
     if (!display?.id) return;
@@ -163,9 +217,14 @@ export default function DisplayScreen() {
           setElapsedTick(msg.data.elapsedTime || 0);
         } else if (msg.type === "timer_tick") {
           setElapsedTick(msg.data.elapsedTime || 0);
-          if (msg.data.restRemaining !== undefined) {
-            setWorkoutState(prev => prev ? { ...prev, restRemaining: msg.data.restRemaining, phase: msg.data.phase } : prev);
-          }
+          setWorkoutState(prev => {
+            if (!prev) return prev;
+            const updates: Partial<WorkoutState> = {};
+            if (msg.data.phase) updates.phase = msg.data.phase;
+            if (msg.data.restRemaining !== undefined) updates.restRemaining = msg.data.restRemaining;
+            if (msg.data.blockContext) updates.blockContext = msg.data.blockContext;
+            return { ...prev, ...updates };
+          });
         } else if (msg.type === "set_complete") {
           setWorkoutState(prev => {
             if (!prev) return prev;
@@ -366,7 +425,7 @@ export default function DisplayScreen() {
           </div>
         </div>
 
-        {/* Block Context (EMOM/AMRAP) */}
+        {/* Block Context (EMOM/AMRAP) with local countdown */}
         {workoutState!.blockContext && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -386,13 +445,20 @@ export default function DisplayScreen() {
                 <div>
                   <p className="text-lg font-bold">{workoutState!.blockContext.name}</p>
                   <p className="text-sm text-white/50">
-                    Round {workoutState!.blockContext.round} of {workoutState!.blockContext.totalRounds}
+                    {workoutState!.blockContext.type === "amrap" 
+                      ? `${Math.floor((workoutState!.blockContext.timeCapSeconds || 0) / 60)} min cap`
+                      : `Round ${workoutState!.blockContext.round} of ${workoutState!.blockContext.totalRounds}`
+                    }
                   </p>
                 </div>
               </div>
-              {workoutState!.blockContext.timeRemaining !== undefined && (
-                <p className="text-4xl font-mono font-bold tabular-nums">
-                  {formatTime(workoutState!.blockContext.timeRemaining)}
+              {blockTimeRemaining != null && (
+                <p className={cn(
+                  "text-4xl font-mono font-bold tabular-nums",
+                  blockTimeRemaining <= 10 && "text-red-400 animate-pulse",
+                  blockTimeRemaining > 10 && blockTimeRemaining <= 30 && "text-amber-400",
+                )}>
+                  {formatTime(blockTimeRemaining)}
                 </p>
               )}
             </div>
@@ -401,7 +467,7 @@ export default function DisplayScreen() {
 
         {/* Rest Timer Banner / Elapsed since rest */}
         <AnimatePresence mode="wait">
-          {isResting && workoutState!.restRemaining !== undefined ? (
+          {isResting && localRestRemaining != null && localRestRemaining > 0 ? (
             <motion.div
               key="rest-banner"
               initial={{ opacity: 0, y: -10 }}
@@ -411,7 +477,7 @@ export default function DisplayScreen() {
             >
               <p className="text-sm font-semibold text-blue-400 uppercase tracking-wider">Rest</p>
               <p className="text-3xl font-mono font-bold tabular-nums text-blue-400">
-                {formatTime(workoutState!.restRemaining)}
+                {formatTime(localRestRemaining)}
               </p>
             </motion.div>
           ) : restEndedAt && elapsedSinceRest > 0 ? (
