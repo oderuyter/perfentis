@@ -55,7 +55,7 @@ export function useDisplayBroadcast(displayId: string | null, shareLevel?: strin
           })),
           elapsedTime: state.elapsedTime,
           phase: state.phase,
-          restRemaining: state.restRemaining,
+          restRemaining: state.restTimeRemaining ?? state.restRemaining,
           blockContext: state.blockContext || null,
           shareLevel: shareLevelRef.current || "structure_only",
         },

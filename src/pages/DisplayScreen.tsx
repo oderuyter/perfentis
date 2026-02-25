@@ -437,67 +437,87 @@ export default function DisplayScreen() {
               <h3 className="text-4xl font-bold mb-4">{currentEx.name}</h3>
 
               {/* Sets Grid - varies by share level */}
-              {shareLevel === "structure_only" ? (
-                /* Structure only: just exercise name, set count, target reps */
-                <div className="flex items-center gap-4 text-white/50 text-lg">
-                  <span>{currentEx.sets.length} sets</span>
-                  <span>·</span>
-                  <span>{currentEx.sets[0]?.targetReps} reps</span>
-                </div>
-              ) : shareLevel === "completion_only" ? (
-                /* Completion only: show done/not done per set */
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mt-4">
-                  {currentEx.sets.map((set, i) => (
+              {/* Sets display - all modes show boxes */}
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mt-4">
+                {currentEx.sets.map((set, i) => {
+                  const isCurrentSet = i === (workoutState!.currentSetIndex ?? 0);
+                  const repsLabel = set.completedReps ?? set.targetReps ?? "–";
+
+                  if (shareLevel === "full_stats") {
+                    return (
+                      <div
+                        key={i}
+                        className={cn(
+                          "rounded-xl p-4 text-center border transition-all",
+                          set.completed
+                            ? "bg-emerald-500/10 border-emerald-500/30"
+                            : isCurrentSet
+                            ? "bg-white/10 border-white/30 ring-2 ring-white/20"
+                            : "bg-white/[0.02] border-white/5"
+                        )}
+                      >
+                        <p className="text-xs text-white/40 mb-1">Set {i + 1}</p>
+                        {set.completed && set.completedWeight != null ? (
+                          <>
+                            <p className="text-lg font-bold">{set.completedWeight}kg</p>
+                            <p className="text-sm text-white/50">× {set.completedReps ?? "–"}</p>
+                          </>
+                        ) : set.completed ? (
+                          <p className="text-lg font-bold text-emerald-400">✓</p>
+                        ) : (
+                          <p className="text-lg font-mono text-white/50">{String(repsLabel)}</p>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  if (shareLevel === "completion_only") {
+                    return (
+                      <div
+                        key={i}
+                        className={cn(
+                          "rounded-xl p-4 text-center border transition-all",
+                          set.completed
+                            ? "bg-emerald-500/10 border-emerald-500/30"
+                            : isCurrentSet
+                            ? "bg-white/10 border-white/30 ring-2 ring-white/20"
+                            : "bg-white/[0.02] border-white/5"
+                        )}
+                      >
+                        <p className="text-xs text-white/40 mb-1">Set {i + 1}</p>
+                        {set.completed ? (
+                          <p className="text-lg font-bold text-emerald-400">✓</p>
+                        ) : (
+                          <p className="text-lg font-mono text-white/50">{String(repsLabel)}</p>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // structure_only — boxes with rep targets, no weights
+                  return (
                     <div
                       key={i}
                       className={cn(
                         "rounded-xl p-4 text-center border transition-all",
                         set.completed
                           ? "bg-emerald-500/10 border-emerald-500/30"
-                          : i === (workoutState!.currentSetIndex || 0)
+                          : isCurrentSet
                           ? "bg-white/10 border-white/30 ring-2 ring-white/20"
                           : "bg-white/[0.02] border-white/5"
                       )}
                     >
-                      <p className="text-xs text-white/40 mb-1">Set {set.setNumber}</p>
-                      {set.completed ? (
-                        <p className="text-lg font-bold text-emerald-400">✓</p>
-                      ) : (
-                        <p className="text-lg font-mono text-white/50">{String(set.targetReps)}</p>
-                      )}
+                      <p className="text-xs text-white/40 mb-1">Set {i + 1}</p>
+                      <p className={cn(
+                        "text-lg font-mono",
+                        set.completed ? "text-emerald-400" : "text-white/50"
+                      )}>
+                        {String(repsLabel)}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                /* Full stats: show weight & reps */
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mt-4">
-                  {currentEx.sets.map((set, i) => (
-                    <div
-                      key={i}
-                      className={cn(
-                        "rounded-xl p-4 text-center border transition-all",
-                        set.completed
-                          ? "bg-emerald-500/10 border-emerald-500/30"
-                          : i === (workoutState!.currentSetIndex || 0)
-                          ? "bg-white/10 border-white/30 ring-2 ring-white/20"
-                          : "bg-white/[0.02] border-white/5"
-                      )}
-                    >
-                      <p className="text-xs text-white/40 mb-1">Set {set.setNumber}</p>
-                      {set.completed && set.completedWeight != null ? (
-                        <>
-                          <p className="text-lg font-bold">{set.completedWeight}kg</p>
-                          <p className="text-sm text-white/50">× {set.completedReps}</p>
-                        </>
-                      ) : set.completed ? (
-                        <p className="text-lg font-bold text-emerald-400">✓</p>
-                      ) : (
-                        <p className="text-lg font-mono text-white/50">{String(set.targetReps)}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
 
             {/* Next Exercise Preview */}
