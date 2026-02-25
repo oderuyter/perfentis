@@ -148,16 +148,50 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   // Display broadcast
   const { sendState, sendTick, sendSetComplete, sendSessionEnd } = useDisplayBroadcast(connectedDisplayId, connectedShareLevel);
 
+  // Build block context for broadcast
+  const broadcastBlockContext = useMemo(() => {
+    if (!currentBlockContext || currentBlockContext.block.type === 'single') return null;
+    const block = currentBlockContext.block;
+    const blockState = blockExecution.getBlockState(block.id);
+    if (block.type === 'emom') {
+      const s = block.settings as EmomSettings;
+      return {
+        type: 'emom' as const,
+        name: block.title || 'EMOM',
+        round: blockState?.currentRound || 1,
+        totalRounds: s.rounds,
+        intervalSeconds: 60, // EMOM = 1 minute intervals
+      };
+    }
+    if (block.type === 'amrap') {
+      const s = block.settings as AmrapSettings;
+      return {
+        type: 'amrap' as const,
+        name: block.title || 'AMRAP',
+        round: blockState?.roundsCompleted || 0,
+        totalRounds: 0,
+        timeCapSeconds: s.time_cap_seconds,
+        startedAt: blockState?.amrapStartedAt || null,
+      };
+    }
+    return {
+      type: block.type,
+      name: block.title || block.type.toUpperCase(),
+      round: blockState?.currentRound || 1,
+      totalRounds: blockState?.totalRounds || 0,
+    };
+  }, [currentBlockContext, blockExecution.blockStates]);
+
   // Broadcast full workout state whenever it changes
   const lastBroadcastRef = useRef<string>("");
   useEffect(() => {
     if (!connectedDisplayId || !state) return;
     // Throttle: only send if meaningful state changed (exercise/set index, phase, exercises)
-    const stateKey = `${state.currentExerciseIndex}-${state.currentSetIndex}-${state.phase}-${state.exercises.map(e => e.sets.map(s => `${s.completed}${s.completedWeight}${s.completedReps}`).join()).join('|')}`;
+    const stateKey = `${state.currentExerciseIndex}-${state.currentSetIndex}-${state.phase}-${state.exercises.map(e => e.sets.map(s => `${s.completed}${s.completedWeight}${s.completedReps}`).join()).join('|')}-${JSON.stringify(broadcastBlockContext)}`;
     if (stateKey === lastBroadcastRef.current) return;
     lastBroadcastRef.current = stateKey;
-    try { sendState(state); } catch (e) { console.error("Broadcast error:", e); }
-  }, [connectedDisplayId, state?.currentExerciseIndex, state?.currentSetIndex, state?.phase, state?.exercises, sendState]);
+    try { sendState({ ...state, blockContext: broadcastBlockContext }); } catch (e) { console.error("Broadcast error:", e); }
+  }, [connectedDisplayId, state?.currentExerciseIndex, state?.currentSetIndex, state?.phase, state?.exercises, broadcastBlockContext, sendState]);
 
   // Broadcast timer ticks (every 1s during rest for countdown, every 5s otherwise)
   useEffect(() => {
@@ -168,12 +202,13 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         sendTick(
           state.elapsedTime,
           isRest ? state.restTimeRemaining : undefined,
-          state.phase
+          state.phase,
+          broadcastBlockContext
         );
       } catch (e) { console.error("Tick broadcast error:", e); }
     }, isRest ? 1000 : 5000);
     return () => clearInterval(interval);
-  }, [connectedDisplayId, state?.elapsedTime, state?.phase, state?.restTimeRemaining, sendTick]);
+  }, [connectedDisplayId, state?.elapsedTime, state?.phase, state?.restTimeRemaining, broadcastBlockContext, sendTick]);
 
   // Broadcast rest phase changes immediately
   const prevBroadcastPhaseRef = useRef<string>("");
