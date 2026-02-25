@@ -148,6 +148,49 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   // Display broadcast
   const { sendState, sendTick, sendSetComplete, sendSessionEnd } = useDisplayBroadcast(connectedDisplayId, connectedShareLevel);
 
+  // Broadcast full workout state whenever it changes
+  const lastBroadcastRef = useRef<string>("");
+  useEffect(() => {
+    if (!connectedDisplayId || !state) return;
+    // Throttle: only send if meaningful state changed (exercise/set index, phase, exercises)
+    const stateKey = `${state.currentExerciseIndex}-${state.currentSetIndex}-${state.phase}-${state.exercises.map(e => e.sets.map(s => `${s.completed}${s.completedWeight}${s.completedReps}`).join()).join('|')}`;
+    if (stateKey === lastBroadcastRef.current) return;
+    lastBroadcastRef.current = stateKey;
+    try { sendState(state); } catch (e) { console.error("Broadcast error:", e); }
+  }, [connectedDisplayId, state?.currentExerciseIndex, state?.currentSetIndex, state?.phase, state?.exercises, sendState]);
+
+  // Broadcast timer ticks (every 1s during rest for countdown, every 5s otherwise)
+  useEffect(() => {
+    if (!connectedDisplayId || !state) return;
+    const isRest = state.phase === "rest";
+    const interval = setInterval(() => {
+      try {
+        sendTick(
+          state.elapsedTime,
+          isRest ? state.restTimeRemaining : undefined,
+          state.phase
+        );
+      } catch (e) { console.error("Tick broadcast error:", e); }
+    }, isRest ? 1000 : 5000);
+    return () => clearInterval(interval);
+  }, [connectedDisplayId, state?.elapsedTime, state?.phase, state?.restTimeRemaining, sendTick]);
+
+  // Broadcast rest phase changes immediately
+  const prevBroadcastPhaseRef = useRef<string>("");
+  useEffect(() => {
+    if (!connectedDisplayId || !state) return;
+    if (state.phase !== prevBroadcastPhaseRef.current) {
+      prevBroadcastPhaseRef.current = state.phase;
+      try {
+        sendTick(
+          state.elapsedTime,
+          state.phase === "rest" ? state.restTimeRemaining : undefined,
+          state.phase
+        );
+      } catch (e) { console.error("Phase broadcast error:", e); }
+    }
+  }, [connectedDisplayId, state?.phase, state?.elapsedTime, state?.restTimeRemaining, sendTick]);
+
   // Auto-disconnect display after 2.5 hours
   const displayConnectTimeRef = useRef<number | null>(null);
   useEffect(() => {
