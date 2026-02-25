@@ -3,11 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Hook to broadcast workout state to a display channel.
- * Call `sendState(state)` on every meaningful state change (set complete, exercise change, rest start/end).
- * Call `sendTick(elapsed, restRemaining, phase)` every second for timer updates.
+ * Now includes shareLevel in broadcasts so display knows privacy mode.
  */
-export function useDisplayBroadcast(displayId: string | null) {
+export function useDisplayBroadcast(displayId: string | null, shareLevel?: string) {
   const channelRef = useRef<any>(null);
+  const shareLevelRef = useRef(shareLevel);
+  shareLevelRef.current = shareLevel;
 
   useEffect(() => {
     if (!displayId) {
@@ -56,6 +57,7 @@ export function useDisplayBroadcast(displayId: string | null) {
           phase: state.phase,
           restRemaining: state.restRemaining,
           blockContext: state.blockContext || null,
+          shareLevel: shareLevelRef.current || "structure_only",
         },
       },
     });
