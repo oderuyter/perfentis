@@ -67,21 +67,113 @@ Deno.serve(async (req) => {
         } else { await cRes.text(); }
       }
 
+      // Get latest session (idle or active)
       const sRes = await fetch(
         `${restUrl}/display_sessions?select=id,status,title,started_at,settings_json,join_code,current_workout_session_id&display_id=eq.${display.id}&status=in.(idle,active)&order=created_at.desc&limit=1`,
         { headers: baseHeaders }
       );
       const sessions = sRes.ok ? await sRes.json() : (await sRes.text(), []);
+      let session = sessions[0] || null;
+
+      // If no session exists, create one with a persistent join code
+      if (!session) {
+        const codeRes = await fetch(`${restUrl}/rpc/generate_display_join_code`, {
+          method: "POST",
+          headers: baseHeaders,
+          body: "{}",
+        });
+        const joinCodeVal = codeRes.ok ? (await codeRes.json()) : null;
+
+        if (joinCodeVal) {
+          const createRes = await fetch(`${restUrl}/display_sessions`, {
+            method: "POST",
+            headers: { ...baseHeaders, "Prefer": "return=representation" },
+            body: JSON.stringify({
+              display_id: display.id,
+              status: "idle",
+              join_code: joinCodeVal,
+              settings_json: { privacy_mode: "structure_only", show_user_names: false, max_participant_tiles: 1 },
+            }),
+          });
+          if (createRes.ok) {
+            const created = await createRes.json();
+            session = Array.isArray(created) ? created[0] : created;
+          } else { await createRes.text(); }
+        }
+      } else {
+        // Rotate join code every 3 hours
+        const sessionCreated = new Date(session.started_at || session.id).getTime();
+        const threeHoursMs = 3 * 60 * 60 * 1000;
+        // Use a simple check: if join_code was created > 3h ago, rotate
+        // We'll track this by checking if session has been idle for 3+ hours
+        if (session.status === "idle" && session.join_code) {
+          // Check if we need to rotate by looking at when the session was created
+          const sDetailRes = await fetch(
+            `${restUrl}/display_sessions?select=created_at&id=eq.${session.id}`,
+            { headers: { ...baseHeaders, "Accept": "application/vnd.pgrst.object+json" } }
+          );
+          if (sDetailRes.ok) {
+            const sDetail = await sDetailRes.json();
+            const createdAt = new Date(sDetail.created_at).getTime();
+            if (Date.now() - createdAt > threeHoursMs) {
+              // Rotate: generate new join code
+              const codeRes = await fetch(`${restUrl}/rpc/generate_display_join_code`, {
+                method: "POST",
+                headers: baseHeaders,
+                body: "{}",
+              });
+              const newCode = codeRes.ok ? await codeRes.json() : null;
+              if (newCode) {
+                // End old idle session, create new one
+                await fetch(`${restUrl}/display_sessions?id=eq.${session.id}`, {
+                  method: "PATCH",
+                  headers: baseHeaders,
+                  body: JSON.stringify({ status: "ended", ended_at: new Date().toISOString() }),
+                });
+                const createRes = await fetch(`${restUrl}/display_sessions`, {
+                  method: "POST",
+                  headers: { ...baseHeaders, "Prefer": "return=representation" },
+                  body: JSON.stringify({
+                    display_id: display.id,
+                    status: "idle",
+                    join_code: newCode,
+                    settings_json: session.settings_json || { privacy_mode: "structure_only", show_user_names: false, max_participant_tiles: 1 },
+                  }),
+                });
+                if (createRes.ok) {
+                  const created = await createRes.json();
+                  session = Array.isArray(created) ? created[0] : created;
+                } else { await createRes.text(); }
+              }
+            }
+          } else { await sDetailRes.text(); }
+        }
+      }
+
+      // Count connected participants
+      let participantCount = 0;
+      if (session) {
+        const pRes = await fetch(
+          `${restUrl}/display_participants?select=id&display_session_id=eq.${session.id}&status=eq.connected`,
+          { headers: baseHeaders }
+        );
+        if (pRes.ok) {
+          const participants = await pRes.json();
+          participantCount = participants.length;
+        } else { await pRes.text(); }
+      }
 
       return new Response(JSON.stringify({
         display: { id: display.id, name: display.name, owner_type: display.owner_type, owner_name: ownerName },
-        session: sessions[0] || null,
+        session,
+        participant_count: participantCount,
       }), { status: 200, headers: openHeaders });
     }
 
     if (joinCode) {
+      // Look up by join code - search both idle and active sessions
       const sRes = await fetch(
-        `${restUrl}/display_sessions?select=id,display_id,status,title,join_code,settings_json&join_code=eq.${encodeURIComponent(joinCode.toUpperCase())}&status=eq.active&limit=1`,
+        `${restUrl}/display_sessions?select=id,display_id,status,title,join_code,settings_json&join_code=eq.${encodeURIComponent(joinCode.toUpperCase())}&status=in.(idle,active)&limit=1`,
         { headers: baseHeaders }
       );
       const sessions = sRes.ok ? await sRes.json() : (await sRes.text(), []);

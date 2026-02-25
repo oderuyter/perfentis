@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Check, SkipForward, Heart, ChevronUp, Shuffle, Plus, History, Pause, Play, StickyNote, Trophy, Save, Trash2, Share2, Target, Monitor } from "lucide-react";
 
@@ -32,6 +32,7 @@ import { YgigPanel } from "@/components/workout/YgigPanel";
 import { computeSessionE1RM } from "@/hooks/useOneRepMax";
 import { useDisplayBroadcast } from "@/hooks/useDisplayBroadcast";
 import { SendToDisplaySheet } from "@/components/workout/SendToDisplaySheet";
+import { supabase } from "@/integrations/supabase/client";
 import { useWorkoutPrefill } from "@/hooks/useWorkoutPrefill";
 import { toast } from "sonner";
 import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
@@ -141,9 +142,43 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const [showOneRM, setShowOneRM] = useState(false);
   const [showSendToDisplay, setShowSendToDisplay] = useState(false);
   const [connectedDisplayId, setConnectedDisplayId] = useState<string | null>(null);
+  const [connectedSessionId, setConnectedSessionId] = useState<string | null>(null);
+  const [connectedShareLevel, setConnectedShareLevel] = useState<string>("structure_only");
 
   // Display broadcast
-  const { sendState, sendTick, sendSetComplete, sendSessionEnd } = useDisplayBroadcast(connectedDisplayId);
+  const { sendState, sendTick, sendSetComplete, sendSessionEnd } = useDisplayBroadcast(connectedDisplayId, connectedShareLevel);
+
+  // Auto-disconnect display after 2.5 hours
+  const displayConnectTimeRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!connectedDisplayId) {
+      displayConnectTimeRef.current = null;
+      return;
+    }
+    displayConnectTimeRef.current = Date.now();
+    const timeout = setTimeout(() => {
+      handleDisplayDisconnect();
+      toast("Display disconnected after 2.5 hours");
+    }, 2.5 * 60 * 60 * 1000);
+    return () => clearTimeout(timeout);
+  }, [connectedDisplayId]);
+
+  const handleDisplayDisconnect = useCallback(async () => {
+    if (connectedDisplayId) {
+      sendSessionEnd();
+      // Update participant status
+      const user = (await supabase.auth.getUser()).data.user;
+      if (user && connectedSessionId) {
+        await supabase
+          .from("display_participants")
+          .update({ status: "disconnected" })
+          .eq("display_session_id", connectedSessionId)
+          .eq("user_id", user.id);
+      }
+    }
+    setConnectedDisplayId(null);
+    setConnectedSessionId(null);
+  }, [connectedDisplayId, connectedSessionId, sendSessionEnd]);
 
   // Build stats card data for post-workout sharing
   const statsCardData = useMemo(() => {
@@ -173,18 +208,16 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   // Explicitly end workout
   const handleEndWorkout = useCallback(async () => {
     if (confirm("End workout? Your progress will be saved.")) {
-      // Save workout session before ending
       if (state) {
         await saveWorkoutSession(state);
       }
-      // Clear saved workout from localStorage first
+      // Disconnect display on workout end
+      await handleDisplayDisconnect();
       clearSavedWorkout();
-      // Then update state to trigger re-render
       endWorkout(false);
-      // Navigate after clearing
       navigate("/");
     }
-  }, [navigate, endWorkout, state, saveWorkoutSession]);
+  }, [navigate, endWorkout, state, saveWorkoutSession, handleDisplayDisconnect]);
 
   // Save session + check PRs, then show share sheet (or navigate directly)
   const handleFinish = useCallback(async () => {
@@ -210,16 +243,17 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         }
       }
     }
+    // Disconnect display on workout finish
+    await handleDisplayDisconnect();
     clearSavedWorkout();
     setCompletedSessionId(sessionId);
     setIsSavingSession(false);
-    // Auto-open share sheet if user's default preference is enabled
     if (profile?.social_share_after_workout) {
       setShowSharePost(true);
     } else {
       navigate("/");
     }
-  }, [isSavingSession, navigate, state, saveWorkoutSession, checkAndSavePRs, user, profile]);
+  }, [isSavingSession, navigate, state, saveWorkoutSession, checkAndSavePRs, user, profile, handleDisplayDisconnect]);
 
   // For freeform workouts without exercises yet, show empty state with add prompt
   const hasNoExercises = state && state.exercises.length === 0;
@@ -747,8 +781,12 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
           open={showSendToDisplay}
           onClose={() => setShowSendToDisplay(false)}
           workoutState={state}
-          onConnected={(displayId, sessionId) => {
+          isConnected={!!connectedDisplayId}
+          onDisconnect={handleDisplayDisconnect}
+          onConnected={(displayId, sessionId, shareLevel) => {
             setConnectedDisplayId(displayId);
+            setConnectedSessionId(sessionId);
+            setConnectedShareLevel(shareLevel);
             sendState(state);
           }}
         />
