@@ -18,7 +18,8 @@ import {
   LogOut,
   Camera,
   Loader2,
-  Share2
+  Share2,
+  Dumbbell
 } from "lucide-react";
 import { useTheme, accentColors } from "@/hooks/useTheme";
 import { useAuth } from "@/hooks/useAuth";
@@ -35,6 +36,7 @@ import { HeartRateZonesSheet } from "@/components/profile/HeartRateZonesSheet";
 import { HRDevicesSheet } from "@/components/profile/HRDevicesSheet";
 import { NotificationsSheet } from "@/components/profile/NotificationsSheet";
 import { PrivacySheet } from "@/components/profile/PrivacySheet";
+import { WorkoutDefaultsSheet } from "@/components/profile/WorkoutDefaultsSheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -152,6 +154,7 @@ export default function Profile() {
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [hrDevicesOpen, setHrDevicesOpen] = useState(false);
   const [signOutDialogOpen, setSignOutDialogOpen] = useState(false);
+  const [workoutDefaultsOpen, setWorkoutDefaultsOpen] = useState(false);
 
   const cycleTheme = () => {
     const modes: ThemeMode[] = ["system", "light", "dark"];
@@ -343,6 +346,16 @@ export default function Profile() {
           </SettingRow>
         </div>
 
+        <SectionHeader title="Workouts" />
+        <div className="card-glass p-4 space-y-0.5">
+          <SettingRow 
+            icon={Dumbbell} 
+            label="Workout Defaults" 
+            value="Rest, sets, reps"
+            onClick={() => setWorkoutDefaultsOpen(true)} 
+          />
+        </div>
+
         <SectionHeader title="Preferences" />
         <div className="card-glass p-4 space-y-0.5">
           <SettingRow 
@@ -410,6 +423,10 @@ export default function Profile() {
       <PrivacySheet
         isOpen={privacyOpen} 
         onClose={() => setPrivacyOpen(false)} 
+      />
+      <WorkoutDefaultsSheet
+        isOpen={workoutDefaultsOpen}
+        onClose={() => setWorkoutDefaultsOpen(false)}
       />
 
       {/* Sign Out Confirmation Dialog */}

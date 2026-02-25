@@ -39,7 +39,7 @@ function createInitialExercise(exercise: Exercise, index: number): ActiveExercis
     name: exercise.name,
     originalIndex: index,
     sets,
-    restDuration: isCardio ? 60 : 90,
+    restDuration: (exercise as any).restDuration || (isCardio ? 60 : 90),
     skipped: false,
     swappedFrom: null,
     addedMidWorkout: false,
@@ -253,15 +253,32 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
     });
   }, []);
 
-  // Update set values (weight, reps)
+  // Update set values (weight, reps) with optional forward propagation for strength exercises
   const updateSet = useCallback((exerciseIndex: number, setIndex: number, updates: Partial<ExerciseSet>) => {
     setState(prev => {
       if (!prev) return null;
       const exercises = [...prev.exercises];
-      exercises[exerciseIndex].sets[setIndex] = {
-        ...exercises[exerciseIndex].sets[setIndex],
-        ...updates,
-      };
+      const exercise = { ...exercises[exerciseIndex] };
+      const sets = [...exercise.sets];
+      sets[setIndex] = { ...sets[setIndex], ...updates };
+
+      // In-session propagation: if weight was changed on a strength exercise,
+      // propagate forward to subsequent uncompleted sets
+      const isStrength = !exercise.exerciseType || exercise.exerciseType === 'strength' || exercise.exerciseType === 'weight_reps';
+      if (isStrength && updates.completedWeight !== undefined) {
+        const newWeight = updates.completedWeight;
+        for (let i = setIndex + 1; i < sets.length; i++) {
+          if (sets[i].completed) continue;
+          // Only propagate if the set hasn't been manually edited to a different value
+          const currentWeight = sets[i].completedWeight;
+          if (currentWeight === null || currentWeight === sets[setIndex].targetWeight || currentWeight === sets[Math.max(0, i - 1)].completedWeight) {
+            sets[i] = { ...sets[i], completedWeight: newWeight };
+          }
+        }
+      }
+
+      exercise.sets = sets;
+      exercises[exerciseIndex] = exercise;
       return { ...prev, exercises };
     });
   }, []);
@@ -352,7 +369,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
   }, []);
 
   // Add exercise and optionally navigate to it
-  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string; exerciseType?: 'strength' | 'cardio'; recordType?: string }, navigateTo: boolean = false) => {
+  const addExercise = useCallback((exercise: { id: string; name: string; sets?: number; version?: number; muscleGroup?: string; exerciseType?: 'strength' | 'cardio'; recordType?: string; restDuration?: number }, navigateTo: boolean = false) => {
     setState(prev => {
       if (!prev) return null;
 
@@ -386,7 +403,7 @@ export function useWorkoutState(workout: Workout | null, resumeState?: ActiveWor
           tempo: null,
           note: null,
         })),
-        restDuration: isCardio ? 60 : 90,
+        restDuration: exercise.restDuration || (isCardio ? 60 : 90),
         skipped: false,
         swappedFrom: null,
         addedMidWorkout: true,

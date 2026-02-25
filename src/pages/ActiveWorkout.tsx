@@ -32,6 +32,7 @@ import { YgigPanel } from "@/components/workout/YgigPanel";
 import { computeSessionE1RM } from "@/hooks/useOneRepMax";
 import { useDisplayBroadcast } from "@/hooks/useDisplayBroadcast";
 import { SendToDisplaySheet } from "@/components/workout/SendToDisplaySheet";
+import { useWorkoutPrefill } from "@/hooks/useWorkoutPrefill";
 import { toast } from "sonner";
 import { notifyWorkoutCompleted, notifyPRSet } from "@/lib/notifications";
 import type { WorkoutBlock, EmomSettings, AmrapSettings, YgigSettings } from "@/types/workout-blocks";
@@ -121,6 +122,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   // Background 30-second heartbeat: upserts `status='active'` to the DB so the
   // session survives localStorage being cleared or the device crashing.
   useWorkoutHeartbeat(state);
+  useWorkoutPrefill(state, updateSet);
   const [newPRs, setNewPRs] = useState<PersonalRecord[]>([]);
   const [showSharePost, setShowSharePost] = useState(false);
   const [completedSessionId, setCompletedSessionId] = useState<string | undefined>(undefined);

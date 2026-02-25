@@ -8773,6 +8773,42 @@ export type Database = {
         }
         Relationships: []
       }
+      user_workout_preferences: {
+        Row: {
+          created_at: string
+          default_reps: number
+          default_rest_seconds: number
+          default_sets: number
+          id: string
+          updated_at: string
+          user_id: string
+          weight_prefill_mode: string
+          weight_rounding_increment: number
+        }
+        Insert: {
+          created_at?: string
+          default_reps?: number
+          default_rest_seconds?: number
+          default_sets?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+          weight_prefill_mode?: string
+          weight_rounding_increment?: number
+        }
+        Update: {
+          created_at?: string
+          default_reps?: number
+          default_rest_seconds?: number
+          default_sets?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weight_prefill_mode?: string
+          weight_rounding_increment?: number
+        }
+        Relationships: []
+      }
       workout_block_items: {
         Row: {
           block_id: string
