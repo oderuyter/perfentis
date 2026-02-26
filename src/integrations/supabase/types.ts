@@ -8780,6 +8780,8 @@ export type Database = {
           default_rest_seconds: number
           default_sets: number
           id: string
+          rest_timer_haptics: boolean
+          rest_timer_sound: boolean
           updated_at: string
           user_id: string
           weight_prefill_mode: string
@@ -8791,6 +8793,8 @@ export type Database = {
           default_rest_seconds?: number
           default_sets?: number
           id?: string
+          rest_timer_haptics?: boolean
+          rest_timer_sound?: boolean
           updated_at?: string
           user_id: string
           weight_prefill_mode?: string
@@ -8802,6 +8806,8 @@ export type Database = {
           default_rest_seconds?: number
           default_sets?: number
           id?: string
+          rest_timer_haptics?: boolean
+          rest_timer_sound?: boolean
           updated_at?: string
           user_id?: string
           weight_prefill_mode?: string

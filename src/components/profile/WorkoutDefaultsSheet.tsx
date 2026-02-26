@@ -10,8 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useWorkoutPreferences } from "@/hooks/useWorkoutPreferences";
 import { useProfile } from "@/hooks/useProfile";
-import { Dumbbell, Timer, Hash, RotateCcw, Scale } from "lucide-react";
+import { Dumbbell, Timer, Hash, RotateCcw, Scale, Volume2, SmartphoneNfc } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 interface WorkoutDefaultsSheetProps {
   isOpen: boolean;
@@ -183,6 +184,37 @@ export function WorkoutDefaultsSheet({ isOpen, onClose }: WorkoutDefaultsSheetPr
                   {opt} {weightUnit}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* Rest Timer Sound & Haptics */}
+          <div className="space-y-4">
+            <Label className="text-sm font-medium">Rest Timer Feedback</Label>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/30">
+              <div className="flex items-center gap-2">
+                <Volume2 className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Sound</p>
+                  <p className="text-xs text-muted-foreground">Play tone when rest completes</p>
+                </div>
+              </div>
+              <Switch
+                checked={preferences.rest_timer_sound}
+                onCheckedChange={(v) => updatePreferences({ rest_timer_sound: v })}
+              />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/30">
+              <div className="flex items-center gap-2">
+                <SmartphoneNfc className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium">Haptics</p>
+                  <p className="text-xs text-muted-foreground">Vibrate on rest start &amp; completion</p>
+                </div>
+              </div>
+              <Switch
+                checked={preferences.rest_timer_haptics}
+                onCheckedChange={(v) => updatePreferences({ rest_timer_haptics: v })}
+              />
             </div>
           </div>
         </div>
