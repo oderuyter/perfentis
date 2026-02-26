@@ -72,6 +72,7 @@ export function useRestTimer(options: UseRestTimerOptions = {}) {
   const rafRef = useRef<number | null>(null);
   const tickIntervalRef = useRef<number | null>(null);
   const completionFiredRef = useRef(false);
+  const countdownFiredRef = useRef<Set<number>>(new Set());
 
   // Compute elapsed ms from timestamps (background-resilient)
   const computeElapsedMs = useCallback((state: RestTimerState): number => {
@@ -128,17 +129,33 @@ export function useRestTimer(options: UseRestTimerOptions = {}) {
     return displaySeconds <= 0;
   }, [timerState.isActive, timerState.restMode, displaySeconds]);
 
-  // Fire sound + haptics ONCE on completion
+  // Countdown beeps at 5, 4, 3, 2, 1 seconds remaining + completion chime at 0
   useEffect(() => {
-    if (isComplete && !completionFiredRef.current) {
+    if (!timerState.isActive || timerState.restMode !== 'countdown') return;
+
+    // Countdown tones: escalating pitch for 5→1
+    const countdownTones: Record<number, number> = { 5: 440, 4: 523, 3: 587, 2: 659, 1: 784 };
+    const sec = displaySeconds;
+
+    if (sec >= 1 && sec <= 5 && !countdownFiredRef.current.has(sec)) {
+      countdownFiredRef.current.add(sec);
+      if (soundEnabled) playBeep(countdownTones[sec], 120, 0.25);
+      if (hapticsEnabled) triggerHaptic(25);
+    }
+
+    // Final completion chime at 0
+    if (sec <= 0 && !completionFiredRef.current) {
       completionFiredRef.current = true;
       if (soundEnabled) playCompletionSound();
       if (hapticsEnabled) triggerHaptic([100, 50, 100]);
     }
-    if (!isComplete) {
+
+    if (sec > 5) {
+      // Reset trackers when above countdown range
       completionFiredRef.current = false;
+      countdownFiredRef.current.clear();
     }
-  }, [isComplete, soundEnabled, hapticsEnabled]);
+  }, [displaySeconds, timerState.isActive, timerState.restMode, soundEnabled, hapticsEnabled]);
 
   // Derived: has exceeded target (countup mode)?
   const isOverTarget = useMemo(() => {
@@ -159,6 +176,7 @@ export function useRestTimer(options: UseRestTimerOptions = {}) {
 
   const startRest = useCallback((targetSeconds: number, mode: RestMode = 'countdown') => {
     completionFiredRef.current = false;
+    countdownFiredRef.current.clear();
     if (hapticsEnabled) triggerHaptic(30);
     setTimerState({
       isActive: true,
