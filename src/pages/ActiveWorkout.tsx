@@ -101,8 +101,11 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const { checkAndSavePRs } = usePersonalRecords();
 
   // Rest timer (timestamp-based, background-resilient)
-  const restTimer = useRestTimer();
   const { preferences: workoutPrefs, updatePreferences: updateWorkoutPrefs } = useWorkoutPreferences();
+  const restTimer = useRestTimer({
+    soundEnabled: workoutPrefs.rest_timer_sound,
+    hapticsEnabled: workoutPrefs.rest_timer_haptics,
+  });
 
   // Block execution state for EMOM/AMRAP/YGIG
   const blockExecution = useBlockExecution({ blocks: workoutBlocks, sessionId: undefined });

@@ -1,5 +1,37 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 
+// --- Sound & Haptics utilities ---
+function playBeep(frequency = 880, durationMs = 200, volume = 0.3) {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = frequency;
+    gain.gain.value = volume;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationMs / 1000);
+    osc.stop(ctx.currentTime + durationMs / 1000 + 0.05);
+    setTimeout(() => ctx.close(), durationMs + 200);
+  } catch { /* silent fail */ }
+}
+
+function playCompletionSound() {
+  // Two-tone chime
+  playBeep(660, 150, 0.3);
+  setTimeout(() => playBeep(880, 250, 0.35), 170);
+}
+
+function triggerHaptic(pattern: number | number[] = 50) {
+  try {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  } catch { /* silent fail */ }
+}
+
 export type RestMode = 'countdown' | 'countup';
 export type DrawerState = 'expanded' | 'compact' | 'floating';
 
@@ -23,16 +55,23 @@ const INITIAL_STATE: RestTimerState = {
   totalPausedMs: 0,
 };
 
+interface UseRestTimerOptions {
+  soundEnabled?: boolean;
+  hapticsEnabled?: boolean;
+}
+
 /**
  * Timestamp-based rest timer. Never relies on JS intervals as source of truth.
  * Remaining/elapsed is always recomputed from wall-clock timestamps.
  */
-export function useRestTimer() {
+export function useRestTimer(options: UseRestTimerOptions = {}) {
+  const { soundEnabled = false, hapticsEnabled = true } = options;
   const [timerState, setTimerState] = useState<RestTimerState>(INITIAL_STATE);
   const [drawerState, setDrawerState] = useState<DrawerState>('compact');
   const [displaySeconds, setDisplaySeconds] = useState(0);
   const rafRef = useRef<number | null>(null);
   const tickIntervalRef = useRef<number | null>(null);
+  const completionFiredRef = useRef(false);
 
   // Compute elapsed ms from timestamps (background-resilient)
   const computeElapsedMs = useCallback((state: RestTimerState): number => {
@@ -89,6 +128,18 @@ export function useRestTimer() {
     return displaySeconds <= 0;
   }, [timerState.isActive, timerState.restMode, displaySeconds]);
 
+  // Fire sound + haptics ONCE on completion
+  useEffect(() => {
+    if (isComplete && !completionFiredRef.current) {
+      completionFiredRef.current = true;
+      if (soundEnabled) playCompletionSound();
+      if (hapticsEnabled) triggerHaptic([100, 50, 100]);
+    }
+    if (!isComplete) {
+      completionFiredRef.current = false;
+    }
+  }, [isComplete, soundEnabled, hapticsEnabled]);
+
   // Derived: has exceeded target (countup mode)?
   const isOverTarget = useMemo(() => {
     if (!timerState.isActive || timerState.restMode !== 'countup') return false;
@@ -107,6 +158,8 @@ export function useRestTimer() {
   // ---- Actions ----
 
   const startRest = useCallback((targetSeconds: number, mode: RestMode = 'countdown') => {
+    completionFiredRef.current = false;
+    if (hapticsEnabled) triggerHaptic(30);
     setTimerState({
       isActive: true,
       restStartedAt: new Date().toISOString(),
@@ -117,7 +170,7 @@ export function useRestTimer() {
       totalPausedMs: 0,
     });
     setDrawerState('expanded');
-  }, []);
+  }, [hapticsEnabled]);
 
   const skipRest = useCallback(() => {
     setTimerState(INITIAL_STATE);
@@ -145,13 +198,14 @@ export function useRestTimer() {
   }, []);
 
   const adjustTarget = useCallback((deltaSec: number) => {
+    if (hapticsEnabled) triggerHaptic(15);
     setTimerState(prev => {
       if (!prev.isActive) return prev;
       const newTarget = Math.max(0, prev.restTargetSeconds + deltaSec);
       // Simply update the target; elapsed stays the same, so remaining shifts by deltaSec
       return { ...prev, restTargetSeconds: newTarget };
     });
-  }, []);
+  }, [hapticsEnabled]);
 
   const setTargetManual = useCallback((seconds: number) => {
     setTimerState(prev => {
