@@ -203,14 +203,16 @@ export function RestTimerDrawer({
 
   return (
     <>
-      {/* Backdrop - minimal for compact */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: drawerState === 'expanded' ? 0.3 : 0.1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-40 bg-foreground/20"
-        onClick={() => setDrawerState(drawerState === 'expanded' ? 'compact' : 'floating')}
-      />
+      {/* Backdrop - only for expanded */}
+      {drawerState === 'expanded' && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.3 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-40 bg-foreground/20"
+          onClick={() => setDrawerState('compact')}
+        />
+      )}
 
       {/* Drawer */}
       <motion.div

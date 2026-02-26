@@ -111,12 +111,12 @@ export function useRestTimer() {
       pausedAt: null,
       totalPausedMs: 0,
     });
-    setDrawerState('compact');
+    setDrawerState('expanded');
   }, []);
 
   const skipRest = useCallback(() => {
     setTimerState(INITIAL_STATE);
-    setDrawerState('compact');
+    setDrawerState('expanded');
   }, []);
 
   const pauseRest = useCallback(() => {
@@ -143,27 +143,7 @@ export function useRestTimer() {
     setTimerState(prev => {
       if (!prev.isActive) return prev;
       const newTarget = Math.max(0, prev.restTargetSeconds + deltaSec);
-
-      if (prev.restMode === 'countdown') {
-        // Also shift the start time to keep remaining consistent with the adjustment
-        // remaining = target - elapsed → new remaining = (target + delta) - elapsed = remaining + delta
-        // We adjust the started_at to effectively add/remove time from remaining
-        const elapsedMs = prev.restStartedAt
-          ? (prev.isPaused && prev.pausedAt
-              ? new Date(prev.pausedAt).getTime()
-              : Date.now()) - new Date(prev.restStartedAt).getTime() - prev.totalPausedMs
-          : 0;
-        const currentRemaining = prev.restTargetSeconds - Math.floor(elapsedMs / 1000);
-        const newRemaining = Math.max(0, currentRemaining + deltaSec);
-        // Recompute startedAt so that newTarget - newElapsed = newRemaining
-        const newElapsedSec = newTarget - newRemaining;
-        const referenceNow = prev.isPaused && prev.pausedAt ? new Date(prev.pausedAt).getTime() : Date.now();
-        const newStartedAt = new Date(referenceNow - newElapsedSec * 1000 - prev.totalPausedMs).toISOString();
-
-        return { ...prev, restTargetSeconds: newTarget, restStartedAt: newStartedAt };
-      }
-
-      // Countup: only change threshold
+      // Simply update the target; elapsed stays the same, so remaining shifts by deltaSec
       return { ...prev, restTargetSeconds: newTarget };
     });
   }, []);
