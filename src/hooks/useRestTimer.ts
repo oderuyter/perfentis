@@ -32,6 +32,7 @@ export function useRestTimer() {
   const [drawerState, setDrawerState] = useState<DrawerState>('compact');
   const [displaySeconds, setDisplaySeconds] = useState(0);
   const rafRef = useRef<number | null>(null);
+  const tickIntervalRef = useRef<number | null>(null);
 
   // Compute elapsed ms from timestamps (background-resilient)
   const computeElapsedMs = useCallback((state: RestTimerState): number => {
@@ -43,14 +44,26 @@ export function useRestTimer() {
     return Math.max(0, now - start - state.totalPausedMs);
   }, []);
 
-  // Update display value at ~1Hz (using rAF for efficiency)
+  // Update display value from timestamps (single stable ticker)
   useEffect(() => {
+    const clearTicker = () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
+    };
+
     if (!timerState.isActive) {
+      clearTicker();
       setDisplaySeconds(0);
       return;
     }
 
-    const tick = () => {
+    const updateDisplay = () => {
       const elapsedMs = computeElapsedMs(timerState);
       const elapsedSec = Math.floor(elapsedMs / 1000);
 
@@ -60,22 +73,14 @@ export function useRestTimer() {
       } else {
         setDisplaySeconds(elapsedSec);
       }
-
-      rafRef.current = requestAnimationFrame(() => {
-        // Schedule next tick ~250ms later for battery efficiency
-        setTimeout(() => {
-          if (timerState.isActive) {
-            rafRef.current = requestAnimationFrame(tick);
-          }
-        }, 250);
-      });
     };
 
-    tick();
+    updateDisplay();
 
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+    // Keep one ticker only; paused state is handled by timestamps themselves
+    tickIntervalRef.current = window.setInterval(updateDisplay, 250);
+
+    return clearTicker;
   }, [timerState.isActive, timerState.restStartedAt, timerState.isPaused, timerState.pausedAt, timerState.totalPausedMs, timerState.restTargetSeconds, timerState.restMode, computeElapsedMs]);
 
   // Derived: is rest complete (countdown hit 0)?
