@@ -14,11 +14,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { useBlockExecution } from "@/hooks/useBlockExecution";
+import { useRestTimer } from "@/hooks/useRestTimer";
+import { useWorkoutPreferences } from "@/hooks/useWorkoutPreferences";
 import { SetEditor } from "@/components/workout/SetEditor";
 import { ExerciseHistorySheet } from "@/components/workout/ExerciseHistorySheet";
 import { SwapExerciseSheet } from "@/components/workout/SwapExerciseSheet";
 import { AddExerciseSheet } from "@/components/workout/AddExerciseSheet";
-import { RestTimerEdit } from "@/components/workout/RestTimerEdit";
+import { RestTimerDrawer } from "@/components/workout/RestTimerDrawer";
 import { ExerciseNav } from "@/components/workout/ExerciseNav";
 import { AdvancedMetrics } from "@/components/workout/AdvancedMetrics";
 import { SaveAsTemplateDialog } from "@/components/workout/SaveAsTemplateDialog";
@@ -98,13 +100,16 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const { saveWorkoutSession } = useWorkoutHistory();
   const { checkAndSavePRs } = usePersonalRecords();
 
+  // Rest timer (timestamp-based, background-resilient)
+  const restTimer = useRestTimer();
+  const { preferences: workoutPrefs, updatePreferences: updateWorkoutPrefs } = useWorkoutPreferences();
+
   // Block execution state for EMOM/AMRAP/YGIG
   const blockExecution = useBlockExecution({ blocks: workoutBlocks, sessionId: undefined });
 
   // Determine if the current exercise belongs to a block
   const currentBlockContext = useMemo(() => {
     if (workoutBlocks.length === 0 || !state) return null;
-    // Find which block the current exercise belongs to by matching exercise name/order
     const currentEx = state.exercises[state.currentExerciseIndex];
     if (!currentEx) return null;
     
@@ -120,8 +125,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
     return null;
   }, [workoutBlocks, state?.currentExerciseIndex]);
 
-  // Background 30-second heartbeat: upserts `status='active'` to the DB so the
-  // session survives localStorage being cleared or the device crashing.
+  // Background 30-second heartbeat
   useWorkoutHeartbeat(state);
   useWorkoutPrefill(state, updateSet);
   const [newPRs, setNewPRs] = useState<PersonalRecord[]>([]);
@@ -134,7 +138,6 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const [showHistory, setShowHistory] = useState(false);
   const [showSwap, setShowSwap] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
-  const [showRestEdit, setShowRestEdit] = useState(false);
   const [showExerciseNav, setShowExerciseNav] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showResumePrompt, setShowResumePrompt] = useState(!!resumeState);
@@ -144,6 +147,48 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const [connectedDisplayId, setConnectedDisplayId] = useState<string | null>(null);
   const [connectedSessionId, setConnectedSessionId] = useState<string | null>(null);
   const [connectedShareLevel, setConnectedShareLevel] = useState<string>("structure_only");
+
+  // Start rest timer when workout phase enters 'rest'
+  const prevPhaseRef2 = useRef(state?.phase);
+  useEffect(() => {
+    if (!state) return;
+    if (state.phase === 'rest' && prevPhaseRef2.current !== 'rest') {
+      // Determine rest target: exercise-defined > user default
+      const currentEx = state.exercises[state.currentExerciseIndex];
+      const targetSeconds = currentEx?.restDuration || workoutPrefs.default_rest_seconds;
+      restTimer.startRest(targetSeconds, restTimer.timerState.restMode);
+    }
+    if (state.phase !== 'rest' && prevPhaseRef2.current === 'rest') {
+      // Rest ended via completeSet moving to next exercise
+      if (restTimer.timerState.isActive) {
+        restTimer.skipRest();
+      }
+    }
+    prevPhaseRef2.current = state.phase;
+  }, [state?.phase]);
+
+  // Auto-skip workout phase when rest timer countdown completes
+  useEffect(() => {
+    if (restTimer.isComplete && state?.phase === 'rest') {
+      // Auto-transition out of rest after a short delay to let user see "complete"
+      const timeout = setTimeout(() => {
+        skipRest();
+        restTimer.skipRest();
+      }, 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [restTimer.isComplete, state?.phase]);
+
+  // Handle rest skip from drawer
+  const handleDrawerSkipRest = useCallback(() => {
+    skipRest();
+    restTimer.skipRest();
+  }, [skipRest, restTimer]);
+
+  // Handle apply rest to all remaining sets
+  const handleApplyRestToAll = useCallback((seconds: number) => {
+    editRestDuration(seconds, true);
+  }, [editRestDuration]);
 
   // Display broadcast
   const { sendState, sendTick, sendSetComplete, sendSessionEnd } = useDisplayBroadcast(connectedDisplayId, connectedShareLevel);
@@ -540,7 +585,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
     );
   }
 
-  const isPaused = state.phase === 'rest' && !!state.restTimerPausedAt;
+  // isPaused now handled by restTimer hook
 
   return (
     <div className="fixed inset-0 bg-background flex flex-col">
@@ -753,47 +798,28 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
                 </div>
               </div>
             </motion.div>
-          ) : (
-            <motion.div key="rest" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col items-center justify-center">
-              <p className="text-sm text-muted-foreground mb-2">Rest</p>
-              <button onClick={() => setShowRestEdit(true)} className="relative w-48 h-48 mb-4">
-                {/* Gradient background for rest timer */}
-                <div className="absolute inset-4 rounded-full gradient-metric opacity-30" />
-                <svg className="w-full h-full transform -rotate-90 relative">
-                  <circle cx="96" cy="96" r="88" fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
-                  <circle 
-                    cx="96" cy="96" r="88" 
-                    fill="none" 
-                    stroke="url(#progressGradient)" 
-                    strokeWidth="8" 
-                    strokeLinecap="round" 
-                    strokeDasharray={553} 
-                    strokeDashoffset={553 * (1 - state.restTimeRemaining / state.restDuration)} 
-                    className="transition-all duration-1000 linear" 
-                  />
-                  <defs>
-                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="hsl(var(--accent-primary))" />
-                      <stop offset="100%" stopColor="hsl(var(--accent-primary) / 0.7)" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <p className="text-5xl font-bold tracking-tight">{formatTime(state.restTimeRemaining)}</p>
+          ) : state.phase === "rest" && currentExercise ? (
+            // During rest, still show the exercise content (non-blocking drawer handles the timer)
+            <motion.div key="rest-exercise" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex-1 flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Set {state.currentSetIndex + 1} of {currentExercise.sets.length}</p>
+                  <h1 className="text-xl font-semibold">{currentExercise.name}</h1>
                 </div>
-              </button>
-              <button onClick={isPaused ? resumeRest : pauseRest} className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-                {isPaused ? 'Resume' : 'Pause'}
-              </button>
-              {nextExercise && (
-                <div className="gradient-card rounded-xl p-3 border border-border/50">
-                  <p className="text-xs text-muted-foreground mb-1">Up next</p>
-                  <p className="font-medium text-sm">{nextExercise.name}</p>
-                </div>
-              )}
+              </div>
+              
+              <div className="flex-1">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">All Sets</p>
+                <SetEditor
+                  sets={currentExercise.sets}
+                  currentSetIndex={state.currentSetIndex}
+                  onUpdateSet={(setIndex, updates) => updateSet(state.currentExerciseIndex, setIndex, updates)}
+                  onSelectSet={(setIndex) => goToExercise(state.currentExerciseIndex, setIndex)}
+                  exerciseType={currentExercise.exerciseType}
+                />
+              </div>
             </motion.div>
-          )}
+          ) : null}
         </AnimatePresence>
       </div>
 
@@ -809,12 +835,11 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
               <Check className="h-5 w-5" />Complete Set
             </Button>
           ) : (
-            <Button onClick={skipRest} variant="secondary" className="flex-1 h-14 rounded-xl font-semibold text-base gap-2">
+            <Button onClick={handleDrawerSkipRest} variant="secondary" className="flex-1 h-14 rounded-xl font-semibold text-base gap-2">
               <SkipForward className="h-5 w-5" />Skip Rest
             </Button>
           )}
         </div>
-        {/* End workout button */}
         <button 
           onClick={handleEndWorkout}
           className="w-full py-2 text-sm text-muted-foreground hover:text-destructive transition-colors"
@@ -822,6 +847,40 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
           End Workout
         </button>
       </div>
+
+      {/* Rest Timer Drawer */}
+      <AnimatePresence>
+        {restTimer.timerState.isActive && (
+          <RestTimerDrawer
+            isActive={restTimer.timerState.isActive}
+            displaySeconds={restTimer.displaySeconds}
+            progress={restTimer.progress}
+            isComplete={restTimer.isComplete}
+            isOverTarget={restTimer.isOverTarget}
+            restMode={restTimer.timerState.restMode}
+            restTargetSeconds={restTimer.timerState.restTargetSeconds}
+            isPaused={restTimer.timerState.isPaused}
+            drawerState={restTimer.drawerState}
+            setDrawerState={restTimer.setDrawerState}
+            nextExerciseName={nextExercise?.name || currentExercise?.name}
+            nextSetReps={currentExercise?.sets[state.currentSetIndex]?.targetReps}
+            nextSetWeight={currentExercise?.sets[state.currentSetIndex]?.completedWeight ?? currentExercise?.sets[state.currentSetIndex]?.targetWeight}
+            currentSetNumber={state.currentSetIndex + 1}
+            totalSets={currentExercise?.sets.length}
+            soundEnabled={workoutPrefs.rest_timer_sound}
+            hapticsEnabled={workoutPrefs.rest_timer_haptics}
+            onSoundToggle={(v) => updateWorkoutPrefs({ rest_timer_sound: v })}
+            onHapticsToggle={(v) => updateWorkoutPrefs({ rest_timer_haptics: v })}
+            onSkip={handleDrawerSkipRest}
+            onPause={restTimer.pauseRest}
+            onResume={restTimer.resumeRest}
+            onAdjust={restTimer.adjustTarget}
+            onSetTarget={restTimer.setTargetManual}
+            onToggleMode={restTimer.toggleMode}
+            onApplyToAll={handleApplyRestToAll}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Overlays */}
       <AnimatePresence>
@@ -844,7 +903,6 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         {showHistory && <ExerciseHistorySheet exerciseName={currentExercise.name} currentWeight={currentSet?.completedWeight ?? currentSet?.targetWeight ?? null} currentReps={currentSet?.completedReps ?? parseInt(currentSet?.targetReps?.match(/\d+/)?.[0] || '0')} onClose={() => setShowHistory(false)} />}
         {showSwap && <SwapExerciseSheet currentExercise={currentExercise.name} currentMuscleGroup={currentExercise.muscleGroup} onSwap={(ex) => { swapExercise(state.currentExerciseIndex, ex); setShowSwap(false); }} onClose={() => setShowSwap(false)} />}
         {showAdd && <AddExerciseSheet onAdd={(ex) => { addExercise(ex, true); }} onClose={() => setShowAdd(false)} multiSelect />}
-        {showRestEdit && <RestTimerEdit currentDuration={state.restDuration} onUpdate={editRestDuration} onClose={() => setShowRestEdit(false)} />}
         {showExerciseNav && <ExerciseNav exercises={state.exercises} currentIndex={state.currentExerciseIndex} onSelect={(i) => goToExercise(i)} onRemove={removeExercise} onReorder={reorderExercise} onClose={() => setShowExerciseNav(false)} />}
         {showAdvanced && <AdvancedMetrics rpe={currentSet?.rpe ?? null} tempo={currentSet?.tempo ?? null} note={currentSet?.note ?? null} onUpdate={(updates) => updateSet(state.currentExerciseIndex, state.currentSetIndex, updates)} onClose={() => setShowAdvanced(false)} />}
         {showOneRM && currentExercise && (

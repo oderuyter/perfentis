@@ -12,6 +12,8 @@ export interface WorkoutPreferences {
   default_reps: number;
   weight_prefill_mode: string;
   weight_rounding_increment: number;
+  rest_timer_sound: boolean;
+  rest_timer_haptics: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -22,6 +24,8 @@ const DEFAULTS: Omit<WorkoutPreferences, "id" | "user_id" | "created_at" | "upda
   default_reps: 8,
   weight_prefill_mode: "hybrid",
   weight_rounding_increment: 0.25,
+  rest_timer_sound: false,
+  rest_timer_haptics: true,
 };
 
 export function useWorkoutPreferences() {
@@ -89,6 +93,8 @@ export function useWorkoutPreferences() {
     default_reps: preferences?.default_reps ?? DEFAULTS.default_reps,
     weight_prefill_mode: preferences?.weight_prefill_mode ?? DEFAULTS.weight_prefill_mode,
     weight_rounding_increment: preferences?.weight_rounding_increment ?? DEFAULTS.weight_rounding_increment,
+    rest_timer_sound: preferences?.rest_timer_sound ?? DEFAULTS.rest_timer_sound,
+    rest_timer_haptics: preferences?.rest_timer_haptics ?? DEFAULTS.rest_timer_haptics,
   };
 
   return {
