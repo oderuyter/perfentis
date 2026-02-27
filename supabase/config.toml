@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.api-scanner]
 verify_jwt = false
+
+[functions.display-lookup]
+verify_jwt = false
