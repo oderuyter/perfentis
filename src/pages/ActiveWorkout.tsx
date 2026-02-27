@@ -216,6 +216,7 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   useWorkoutHeartbeat(state);
   useWorkoutPrefill(state, updateSet);
   const [newPRs, setNewPRs] = useState<PersonalRecord[]>([]);
+  const [blockTimerAutoStart, setBlockTimerAutoStart] = useState(true);
   const [showSharePost, setShowSharePost] = useState(false);
   const [completedSessionId, setCompletedSessionId] = useState<string | undefined>(undefined);
   const [isSavingSession, setIsSavingSession] = useState(false);
@@ -251,20 +252,40 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
         restTimer.skipRest();
       }
     }
+    // Auto-start block timer when transitioning from rest to exercise (no rest defined case)
+    if (state.phase === 'exercise' && prevPhaseRef2.current !== 'exercise' && prevPhaseRef2.current !== undefined) {
+      if (blockTimerAutoStart && currentBlockContext) {
+        if (currentBlockContext.block.type === 'emom' && !emomTimer.isStarted) {
+          emomTimer.start();
+        }
+        if (currentBlockContext.block.type === 'amrap' && !amrapTimer.isStarted) {
+          amrapTimer.start();
+        }
+      }
+    }
     prevPhaseRef2.current = state.phase;
   }, [state?.phase]);
 
-  // Auto-skip workout phase when rest timer countdown completes
+  // Auto-skip workout phase when rest timer countdown completes + auto-start block timer
   useEffect(() => {
     if (restTimer.isComplete && state?.phase === 'rest') {
       // Auto-transition out of rest after a short delay to let user see "complete"
       const timeout = setTimeout(() => {
         skipRest();
         restTimer.skipRest();
+        // Auto-start EMOM/AMRAP timer if in a block and auto-start is enabled
+        if (blockTimerAutoStart && currentBlockContext) {
+          if (currentBlockContext.block.type === 'emom' && !emomTimer.isStarted) {
+            emomTimer.start();
+          }
+          if (currentBlockContext.block.type === 'amrap' && !amrapTimer.isStarted) {
+            amrapTimer.start();
+          }
+        }
       }, 2000);
       return () => clearTimeout(timeout);
     }
-  }, [restTimer.isComplete, state?.phase]);
+  }, [restTimer.isComplete, state?.phase, blockTimerAutoStart, currentBlockContext?.block?.type]);
 
   // Handle rest skip from drawer
   const handleDrawerSkipRest = useCallback(() => {
@@ -479,6 +500,22 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const currentSet = currentExercise?.sets[state.currentSetIndex];
   const isLastExercise = state.currentExerciseIndex >= state.exercises.filter(e => !e.skipped).length - 1;
   const nextExercise = !isLastExercise ? state.exercises.find((e, i) => i > state.currentExerciseIndex && !e.skipped) : null;
+
+  // Determine what's "next up" for the rest timer drawer
+  // If we still have more sets in the current exercise, show current exercise + next set
+  // If we're on the last set, show the next exercise
+  const isLastSetOfCurrentExercise = currentExercise && state.currentSetIndex >= currentExercise.sets.length - 1;
+  const nextUpExerciseName = isLastSetOfCurrentExercise
+    ? (nextExercise?.name || currentExercise?.name)
+    : currentExercise?.name;
+  const nextUpSetNumber = isLastSetOfCurrentExercise ? 1 : (state.currentSetIndex + 1);
+  const nextUpTotalSets = isLastSetOfCurrentExercise
+    ? (nextExercise?.sets.length || currentExercise?.sets.length)
+    : currentExercise?.sets.length;
+  const nextUpSet = isLastSetOfCurrentExercise
+    ? nextExercise?.sets[0] || currentExercise?.sets[state.currentSetIndex]
+    : currentExercise?.sets[state.currentSetIndex];
+  const isInBlockTimerBlock = !!(currentBlockContext && (currentBlockContext.block.type === 'emom' || currentBlockContext.block.type === 'amrap'));
 
   // Resume Prompt
   if (showResumePrompt) {
@@ -934,11 +971,14 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
             isPaused={restTimer.timerState.isPaused}
             drawerState={restTimer.drawerState}
             setDrawerState={restTimer.setDrawerState}
-            nextExerciseName={nextExercise?.name || currentExercise?.name}
-            nextSetReps={currentExercise?.sets[state.currentSetIndex]?.targetReps}
-            nextSetWeight={currentExercise?.sets[state.currentSetIndex]?.completedWeight ?? currentExercise?.sets[state.currentSetIndex]?.targetWeight}
-            currentSetNumber={state.currentSetIndex + 1}
-            totalSets={currentExercise?.sets.length}
+            nextExerciseName={nextUpExerciseName}
+            nextSetReps={nextUpSet?.targetReps}
+            nextSetWeight={nextUpSet?.completedWeight ?? nextUpSet?.targetWeight}
+            currentSetNumber={nextUpSetNumber}
+            totalSets={nextUpTotalSets}
+            isBlockTimerBlock={isInBlockTimerBlock}
+            blockTimerAutoStart={blockTimerAutoStart}
+            onBlockTimerAutoStartToggle={setBlockTimerAutoStart}
             soundEnabled={workoutPrefs.rest_timer_sound}
             hapticsEnabled={workoutPrefs.rest_timer_haptics}
             onSoundToggle={(v) => updateWorkoutPrefs({ rest_timer_sound: v })}

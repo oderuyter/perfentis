@@ -30,6 +30,11 @@ interface RestTimerDrawerProps {
   currentSetNumber?: number;
   totalSets?: number;
 
+  // Block timer auto-start toggle (for EMOM/AMRAP)
+  isBlockTimerBlock?: boolean;
+  blockTimerAutoStart?: boolean;
+  onBlockTimerAutoStartToggle?: (v: boolean) => void;
+
   // Sound/haptics
   soundEnabled: boolean;
   hapticsEnabled: boolean;
@@ -88,6 +93,9 @@ export function RestTimerDrawer({
   hapticsEnabled,
   onSoundToggle,
   onHapticsToggle,
+  isBlockTimerBlock,
+  blockTimerAutoStart,
+  onBlockTimerAutoStartToggle,
   onSkip,
   onPause,
   onResume,
@@ -278,6 +286,17 @@ export function RestTimerDrawer({
               </Button>
             </div>
 
+            {/* Block timer auto-start toggle (compact) */}
+            {isBlockTimerBlock && onBlockTimerAutoStartToggle && (
+              <div className="flex items-center justify-between bg-muted/50 rounded-xl px-3 py-2 border border-border/30 mb-2">
+                <div className="flex items-center gap-2">
+                  <Timer className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs">Auto-start interval</span>
+                </div>
+                <Switch checked={blockTimerAutoStart ?? true} onCheckedChange={onBlockTimerAutoStartToggle} />
+              </div>
+            )}
+
             {/* Next set preview */}
             {nextExerciseName && (
               <div className="bg-muted/50 rounded-xl p-3 border border-border/30">
@@ -421,6 +440,15 @@ export function RestTimerDrawer({
                 </div>
                 <Switch checked={hapticsEnabled} onCheckedChange={onHapticsToggle} />
               </div>
+              {isBlockTimerBlock && onBlockTimerAutoStartToggle && (
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    <Timer className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">Auto-start interval</span>
+                  </div>
+                  <Switch checked={blockTimerAutoStart ?? true} onCheckedChange={onBlockTimerAutoStartToggle} />
+                </div>
+              )}
             </div>
 
             {/* Next set preview */}
