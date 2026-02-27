@@ -143,6 +143,7 @@ import NutritionLibrary from "./pages/NutritionLibrary";
 import RunTracker from "./pages/RunTracker";
 import CoachDisplays from "./pages/coach-portal/CoachDisplays";
 import DisplayScreen from "./pages/DisplayScreen";
+import DisplayJoin from "./pages/DisplayJoin";
 
 const queryClient = new QueryClient();
 
@@ -332,6 +333,7 @@ function AppRoutes() {
         <Route path="api-console/import-export" element={<ApiConsoleImportExport />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
+      <Route path="/display/join" element={<DisplayJoin />} />
       <Route path="/display/:token" element={<DisplayScreen />} />
       <Route path="/workout/:id/active" element={<ProtectedRoute><ActiveWorkout /></ProtectedRoute>} />
       <Route path="/workout/template/:templateId/active" element={<ProtectedRoute><TemplateActiveWorkout /></ProtectedRoute>} />

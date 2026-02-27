@@ -2141,6 +2141,30 @@ export type Database = {
         }
         Relationships: []
       }
+      display_join_attempts: {
+        Row: {
+          attempted_at: string
+          attempted_code: string
+          id: string
+          ip_hint: string | null
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          attempted_code: string
+          id?: string
+          ip_hint?: string | null
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          attempted_code?: string
+          id?: string
+          ip_hint?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       display_participants: {
         Row: {
           display_session_id: string
@@ -2194,6 +2218,7 @@ export type Database = {
       }
       display_sessions: {
         Row: {
+          allow_participant_join: boolean
           controlling_user_id: string | null
           created_at: string
           current_workout_session_id: string | null
@@ -2201,6 +2226,9 @@ export type Database = {
           ended_at: string | null
           id: string
           join_code: string | null
+          join_code_expires_at: string | null
+          join_qr_generated_at: string | null
+          join_qr_payload: string | null
           settings_json: Json
           started_at: string | null
           status: string
@@ -2208,6 +2236,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_participant_join?: boolean
           controlling_user_id?: string | null
           created_at?: string
           current_workout_session_id?: string | null
@@ -2215,6 +2244,9 @@ export type Database = {
           ended_at?: string | null
           id?: string
           join_code?: string | null
+          join_code_expires_at?: string | null
+          join_qr_generated_at?: string | null
+          join_qr_payload?: string | null
           settings_json?: Json
           started_at?: string | null
           status?: string
@@ -2222,6 +2254,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_participant_join?: boolean
           controlling_user_id?: string | null
           created_at?: string
           current_workout_session_id?: string | null
@@ -2229,6 +2262,9 @@ export type Database = {
           ended_at?: string | null
           id?: string
           join_code?: string | null
+          join_code_expires_at?: string | null
+          join_qr_generated_at?: string | null
+          join_qr_payload?: string | null
           settings_json?: Json
           started_at?: string | null
           status?: string

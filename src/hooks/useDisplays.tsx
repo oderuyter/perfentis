@@ -132,6 +132,7 @@ export function useDisplays(ownerType: "gym" | "coach", ownerId: string | null) 
         .in("status", ["idle", "active"]);
 
       const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const joinQrPayload = `${window.location.origin}/display/join?code=${joinCode}`;
 
       const { data, error } = await supabase
         .from("display_sessions")
@@ -142,6 +143,8 @@ export function useDisplays(ownerType: "gym" | "coach", ownerId: string | null) 
           started_at: new Date().toISOString(),
           controlling_user_id: (await supabase.auth.getUser()).data.user?.id,
           join_code: joinCode,
+          join_qr_payload: joinQrPayload,
+          join_qr_generated_at: new Date().toISOString(),
           settings_json: {
             privacy_mode: "structure_only",
             show_user_names: false,
