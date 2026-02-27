@@ -223,6 +223,246 @@ export type Database = {
         }
         Relationships: []
       }
+      api_call_logs: {
+        Row: {
+          api_registry_id: string | null
+          correlation_id: string | null
+          created_at: string
+          environment: string
+          error_type: string | null
+          id: string
+          latency_ms: number | null
+          raw_meta: Json | null
+          request_host: string | null
+          request_method: string | null
+          request_path: string | null
+          status_code: number | null
+          timestamp: string
+          user_id: string | null
+        }
+        Insert: {
+          api_registry_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          environment?: string
+          error_type?: string | null
+          id?: string
+          latency_ms?: number | null
+          raw_meta?: Json | null
+          request_host?: string | null
+          request_method?: string | null
+          request_path?: string | null
+          status_code?: number | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Update: {
+          api_registry_id?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          environment?: string
+          error_type?: string | null
+          id?: string
+          latency_ms?: number | null
+          raw_meta?: Json | null
+          request_host?: string | null
+          request_method?: string | null
+          request_path?: string | null
+          status_code?: number | null
+          timestamp?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_call_logs_api_registry_id_fkey"
+            columns: ["api_registry_id"]
+            isOneToOne: false
+            referencedRelation: "api_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_governance_settings: {
+        Row: {
+          auto_discover_enabled: boolean
+          block_unregistered_in_prod: boolean
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          auto_discover_enabled?: boolean
+          block_unregistered_in_prod?: boolean
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          auto_discover_enabled?: boolean
+          block_unregistered_in_prod?: boolean
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      api_registry: {
+        Row: {
+          auth_type: string
+          base_urls: Json | null
+          category: string
+          created_at: string
+          description: string | null
+          docs_url: string | null
+          env_var_presence: Json | null
+          environment: string | null
+          health_status: string
+          id: string
+          last_scanned_at: string | null
+          last_used_at: string | null
+          name: string
+          owner_maintainer: string | null
+          pii_level: string
+          provider: string | null
+          rate_limit_notes: string | null
+          reference_count: number
+          required_env_vars: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          auth_type?: string
+          base_urls?: Json | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          docs_url?: string | null
+          env_var_presence?: Json | null
+          environment?: string | null
+          health_status?: string
+          id?: string
+          last_scanned_at?: string | null
+          last_used_at?: string | null
+          name: string
+          owner_maintainer?: string | null
+          pii_level?: string
+          provider?: string | null
+          rate_limit_notes?: string | null
+          reference_count?: number
+          required_env_vars?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          auth_type?: string
+          base_urls?: Json | null
+          category?: string
+          created_at?: string
+          description?: string | null
+          docs_url?: string | null
+          env_var_presence?: Json | null
+          environment?: string | null
+          health_status?: string
+          id?: string
+          last_scanned_at?: string | null
+          last_used_at?: string | null
+          name?: string
+          owner_maintainer?: string | null
+          pii_level?: string
+          provider?: string | null
+          rate_limit_notes?: string | null
+          reference_count?: number
+          required_env_vars?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      api_registry_changelog: {
+        Row: {
+          action_type: string
+          actor_user_id: string | null
+          after_json: Json | null
+          api_registry_id: string | null
+          before_json: Json | null
+          created_at: string
+          id: string
+        }
+        Insert: {
+          action_type: string
+          actor_user_id?: string | null
+          after_json?: Json | null
+          api_registry_id?: string | null
+          before_json?: Json | null
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          action_type?: string
+          actor_user_id?: string | null
+          after_json?: Json | null
+          api_registry_id?: string | null
+          before_json?: Json | null
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_registry_changelog_api_registry_id_fkey"
+            columns: ["api_registry_id"]
+            isOneToOne: false
+            referencedRelation: "api_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      api_registry_references: {
+        Row: {
+          api_registry_id: string | null
+          confidence_score: number
+          created_at: string
+          discovered_name: string
+          discovery_status: string
+          id: string
+          reference_key: string
+          reference_snippet: string | null
+          reference_type: string
+          scan_session_id: string | null
+        }
+        Insert: {
+          api_registry_id?: string | null
+          confidence_score?: number
+          created_at?: string
+          discovered_name: string
+          discovery_status?: string
+          id?: string
+          reference_key: string
+          reference_snippet?: string | null
+          reference_type?: string
+          scan_session_id?: string | null
+        }
+        Update: {
+          api_registry_id?: string | null
+          confidence_score?: number
+          created_at?: string
+          discovered_name?: string
+          discovery_status?: string
+          id?: string
+          reference_key?: string
+          reference_snippet?: string | null
+          reference_type?: string
+          scan_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_registry_references_api_registry_id_fkey"
+            columns: ["api_registry_id"]
+            isOneToOne: false
+            referencedRelation: "api_registry"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_settings: {
         Row: {
           category: string

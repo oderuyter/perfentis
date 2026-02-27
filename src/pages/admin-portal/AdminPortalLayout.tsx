@@ -44,6 +44,7 @@ import {
   Package,
   Apple,
   Radio,
+  Globe,
 } from "lucide-react";
 
 interface NavItem {
@@ -81,6 +82,7 @@ const navItems: NavItem[] = [
   { to: "/admin-portal/email-diagnostics", icon: Mail, label: "Email (SMTP)" },
   { to: "/admin-portal/email-templates", icon: FileText, label: "Email Templates" },
   { to: "/admin-portal/connected-devices", icon: Radio, label: "Connected Devices" },
+  { to: "/admin-portal/api-console", icon: Globe, label: "API Console" },
   { to: "/admin-portal/settings", icon: Settings, label: "Settings" },
 ];
 

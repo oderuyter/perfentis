@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.smtp-config]
 verify_jwt = false
+
+[functions.api-scanner]
+verify_jwt = false
