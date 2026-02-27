@@ -134,6 +134,11 @@ import AdminExternalGymSubmissions from "./pages/admin-portal/AdminExternalGymSu
 import AdminConnectedDevices from "./pages/admin-portal/AdminConnectedDevices";
 import AdminEmailTemplates from "./pages/admin-portal/AdminEmailTemplates";
 import AdminEmailTemplateEditor from "./pages/admin-portal/AdminEmailTemplateEditor";
+import ApiConsoleDashboard from "./pages/admin-portal/ApiConsoleDashboard";
+import ApiConsoleRegistry from "./pages/admin-portal/ApiConsoleRegistry";
+import ApiConsoleDetail from "./pages/admin-portal/ApiConsoleDetail";
+import ApiConsoleDiscoveries from "./pages/admin-portal/ApiConsoleDiscoveries";
+import ApiConsoleImportExport from "./pages/admin-portal/ApiConsoleImportExport";
 import NutritionLibrary from "./pages/NutritionLibrary";
 import RunTracker from "./pages/RunTracker";
 import CoachDisplays from "./pages/coach-portal/CoachDisplays";
@@ -320,6 +325,11 @@ function AppRoutes() {
         <Route path="connected-devices" element={<AdminConnectedDevices />} />
         <Route path="email-templates" element={<AdminEmailTemplates />} />
         <Route path="email-templates/:templateId" element={<AdminEmailTemplateEditor />} />
+        <Route path="api-console" element={<ApiConsoleDashboard />} />
+        <Route path="api-console/registry" element={<ApiConsoleRegistry />} />
+        <Route path="api-console/registry/:apiId" element={<ApiConsoleDetail />} />
+        <Route path="api-console/discoveries" element={<ApiConsoleDiscoveries />} />
+        <Route path="api-console/import-export" element={<ApiConsoleImportExport />} />
       </Route>
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/display/:token" element={<DisplayScreen />} />
