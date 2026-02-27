@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Monitor, Wifi, WifiOff, Timer, Zap, Users, Dumbbell, Clock } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -332,6 +333,14 @@ export default function DisplayScreen() {
   // Determine whether to show join code: only if no participants connected
   const hasParticipants = participantCount > 0 || !!workoutState;
   const joinCode = session?.join_code;
+  const allowParticipantJoin = (session as any)?.allow_participant_join !== false;
+
+  // Build QR join URL
+  const joinUrl = useMemo(() => {
+    if (!joinCode) return null;
+    const origin = window.location.origin;
+    return `${origin}/display/join?code=${joinCode}`;
+  }, [joinCode]);
 
   // Idle state — no active workout broadcast
   if (!session || session.status === "idle" || (!workoutState && session.status === "active")) {
@@ -351,17 +360,29 @@ export default function DisplayScreen() {
 
         <div className="flex-1 flex flex-col items-center justify-center p-8">
           <div className="text-center">
-            <div className="h-20 w-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
-              <Monitor className="h-10 w-10 text-white/60" />
-            </div>
             <h2 className="text-4xl font-bold mb-2">{display?.owner_name}</h2>
-            <p className="text-xl text-white/50 mb-2">{display?.name}</p>
+            <p className="text-xl text-white/50 mb-6">{display?.name}</p>
             
-            {/* Show join code only if nobody is connected */}
+            {/* QR Code + Join Code */}
             {joinCode && !hasParticipants && (
-              <div className="mt-8 bg-white/5 border border-white/10 rounded-xl px-8 py-4 inline-block">
-                <p className="text-xs text-white/40 mb-1">Join Code</p>
-                <p className="text-4xl font-mono font-bold tracking-widest">{joinCode}</p>
+              <div className="mt-4 flex flex-col items-center gap-6">
+                {joinUrl && (
+                  <div className="bg-white rounded-2xl p-4 shadow-2xl">
+                    <QRCodeSVG
+                      value={joinUrl}
+                      size={220}
+                      bgColor="#ffffff"
+                      fgColor="#000000"
+                      level="M"
+                      includeMargin={false}
+                    />
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-white/40 mb-1 uppercase tracking-wider">Or enter code</p>
+                  <p className="text-5xl font-mono font-bold tracking-[0.3em]">{joinCode}</p>
+                </div>
+                <p className="text-sm text-white/30">Scan QR or enter code in your app to connect</p>
               </div>
             )}
             
@@ -394,11 +415,18 @@ export default function DisplayScreen() {
           <span className="text-white/50">{session.title || display?.name}</span>
         </div>
         <div className="flex items-center gap-4">
-          {/* Show join code only if no participants */}
-          {joinCode && !hasParticipants && (
-            <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-1.5">
-              <p className="text-xs text-white/40">Join</p>
-              <p className="text-lg font-mono font-bold tracking-widest">{joinCode}</p>
+          {/* Show small QR + join code if configured and no participants */}
+          {joinCode && allowParticipantJoin && !hasParticipants && (
+            <div className="flex items-center gap-3">
+              {joinUrl && (
+                <div className="bg-white rounded p-1">
+                  <QRCodeSVG value={joinUrl} size={40} bgColor="#ffffff" fgColor="#000000" level="L" />
+                </div>
+              )}
+              <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-1.5">
+                <p className="text-xs text-white/40">Join</p>
+                <p className="text-lg font-mono font-bold tracking-widest">{joinCode}</p>
+              </div>
             </div>
           )}
           <div className="flex items-center gap-1.5 text-white/30 text-xs">
