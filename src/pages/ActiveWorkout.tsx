@@ -16,6 +16,7 @@ import { useHeartRateMonitor } from "@/hooks/useHeartRateMonitor";
 import { useBlockExecution } from "@/hooks/useBlockExecution";
 import { useRestTimer } from "@/hooks/useRestTimer";
 import { useWorkoutPreferences } from "@/hooks/useWorkoutPreferences";
+import { useEmomTimer, useAmrapTimer } from "@/hooks/useBlockTimer";
 import { SetEditor } from "@/components/workout/SetEditor";
 import { ExerciseHistorySheet } from "@/components/workout/ExerciseHistorySheet";
 import { SwapExerciseSheet } from "@/components/workout/SwapExerciseSheet";
@@ -128,6 +129,89 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
     return null;
   }, [workoutBlocks, state?.currentExerciseIndex]);
 
+  // Extract EMOM/AMRAP block settings for hooks (must be called unconditionally)
+  const emomBlock = useMemo(() => {
+    if (!currentBlockContext || currentBlockContext.block.type !== 'emom') return null;
+    return currentBlockContext.block;
+  }, [currentBlockContext]);
+  const emomSettings = emomBlock?.settings as EmomSettings | undefined;
+
+  const amrapBlock = useMemo(() => {
+    if (!currentBlockContext || currentBlockContext.block.type !== 'amrap') return null;
+    return currentBlockContext.block;
+  }, [currentBlockContext]);
+  const amrapSettings = amrapBlock?.settings as AmrapSettings | undefined;
+
+  // Restore persisted timer state from block execution context
+  const emomInitial = useMemo(() => {
+    if (!emomBlock) return undefined;
+    const bs = blockExecution.getBlockState(emomBlock.id);
+    if (bs?.startedAt) {
+      return {
+        block_started_at: bs.startedAt,
+        current_round_index: bs.currentRound || 1,
+        is_paused: false,
+        total_paused_seconds: 0,
+      };
+    }
+    return undefined;
+  }, [emomBlock?.id]);
+
+  const amrapInitial = useMemo(() => {
+    if (!amrapBlock) return undefined;
+    const bs = blockExecution.getBlockState(amrapBlock.id);
+    if (bs?.amrapStartedAt) {
+      return {
+        block_started_at: bs.amrapStartedAt,
+        rounds_completed: bs.roundsCompleted || 0,
+        reps_in_current_round: bs.repsInCurrentRound || 0,
+        is_paused: false,
+        total_paused_seconds: 0,
+      };
+    }
+    return undefined;
+  }, [amrapBlock?.id]);
+
+  // EMOM timer hook (always called, uses dummy values when no EMOM block)
+  const emomTimer = useEmomTimer({
+    blockId: emomBlock?.id || '__none__',
+    sessionId: undefined,
+    intervalSeconds: emomSettings?.work_seconds || 60,
+    roundsTotal: emomSettings?.rounds || 1,
+    rotationMode: emomSettings?.rotation_mode || 'rotate',
+    exerciseCount: emomBlock?.items.length || 1,
+    restSeconds: emomSettings?.rest_seconds || 0,
+    initialState: emomInitial,
+    onRoundChange: useCallback((round: number, itemIdx: number) => {
+      if (emomBlock) {
+        blockExecution.updateBlockState(emomBlock.id, { currentRound: round });
+      }
+    }, [emomBlock?.id]),
+    onComplete: useCallback(() => {
+      if (emomBlock) {
+        blockExecution.completeBlock(emomBlock.id);
+        toast.success("EMOM complete!");
+      }
+    }, [emomBlock?.id]),
+  });
+
+  // AMRAP timer hook (always called, uses dummy values when no AMRAP block)
+  const amrapTimer = useAmrapTimer({
+    blockId: amrapBlock?.id || '__none__',
+    sessionId: undefined,
+    timeCapSeconds: amrapSettings?.time_cap_seconds || 600,
+    initialState: amrapInitial,
+    onComplete: useCallback((score: { rounds: number; reps: number }) => {
+      if (amrapBlock) {
+        blockExecution.completeBlock(amrapBlock.id, {
+          roundsCompleted: score.rounds,
+          repsInCurrentRound: score.reps,
+        });
+        toast.success(`AMRAP complete! ${score.rounds} rounds + ${score.reps} reps`);
+      }
+    }, [amrapBlock?.id]),
+  });
+
   // Background 30-second heartbeat
   useWorkoutHeartbeat(state);
   useWorkoutPrefill(state, updateSet);
@@ -200,15 +284,13 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
   const broadcastBlockContext = useMemo(() => {
     if (!currentBlockContext || currentBlockContext.block.type === 'single') return null;
     const block = currentBlockContext.block;
-    const blockState = blockExecution.getBlockState(block.id);
     if (block.type === 'emom') {
-      const s = block.settings as EmomSettings;
       return {
         type: 'emom' as const,
         name: block.title || 'EMOM',
-        round: blockState?.currentRound || 1,
-        totalRounds: s.rounds,
-        intervalSeconds: 60, // EMOM = 1 minute intervals
+        round: emomTimer.timerState.current_round_index,
+        totalRounds: emomTimer.timerState.rounds_total,
+        intervalSeconds: emomTimer.timerState.interval_seconds,
       };
     }
     if (block.type === 'amrap') {
@@ -216,19 +298,20 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
       return {
         type: 'amrap' as const,
         name: block.title || 'AMRAP',
-        round: blockState?.roundsCompleted || 0,
+        round: amrapTimer.timerState.rounds_completed,
         totalRounds: 0,
         timeCapSeconds: s.time_cap_seconds,
-        startedAt: blockState?.amrapStartedAt || null,
+        startedAt: amrapTimer.timerState.block_started_at,
       };
     }
+    const blockState = blockExecution.getBlockState(block.id);
     return {
       type: block.type,
       name: block.title || block.type.toUpperCase(),
       round: blockState?.currentRound || 1,
       totalRounds: blockState?.totalRounds || 0,
     };
-  }, [currentBlockContext, blockExecution.blockStates]);
+  }, [currentBlockContext, emomTimer.timerState, amrapTimer.timerState, blockExecution.blockStates]);
 
   // Broadcast full workout state whenever it changes
   const lastBroadcastRef = useRef<string>("");
@@ -653,27 +736,13 @@ export default function ActiveWorkout({ templateWorkout }: ActiveWorkoutProps = 
                   />
                   {currentBlockContext.block.type === 'emom' && (
                     <EmomTimer
-                      settings={currentBlockContext.block.settings as EmomSettings}
-                      exerciseCount={currentBlockContext.block.items.length}
-                      onMinuteChange={(minute, exIdx) => {
-                        blockExecution.updateBlockState(currentBlockContext.block.id, { currentRound: minute });
-                      }}
-                      onComplete={() => {
-                        blockExecution.completeBlock(currentBlockContext.block.id);
-                        toast.success("EMOM complete!");
-                      }}
+                      timer={emomTimer}
+                      exerciseNames={currentBlockContext.block.items.map(i => i.name)}
                     />
                   )}
                   {currentBlockContext.block.type === 'amrap' && (
                     <AmrapTimer
-                      settings={currentBlockContext.block.settings as AmrapSettings}
-                      onComplete={(score) => {
-                        blockExecution.completeBlock(currentBlockContext.block.id, {
-                          roundsCompleted: score.rounds,
-                          repsInCurrentRound: score.reps,
-                        });
-                        toast.success(`AMRAP complete! ${score.rounds} rounds + ${score.reps} reps`);
-                      }}
+                      timer={amrapTimer}
                     />
                   )}
                   {currentBlockContext.block.type === 'ygig' && user && (

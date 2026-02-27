@@ -1,68 +1,34 @@
-// AMRAP Active Workout Timer Component
-import { useState, useEffect, useRef } from "react";
+// AMRAP Timer — timestamp-based, resilient, persisted to block_instances.context_json
 import { motion } from "framer-motion";
-import { Zap, Play, Pause, Plus, Minus, Coffee } from "lucide-react";
+import { Zap, Play, Pause, Plus, Minus, ArrowUpDown, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { AmrapSettings } from "@/types/workout-blocks";
+import type { UseAmrapTimerReturn } from "./BlockTimerTypes";
+
+function formatTime(s: number) {
+  const mins = Math.floor(Math.abs(s) / 60);
+  const secs = Math.abs(s) % 60;
+  return `${s < 0 ? '-' : ''}${mins}:${secs.toString().padStart(2, '0')}`;
+}
 
 interface AmrapTimerProps {
-  settings: AmrapSettings;
-  onComplete: (score: { rounds: number; reps: number }) => void;
-  onTick?: (secondsRemaining: number) => void;
+  timer: UseAmrapTimerReturn;
   className?: string;
 }
 
-export function AmrapTimer({
-  settings,
-  onComplete,
-  onTick,
-  className,
-}: AmrapTimerProps) {
-  const [secondsRemaining, setSecondsRemaining] = useState(settings.time_cap_seconds);
-  const [isRunning, setIsRunning] = useState(false);
-  const [roundsCompleted, setRoundsCompleted] = useState(0);
-  const [repsInRound, setRepsInRound] = useState(0);
-  const [isResting, setIsResting] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number | null>(null);
-  const elapsedBeforePauseRef = useRef(0);
+export function AmrapTimer({ timer, className }: AmrapTimerProps) {
+  const {
+    timerState, elapsed, remaining, progress, isCompleted,
+    isRunning, isStarted, start, pause, resume, toggleMode, updateScore, endEarly,
+  } = timer;
 
-  useEffect(() => {
-    if (!isRunning) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      if (startTimeRef.current) {
-        elapsedBeforePauseRef.current += (Date.now() - startTimeRef.current) / 1000;
-        startTimeRef.current = null;
-      }
-      return;
+  const displaySeconds = timerState.timer_mode === "countdown" ? remaining : elapsed;
+
+  const handleEndEarly = () => {
+    if (confirm("End AMRAP early? Your current score will be saved.")) {
+      endEarly();
     }
-
-    startTimeRef.current = Date.now();
-
-    intervalRef.current = setInterval(() => {
-      const elapsed = elapsedBeforePauseRef.current + (Date.now() - (startTimeRef.current || Date.now())) / 1000;
-      const remaining = Math.max(0, settings.time_cap_seconds - Math.floor(elapsed));
-      setSecondsRemaining(remaining);
-      onTick?.(remaining);
-
-      if (remaining <= 0) {
-        setIsRunning(false);
-        onComplete({ rounds: roundsCompleted, reps: repsInRound });
-      }
-    }, 250);
-
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isRunning, settings.time_cap_seconds, roundsCompleted, repsInRound]);
-
-  const formatTime = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
-  const progress = 1 - (secondsRemaining / settings.time_cap_seconds);
 
   return (
     <motion.div
@@ -70,6 +36,7 @@ export function AmrapTimer({
       animate={{ opacity: 1, y: 0 }}
       className={cn("rounded-xl border border-red-500/30 bg-red-500/5 p-4", className)}
     >
+      {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <div className="h-8 w-8 rounded-lg bg-red-500/20 flex items-center justify-center">
           <Zap className="h-4 w-4 text-red-600" />
@@ -77,37 +44,30 @@ export function AmrapTimer({
         <div className="flex-1">
           <p className="text-sm font-semibold">AMRAP</p>
           <p className="text-xs text-muted-foreground">
-            {Math.floor(settings.time_cap_seconds / 60)} min cap
+            {Math.floor(timerState.time_cap_seconds / 60)} min cap
           </p>
         </div>
-        {settings.rest_enabled && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn("gap-1", isResting && "text-blue-500")}
-            onClick={() => setIsResting(!isResting)}
-          >
-            <Coffee className="h-3 w-3" />
-            Rest
-          </Button>
-        )}
       </div>
 
-      {/* Big countdown */}
+      {/* Big countdown / countup */}
       <div className="text-center mb-4">
         <p className={cn(
           "text-5xl font-mono font-bold tabular-nums",
-          secondsRemaining <= 30 ? "text-red-500 animate-pulse" :
-          secondsRemaining <= 60 ? "text-amber-500" :
+          isCompleted ? "text-emerald-500" :
+          remaining <= 30 ? "text-red-500 animate-pulse" :
+          remaining <= 60 ? "text-amber-500" :
           "text-foreground"
         )}>
-          {formatTime(secondsRemaining)}
+          {isCompleted ? "Time!" : formatTime(Math.round(displaySeconds))}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {timerState.timer_mode === "countdown" ? "remaining" : "elapsed"}
         </p>
         {/* Progress bar */}
         <div className="h-1.5 bg-muted rounded-full mt-2 overflow-hidden">
           <div
             className="h-full bg-red-500 rounded-full transition-all duration-500"
-            style={{ width: `${progress * 100}%` }}
+            style={{ width: `${Math.min(100, progress * 100)}%` }}
           />
         </div>
       </div>
@@ -117,11 +77,13 @@ export function AmrapTimer({
         <div className="bg-background/80 rounded-lg p-3 text-center border border-border/50">
           <p className="text-xs text-muted-foreground mb-1">Rounds</p>
           <div className="flex items-center justify-center gap-2">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setRoundsCompleted(Math.max(0, roundsCompleted - 1))}>
+            <Button variant="ghost" size="icon" className="h-7 w-7"
+              onClick={() => updateScore(Math.max(0, timerState.rounds_completed - 1), timerState.reps_in_current_round)}>
               <Minus className="h-3 w-3" />
             </Button>
-            <span className="text-2xl font-bold tabular-nums w-8 text-center">{roundsCompleted}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setRoundsCompleted(roundsCompleted + 1)}>
+            <span className="text-2xl font-bold tabular-nums w-8 text-center">{timerState.rounds_completed}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7"
+              onClick={() => updateScore(timerState.rounds_completed + 1, timerState.reps_in_current_round)}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
@@ -129,11 +91,13 @@ export function AmrapTimer({
         <div className="bg-background/80 rounded-lg p-3 text-center border border-border/50">
           <p className="text-xs text-muted-foreground mb-1">+ Reps</p>
           <div className="flex items-center justify-center gap-2">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setRepsInRound(Math.max(0, repsInRound - 1))}>
+            <Button variant="ghost" size="icon" className="h-7 w-7"
+              onClick={() => updateScore(timerState.rounds_completed, Math.max(0, timerState.reps_in_current_round - 1))}>
               <Minus className="h-3 w-3" />
             </Button>
-            <span className="text-2xl font-bold tabular-nums w-8 text-center">{repsInRound}</span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setRepsInRound(repsInRound + 1)}>
+            <span className="text-2xl font-bold tabular-nums w-8 text-center">{timerState.reps_in_current_round}</span>
+            <Button variant="ghost" size="icon" className="h-7 w-7"
+              onClick={() => updateScore(timerState.rounds_completed, timerState.reps_in_current_round + 1)}>
               <Plus className="h-3 w-3" />
             </Button>
           </div>
@@ -142,14 +106,43 @@ export function AmrapTimer({
 
       {/* Controls */}
       <div className="flex items-center justify-center gap-3">
-        <Button
-          variant={isRunning ? "outline" : "default"}
-          size="lg"
-          className="gap-2 rounded-full px-8"
-          onClick={() => setIsRunning(!isRunning)}
-        >
-          {isRunning ? <><Pause className="h-4 w-4" />Pause</> : <><Play className="h-4 w-4" />Start</>}
-        </Button>
+        {!isStarted ? (
+          <Button onClick={start} size="lg" className="gap-2 rounded-full px-8">
+            <Play className="h-4 w-4" />Start
+          </Button>
+        ) : (
+          <>
+            <Button
+              variant={isRunning ? "outline" : "default"}
+              size="lg"
+              className="gap-2 rounded-full px-6"
+              onClick={isRunning ? pause : resume}
+              disabled={isCompleted}
+            >
+              {isRunning ? <><Pause className="h-4 w-4" />Pause</> : <><Play className="h-4 w-4" />Resume</>}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 rounded-full"
+              onClick={toggleMode}
+              title={timerState.timer_mode === "countdown" ? "Switch to count-up" : "Switch to countdown"}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </Button>
+            {!isCompleted && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-full text-destructive"
+                onClick={handleEndEarly}
+                title="End AMRAP early"
+              >
+                <Square className="h-4 w-4" />
+              </Button>
+            )}
+          </>
+        )}
       </div>
     </motion.div>
   );
