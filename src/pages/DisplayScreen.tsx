@@ -299,6 +299,18 @@ export default function DisplayScreen() {
     return () => { if (tickerRef.current) clearInterval(tickerRef.current); };
   }, [workoutState?.phase]);
 
+  // Determine whether to show join code: only if no participants connected
+  const hasParticipants = participantCount > 0 || !!workoutState;
+  const joinCode = session?.join_code;
+  const allowParticipantJoin = (session as any)?.allow_participant_join !== false;
+
+  // Build QR join URL
+  const joinUrl = useMemo(() => {
+    if (!joinCode) return null;
+    const origin = window.location.origin;
+    return `${origin}/display/join?code=${joinCode}`;
+  }, [joinCode]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -329,18 +341,6 @@ export default function DisplayScreen() {
       </div>
     );
   }
-
-  // Determine whether to show join code: only if no participants connected
-  const hasParticipants = participantCount > 0 || !!workoutState;
-  const joinCode = session?.join_code;
-  const allowParticipantJoin = (session as any)?.allow_participant_join !== false;
-
-  // Build QR join URL
-  const joinUrl = useMemo(() => {
-    if (!joinCode) return null;
-    const origin = window.location.origin;
-    return `${origin}/display/join?code=${joinCode}`;
-  }, [joinCode]);
 
   // Idle state — no active workout broadcast
   if (!session || session.status === "idle" || (!workoutState && session.status === "active")) {
