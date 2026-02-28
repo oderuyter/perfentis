@@ -2288,15 +2288,151 @@ export type Database = {
           },
         ]
       }
+      display_signage_assignments: {
+        Row: {
+          assignment_mode: string
+          created_at: string
+          display_id: string
+          id: string
+          playlist_id: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_mode?: string
+          created_at?: string
+          display_id: string
+          id?: string
+          playlist_id: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_mode?: string
+          created_at?: string
+          display_id?: string
+          id?: string
+          playlist_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_signage_assignments_display_id_fkey"
+            columns: ["display_id"]
+            isOneToOne: true
+            referencedRelation: "displays"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "display_signage_assignments_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "display_signage_playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      display_signage_playlists: {
+        Row: {
+          created_at: string
+          default_slide_duration_seconds: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          owner_id: string
+          owner_type: string
+          shuffle: boolean
+          transition_style: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_slide_duration_seconds?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          owner_id: string
+          owner_type: string
+          shuffle?: boolean
+          transition_style?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_slide_duration_seconds?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          owner_id?: string
+          owner_type?: string
+          shuffle?: boolean
+          transition_style?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      display_signage_slides: {
+        Row: {
+          caption: string | null
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          media_type: string
+          order_index: number
+          playlist_id: string
+          updated_at: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          media_type?: string
+          order_index?: number
+          playlist_id: string
+          updated_at?: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          media_type?: string
+          order_index?: number
+          playlist_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_signage_slides_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "display_signage_playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       displays: {
         Row: {
           created_at: string
           display_token: string
           id: string
           is_active: boolean
+          join_placement: string
           name: string
           owner_id: string
           owner_type: string
+          show_join_code: boolean
+          show_join_qr: boolean
+          signage_enabled: boolean
+          signage_show_during_active_session: boolean
           updated_at: string
         }
         Insert: {
@@ -2304,9 +2440,14 @@ export type Database = {
           display_token?: string
           id?: string
           is_active?: boolean
+          join_placement?: string
           name?: string
           owner_id: string
           owner_type: string
+          show_join_code?: boolean
+          show_join_qr?: boolean
+          signage_enabled?: boolean
+          signage_show_during_active_session?: boolean
           updated_at?: string
         }
         Update: {
@@ -2314,9 +2455,14 @@ export type Database = {
           display_token?: string
           id?: string
           is_active?: boolean
+          join_placement?: string
           name?: string
           owner_id?: string
           owner_type?: string
+          show_join_code?: boolean
+          show_join_qr?: boolean
+          signage_enabled?: boolean
+          signage_show_during_active_session?: boolean
           updated_at?: string
         }
         Relationships: []

@@ -19,7 +19,8 @@ import {
   User,
   Inbox,
   UserPlus,
-  Monitor
+  Monitor,
+  ImageIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,6 +47,7 @@ const navItems: NavItem[] = [
   { to: "/coach-portal/affiliations", icon: Building2, label: "Gym Affiliations" },
   { to: "/coach-portal/financials", icon: Wallet, label: "Financials" },
   { to: "/coach-portal/displays", icon: Monitor, label: "Displays" },
+  { to: "/coach-portal/signage", icon: ImageIcon, label: "Signage" },
   { to: "/coach-portal/settings", icon: Settings, label: "Settings" },
 ];
 
