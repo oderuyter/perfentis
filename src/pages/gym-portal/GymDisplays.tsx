@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
-import { Monitor, Plus, Copy, ExternalLink, RefreshCw, Pencil, Trash2, Power, Play, Square, Hash } from "lucide-react";
+import { Monitor, Plus, Copy, ExternalLink, RefreshCw, Pencil, Trash2, Power, Play, Square, Hash, Settings2, QrCode, Eye, EyeOff, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDisplays, type Display, type DisplaySession } from "@/hooks/useDisplays";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -21,7 +23,8 @@ export default function GymDisplays() {
   const [sessionTitle, setSessionTitle] = useState("");
   const [startingFor, setStartingFor] = useState<string | null>(null);
   const [activeSessions, setActiveSessions] = useState<Record<string, DisplaySession>>({});
-
+  const [settingsFor, setSettingsFor] = useState<string | null>(null);
+  const [displaySettings, setDisplaySettings] = useState<Record<string, any>>({});
   // Fetch active sessions for all displays
   useEffect(() => {
     if (!displays.length) return;
@@ -41,6 +44,18 @@ export default function GymDisplays() {
       }
     };
     fetchSessions();
+    // Load display settings
+    const settingsMap: Record<string, any> = {};
+    displays.forEach(d => {
+      settingsMap[d.id] = {
+        show_join_code: (d as any).show_join_code ?? true,
+        show_join_qr: (d as any).show_join_qr ?? true,
+        join_placement: (d as any).join_placement || "bottom_right",
+        signage_enabled: (d as any).signage_enabled ?? true,
+        signage_show_during_active_session: (d as any).signage_show_during_active_session ?? false,
+      };
+    });
+    setDisplaySettings(settingsMap);
   }, [displays]);
 
   const getDisplayUrl = (token: string) => `${window.location.origin}/display/${token}`;
@@ -172,7 +187,10 @@ export default function GymDisplays() {
                   <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setEditingId(display.id); setEditName(display.name); }}>
                     <Pencil className="h-3.5 w-3.5" /> Rename
                   </Button>
-                  {activeSessions[display.id] ? (
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setSettingsFor(display.id)}>
+                      <Settings2 className="h-3.5 w-3.5" /> Settings
+                    </Button>
+                    {activeSessions[display.id] ? (
                     <Button size="sm" variant="outline" className="gap-1.5 text-destructive border-destructive/30" onClick={() => handleEndSession(display.id, activeSessions[display.id].id)}>
                       <Square className="h-3.5 w-3.5" /> End Session
                     </Button>
@@ -228,6 +246,62 @@ export default function GymDisplays() {
             </div>
             <Button onClick={() => startingFor && handleStartSession(startingFor)} className="w-full">Start Session</Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Display Settings Dialog */}
+      <Dialog open={!!settingsFor} onOpenChange={open => !open && setSettingsFor(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Display Settings</DialogTitle></DialogHeader>
+          {settingsFor && displaySettings[settingsFor] && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label>Show Join QR Code</Label>
+                <Switch checked={displaySettings[settingsFor].show_join_qr} onCheckedChange={v => {
+                  setDisplaySettings(p => ({ ...p, [settingsFor]: { ...p[settingsFor], show_join_qr: v } }));
+                  updateDisplay(settingsFor, { show_join_qr: v });
+                }} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Show Join Code</Label>
+                <Switch checked={displaySettings[settingsFor].show_join_code} onCheckedChange={v => {
+                  setDisplaySettings(p => ({ ...p, [settingsFor]: { ...p[settingsFor], show_join_code: v } }));
+                  updateDisplay(settingsFor, { show_join_code: v });
+                }} />
+              </div>
+              <div>
+                <Label>QR/Code Placement</Label>
+                <Select value={displaySettings[settingsFor].join_placement} onValueChange={v => {
+                  setDisplaySettings(p => ({ ...p, [settingsFor]: { ...p[settingsFor], join_placement: v } }));
+                  updateDisplay(settingsFor, { join_placement: v });
+                }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="top_left">Top Left</SelectItem>
+                    <SelectItem value="top_right">Top Right</SelectItem>
+                    <SelectItem value="top_center">Top Center</SelectItem>
+                    <SelectItem value="bottom_left">Bottom Left</SelectItem>
+                    <SelectItem value="bottom_right">Bottom Right</SelectItem>
+                    <SelectItem value="bottom_center">Bottom Center</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Enable Signage Mode</Label>
+                <Switch checked={displaySettings[settingsFor].signage_enabled} onCheckedChange={v => {
+                  setDisplaySettings(p => ({ ...p, [settingsFor]: { ...p[settingsFor], signage_enabled: v } }));
+                  updateDisplay(settingsFor, { signage_enabled: v });
+                }} />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Show Signage During Active Session</Label>
+                <Switch checked={displaySettings[settingsFor].signage_show_during_active_session} onCheckedChange={v => {
+                  setDisplaySettings(p => ({ ...p, [settingsFor]: { ...p[settingsFor], signage_show_during_active_session: v } }));
+                  updateDisplay(settingsFor, { signage_show_during_active_session: v });
+                }} />
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -22,7 +22,8 @@ import {
   Inbox,
   UserPlus,
   Gift,
-  Monitor
+  Monitor,
+  ImageIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRoles } from "@/hooks/useRoles";
@@ -58,6 +59,7 @@ const navItems: NavItem[] = [
   { to: "/gym-portal/reports", icon: BarChart3, label: "Reports" },
   { to: "/gym-portal/offers", icon: Gift, label: "Offers" },
   { to: "/gym-portal/displays", icon: Monitor, label: "Displays" },
+  { to: "/gym-portal/signage", icon: ImageIcon, label: "Signage" },
   { to: "/gym-portal/profile", icon: Building2, label: "Gym Profile" },
   { to: "/gym-portal/settings", icon: Settings, label: "Settings" },
 ];

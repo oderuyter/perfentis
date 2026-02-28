@@ -2,15 +2,21 @@ import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Monitor, Wifi, WifiOff, Timer, Zap, Users, Dumbbell, Clock } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { SignagePlayer } from "@/components/display/SignagePlayer";
+import { JoinOverlay } from "@/components/display/JoinOverlay";
 
 interface DisplayInfo {
   id: string;
   name: string;
   owner_type: string;
   owner_name: string;
+  show_join_code?: boolean;
+  show_join_qr?: boolean;
+  join_placement?: string;
+  signage_enabled?: boolean;
+  signage_show_during_active_session?: boolean;
 }
 
 interface SessionInfo {
@@ -53,10 +59,26 @@ interface WorkoutState {
     round: number;
     totalRounds: number;
     timeRemaining?: number;
-    intervalSeconds?: number; // EMOM: 60s per minute
-    timeCapSeconds?: number;  // AMRAP: total cap
-    startedAt?: string | null; // AMRAP: when started
+    intervalSeconds?: number;
+    timeCapSeconds?: number;
+    startedAt?: string | null;
   };
+}
+
+interface SignageSlide {
+  id: string;
+  image_url: string | null;
+  caption: string | null;
+  duration_seconds: number | null;
+  order_index: number;
+  is_active: boolean;
+}
+
+interface SignagePlaylistData {
+  slides: SignageSlide[];
+  shuffle: boolean;
+  transition_style: "fade" | "cut";
+  default_slide_duration_seconds: number;
 }
 
 function formatTime(seconds: number): string {
@@ -87,6 +109,7 @@ export default function DisplayScreen() {
   const [elapsedSinceRest, setElapsedSinceRest] = useState(0);
   const [localRestRemaining, setLocalRestRemaining] = useState<number | null>(null);
   const [blockTimeRemaining, setBlockTimeRemaining] = useState<number | null>(null);
+  const [signageData, setSignageData] = useState<SignagePlaylistData | null>(null);
   const channelRef = useRef<any>(null);
   const tickerRef = useRef<ReturnType<typeof setInterval>>();
   const restTickerRef = useRef<ReturnType<typeof setInterval>>();
@@ -96,27 +119,21 @@ export default function DisplayScreen() {
   // Fetch display info via backend function
   const fetchDisplay = useCallback(async () => {
     if (!token) return;
-
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const res = await fetch(
         `${supabaseUrl}/functions/v1/display-lookup?token=${encodeURIComponent(token)}`,
         { headers: { "Content-Type": "application/json" } }
       );
-
       const payload = await res.json().catch(() => ({}));
-
       if (!res.ok || !payload?.display) {
         setError(payload?.error || "Display not found");
         setLoading(false);
         return;
       }
-
       setDisplay(payload.display as DisplayInfo);
       setSession((payload.session || null) as SessionInfo | null);
-      if (payload.participant_count !== undefined) {
-        setParticipantCount(payload.participant_count);
-      }
+      if (payload.participant_count !== undefined) setParticipantCount(payload.participant_count);
       setError(null);
       setLoading(false);
     } catch {
@@ -125,9 +142,7 @@ export default function DisplayScreen() {
     }
   }, [token]);
 
-  useEffect(() => {
-    fetchDisplay();
-  }, [fetchDisplay]);
+  useEffect(() => { fetchDisplay(); }, [fetchDisplay]);
 
   // Poll for session updates
   useEffect(() => {
@@ -136,13 +151,66 @@ export default function DisplayScreen() {
     return () => clearInterval(interval);
   }, [token, fetchDisplay]);
 
+  // Fetch signage playlist for this display
+  useEffect(() => {
+    if (!display?.id) return;
+    const fetchSignage = async () => {
+      // Get assignment
+      const { data: assignment } = await supabase
+        .from("display_signage_assignments")
+        .select("playlist_id")
+        .eq("display_id", display.id)
+        .maybeSingle();
+
+      let playlistId = assignment?.playlist_id;
+
+      // If no explicit assignment, check for default playlist
+      if (!playlistId) {
+        const { data: displayRow } = await supabase
+          .from("displays")
+          .select("owner_type, owner_id")
+          .eq("id", display.id)
+          .single();
+        if (displayRow) {
+          const { data: defaultPlaylist } = await supabase
+            .from("display_signage_playlists")
+            .select("id")
+            .eq("owner_type", displayRow.owner_type)
+            .eq("owner_id", displayRow.owner_id)
+            .eq("is_default", true)
+            .eq("is_active", true)
+            .maybeSingle();
+          playlistId = defaultPlaylist?.id;
+        }
+      }
+
+      if (!playlistId) { setSignageData(null); return; }
+
+      // Fetch playlist + slides
+      const [{ data: playlist }, { data: slides }] = await Promise.all([
+        supabase.from("display_signage_playlists").select("*").eq("id", playlistId).single(),
+        supabase.from("display_signage_slides").select("*").eq("playlist_id", playlistId).eq("is_active", true).order("order_index"),
+      ]);
+
+      if (playlist && slides?.length) {
+        setSignageData({
+          slides: slides as SignageSlide[],
+          shuffle: playlist.shuffle,
+          transition_style: playlist.transition_style as "fade" | "cut",
+          default_slide_duration_seconds: playlist.default_slide_duration_seconds,
+        });
+      } else {
+        setSignageData(null);
+      }
+    };
+    fetchSignage();
+  }, [display?.id]);
+
   // Track rest ended → elapsed since rest
   const prevPhaseRef = useRef<string | undefined>();
   useEffect(() => {
     const currentPhase = workoutState?.phase;
-    if (prevPhaseRef.current === "rest" && currentPhase !== "rest") {
-      setRestEndedAt(Date.now());
-    }
+    if (prevPhaseRef.current === "rest" && currentPhase !== "rest") setRestEndedAt(Date.now());
     prevPhaseRef.current = currentPhase;
   }, [workoutState?.phase]);
 
@@ -158,7 +226,7 @@ export default function DisplayScreen() {
     return () => { if (restTickerRef.current) clearInterval(restTickerRef.current); };
   }, [restEndedAt, workoutState?.phase]);
 
-  // Local rest timer countdown - decrements every second between broadcast ticks
+  // Local rest timer countdown
   useEffect(() => {
     if (workoutState?.phase === "rest" && workoutState.restRemaining != null) {
       setLocalRestRemaining(workoutState.restRemaining);
@@ -176,15 +244,13 @@ export default function DisplayScreen() {
       setLocalRestRemaining(prev => (prev != null && prev > 0) ? prev - 1 : 0);
     }, 1000);
     return () => { if (restCountdownRef.current) clearInterval(restCountdownRef.current); };
-  }, [localRestRemaining != null && localRestRemaining > 0]); // only re-run when transitioning to/from active countdown
+  }, [localRestRemaining != null && localRestRemaining > 0]);
 
-  // Local block timer countdown (EMOM 1-min intervals, AMRAP total cap)
+  // Local block timer countdown
   useEffect(() => {
     const bc = workoutState?.blockContext;
     if (!bc) { setBlockTimeRemaining(null); return; }
-    
     if (bc.type === 'emom' && bc.intervalSeconds) {
-      // For EMOM, timeRemaining comes from broadcast; if not, start at intervalSeconds
       setBlockTimeRemaining(bc.timeRemaining ?? bc.intervalSeconds);
     } else if (bc.type === 'amrap' && bc.timeCapSeconds && bc.startedAt) {
       const elapsed = (Date.now() - new Date(bc.startedAt).getTime()) / 1000;
@@ -208,7 +274,6 @@ export default function DisplayScreen() {
   // Subscribe to realtime broadcast channel
   useEffect(() => {
     if (!display?.id) return;
-
     const channel = supabase
       .channel(`display:${display.id}`, { config: { broadcast: { self: false } } })
       .on("broadcast", { event: "workout_update" }, (payload) => {
@@ -246,69 +311,50 @@ export default function DisplayScreen() {
         }
         setConnected(true);
       })
-      .subscribe((status) => {
-        setConnected(status === "SUBSCRIBED");
-      });
-
+      .subscribe((status) => { setConnected(status === "SUBSCRIBED"); });
     channelRef.current = channel;
     return () => { supabase.removeChannel(channel); };
   }, [display?.id]);
 
-  // Listen for session changes via postgres_changes
+  // Listen for session changes
   useEffect(() => {
     if (!display?.id) return;
-
     const channel = supabase
       .channel(`display_session_watch:${display.id}`)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "display_sessions",
-        filter: `display_id=eq.${display.id}`,
-      }, (payload) => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "display_sessions", filter: `display_id=eq.${display.id}` }, (payload) => {
         const newRow = payload.new as any;
         if (newRow) {
-          setSession({
-            id: newRow.id,
-            status: newRow.status,
-            title: newRow.title,
-            started_at: newRow.started_at,
-            settings_json: newRow.settings_json,
-            join_code: newRow.join_code,
-            current_workout_session_id: newRow.current_workout_session_id,
-          });
-          if (newRow.status === "ended") {
-            setWorkoutState(null);
-          }
+          setSession({ id: newRow.id, status: newRow.status, title: newRow.title, started_at: newRow.started_at, settings_json: newRow.settings_json, join_code: newRow.join_code, current_workout_session_id: newRow.current_workout_session_id });
+          if (newRow.status === "ended") setWorkoutState(null);
         }
       })
       .subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [display?.id]);
 
   // Local elapsed tick
   useEffect(() => {
     if (workoutState && workoutState.phase !== "complete") {
-      tickerRef.current = setInterval(() => {
-        setElapsedTick(prev => prev + 1);
-      }, 1000);
+      tickerRef.current = setInterval(() => { setElapsedTick(prev => prev + 1); }, 1000);
     } else {
       if (tickerRef.current) clearInterval(tickerRef.current);
     }
     return () => { if (tickerRef.current) clearInterval(tickerRef.current); };
   }, [workoutState?.phase]);
 
-  // Determine whether to show join code: only if no participants connected
-  const hasParticipants = participantCount > 0 || !!workoutState;
+  // Display settings
+  const showJoinQr = display?.show_join_qr !== false;
+  const showJoinCode = display?.show_join_code !== false;
+  const joinPlacement = display?.join_placement || "bottom_right";
+  const signageEnabled = display?.signage_enabled !== false;
+  const signageDuringActive = display?.signage_show_during_active_session === true;
+
   const joinCode = session?.join_code;
   const allowParticipantJoin = (session as any)?.allow_participant_join !== false;
 
-  // Build QR join URL
   const joinUrl = useMemo(() => {
     if (!joinCode) return null;
-    const origin = window.location.origin;
-    return `${origin}/display/join?code=${joinCode}`;
+    return `${window.location.origin}/display/join?code=${joinCode}`;
   }, [joinCode]);
 
   if (loading) {
@@ -344,9 +390,35 @@ export default function DisplayScreen() {
 
   // Idle state — no active workout broadcast
   if (!session || session.status === "idle" || (!workoutState && session.status === "active")) {
+    const hasSignage = signageEnabled && signageData && signageData.slides.length > 0;
+
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
-        <header className="flex items-center justify-between px-8 py-4 border-b border-white/10">
+      <div className="min-h-screen bg-black text-white flex flex-col relative">
+        {/* Signage slideshow as background */}
+        {hasSignage && (
+          <SignagePlayer
+            slides={signageData.slides}
+            defaultDuration={signageData.default_slide_duration_seconds}
+            shuffle={signageData.shuffle}
+            transitionStyle={signageData.transition_style}
+          />
+        )}
+
+        {/* QR/Code overlay */}
+        <JoinOverlay
+          joinUrl={joinUrl}
+          joinCode={joinCode || null}
+          showQr={showJoinQr}
+          showCode={showJoinCode}
+          placement={joinPlacement}
+          size="large"
+        />
+
+        {/* Header overlay */}
+        <header className={cn(
+          "relative z-20 flex items-center justify-between px-8 py-4",
+          hasSignage ? "bg-black/40 backdrop-blur-sm" : "border-b border-white/10"
+        )}>
           <div className="flex items-center gap-4">
             <h1 className="text-lg font-semibold text-white/80">{display?.owner_name}</h1>
             <span className="text-white/30">·</span>
@@ -358,40 +430,19 @@ export default function DisplayScreen() {
           </div>
         </header>
 
-        <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <div className="text-center">
-            <h2 className="text-4xl font-bold mb-2">{display?.owner_name}</h2>
-            <p className="text-xl text-white/50 mb-6">{display?.name}</p>
-            
-            {/* QR Code + Join Code */}
-            {joinCode && !hasParticipants && (
-              <div className="mt-4 flex flex-col items-center gap-6">
-                {joinUrl && (
-                  <div className="bg-white rounded-2xl p-4 shadow-2xl">
-                    <QRCodeSVG
-                      value={joinUrl}
-                      size={220}
-                      bgColor="#ffffff"
-                      fgColor="#000000"
-                      level="M"
-                      includeMargin={false}
-                    />
-                  </div>
-                )}
-                <div>
-                  <p className="text-xs text-white/40 mb-1 uppercase tracking-wider">Or enter code</p>
-                  <p className="text-5xl font-mono font-bold tracking-[0.3em]">{joinCode}</p>
-                </div>
-                <p className="text-sm text-white/30">Scan QR or enter code in your app to connect</p>
+        {/* Center content if no signage */}
+        {!hasSignage && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 relative z-20">
+            <div className="text-center">
+              <h2 className="text-4xl font-bold mb-2">{display?.owner_name}</h2>
+              <p className="text-xl text-white/50 mb-6">{display?.name}</p>
+              <div className="mt-8 flex items-center justify-center gap-2 text-white/30">
+                <div className="h-2 w-2 rounded-full bg-white/30 animate-pulse" />
+                <span className="text-sm">Waiting for broadcast…</span>
               </div>
-            )}
-            
-            <div className="mt-8 flex items-center justify-center gap-2 text-white/30">
-              <div className="h-2 w-2 rounded-full bg-white/30 animate-pulse" />
-              <span className="text-sm">Waiting for broadcast…</span>
             </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -400,43 +451,49 @@ export default function DisplayScreen() {
   const currentEx = workoutState?.exercises?.[workoutState.currentExerciseIndex];
   const isResting = workoutState?.phase === "rest";
   const shareLevel = workoutState?.shareLevel || "structure_only";
-  
-  // Next exercise
   const nextExIndex = (workoutState?.currentExerciseIndex ?? 0) + 1;
   const nextEx = workoutState?.exercises?.[nextExIndex];
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col">
+    <div className="min-h-screen bg-black text-white flex flex-col relative">
+      {/* Background signage during active session if allowed */}
+      {signageDuringActive && signageData && signageData.slides.length > 0 && (
+        <div className="absolute inset-0 z-0 opacity-20">
+          <SignagePlayer
+            slides={signageData.slides}
+            defaultDuration={signageData.default_slide_duration_seconds}
+            shuffle={signageData.shuffle}
+            transitionStyle={signageData.transition_style}
+          />
+        </div>
+      )}
+
+      {/* Join overlay during active */}
+      {allowParticipantJoin && (
+        <JoinOverlay
+          joinUrl={joinUrl}
+          joinCode={joinCode || null}
+          showQr={showJoinQr}
+          showCode={showJoinCode}
+          placement={joinPlacement}
+          size="small"
+        />
+      )}
+
       {/* Top Bar */}
-      <header className="flex items-center justify-between px-8 py-4 border-b border-white/10">
+      <header className="relative z-10 flex items-center justify-between px-8 py-4 border-b border-white/10">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-semibold text-white/80">{display?.owner_name}</h1>
           <span className="text-white/30">·</span>
           <span className="text-white/50">{session.title || display?.name}</span>
         </div>
-        <div className="flex items-center gap-4">
-          {/* Show small QR + join code if configured and no participants */}
-          {joinCode && allowParticipantJoin && !hasParticipants && (
-            <div className="flex items-center gap-3">
-              {joinUrl && (
-                <div className="bg-white rounded p-1">
-                  <QRCodeSVG value={joinUrl} size={40} bgColor="#ffffff" fgColor="#000000" level="L" />
-                </div>
-              )}
-              <div className="bg-white/5 border border-white/10 rounded-lg px-4 py-1.5">
-                <p className="text-xs text-white/40">Join</p>
-                <p className="text-lg font-mono font-bold tracking-widest">{joinCode}</p>
-              </div>
-            </div>
-          )}
-          <div className="flex items-center gap-1.5 text-white/30 text-xs">
-            {connected ? <Wifi className="h-3.5 w-3.5 text-emerald-400" /> : <WifiOff className="h-3.5 w-3.5 text-red-400" />}
-          </div>
+        <div className="flex items-center gap-1.5 text-white/30 text-xs">
+          {connected ? <Wifi className="h-3.5 w-3.5 text-emerald-400" /> : <WifiOff className="h-3.5 w-3.5 text-red-400" />}
         </div>
       </header>
 
       {/* Full workout display */}
-      <div className="flex-1 flex flex-col p-8 gap-6">
+      <div className="relative z-10 flex-1 flex flex-col p-8 gap-6">
         {/* Workout Timer + Name */}
         <div className="flex items-center justify-between">
           <div>
@@ -453,7 +510,7 @@ export default function DisplayScreen() {
           </div>
         </div>
 
-        {/* Block Context (EMOM/AMRAP) with local countdown */}
+        {/* Block Context (EMOM/AMRAP) */}
         {workoutState!.blockContext && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -473,10 +530,9 @@ export default function DisplayScreen() {
                 <div>
                   <p className="text-lg font-bold">{workoutState!.blockContext.name}</p>
                   <p className="text-sm text-white/50">
-                    {workoutState!.blockContext.type === "amrap" 
+                    {workoutState!.blockContext.type === "amrap"
                       ? `${Math.floor((workoutState!.blockContext.timeCapSeconds || 0) / 60)} min cap`
-                      : `Round ${workoutState!.blockContext.round} of ${workoutState!.blockContext.totalRounds}`
-                    }
+                      : `Round ${workoutState!.blockContext.round} of ${workoutState!.blockContext.totalRounds}`}
                   </p>
                 </div>
               </div>
@@ -534,8 +590,6 @@ export default function DisplayScreen() {
               <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Current Exercise</p>
               <h3 className="text-4xl font-bold mb-4">{currentEx.name}</h3>
 
-              {/* Sets Grid - varies by share level */}
-              {/* Sets display - all modes show boxes */}
               <div className="grid grid-cols-4 sm:grid-cols-6 gap-3 mt-4">
                 {currentEx.sets.map((set, i) => {
                   const isCurrentSet = i === (workoutState!.currentSetIndex ?? 0);
@@ -543,17 +597,7 @@ export default function DisplayScreen() {
 
                   if (shareLevel === "full_stats") {
                     return (
-                      <div
-                        key={i}
-                        className={cn(
-                          "rounded-xl p-4 text-center border transition-all",
-                          set.completed
-                            ? "bg-emerald-500/10 border-emerald-500/30"
-                            : isCurrentSet
-                            ? "bg-white/10 border-white/30 ring-2 ring-white/20"
-                            : "bg-white/[0.02] border-white/5"
-                        )}
-                      >
+                      <div key={i} className={cn("rounded-xl p-4 text-center border transition-all", set.completed ? "bg-emerald-500/10 border-emerald-500/30" : isCurrentSet ? "bg-white/10 border-white/30 ring-2 ring-white/20" : "bg-white/[0.02] border-white/5")}>
                         <p className="text-xs text-white/40 mb-1">Set {i + 1}</p>
                         {set.completed && set.completedWeight != null ? (
                           <>
@@ -571,17 +615,7 @@ export default function DisplayScreen() {
 
                   if (shareLevel === "completion_only") {
                     return (
-                      <div
-                        key={i}
-                        className={cn(
-                          "rounded-xl p-4 text-center border transition-all",
-                          set.completed
-                            ? "bg-emerald-500/10 border-emerald-500/30"
-                            : isCurrentSet
-                            ? "bg-white/10 border-white/30 ring-2 ring-white/20"
-                            : "bg-white/[0.02] border-white/5"
-                        )}
-                      >
+                      <div key={i} className={cn("rounded-xl p-4 text-center border transition-all", set.completed ? "bg-emerald-500/10 border-emerald-500/30" : isCurrentSet ? "bg-white/10 border-white/30 ring-2 ring-white/20" : "bg-white/[0.02] border-white/5")}>
                         <p className="text-xs text-white/40 mb-1">Set {i + 1}</p>
                         {set.completed ? (
                           <p className="text-lg font-bold text-emerald-400">✓</p>
@@ -592,40 +626,21 @@ export default function DisplayScreen() {
                     );
                   }
 
-                  // structure_only — boxes with rep targets, no weights
                   return (
-                    <div
-                      key={i}
-                      className={cn(
-                        "rounded-xl p-4 text-center border transition-all",
-                        set.completed
-                          ? "bg-emerald-500/10 border-emerald-500/30"
-                          : isCurrentSet
-                          ? "bg-white/10 border-white/30 ring-2 ring-white/20"
-                          : "bg-white/[0.02] border-white/5"
-                      )}
-                    >
+                    <div key={i} className={cn("rounded-xl p-4 text-center border transition-all", set.completed ? "bg-emerald-500/10 border-emerald-500/30" : isCurrentSet ? "bg-white/10 border-white/30 ring-2 ring-white/20" : "bg-white/[0.02] border-white/5")}>
                       <p className="text-xs text-white/40 mb-1">Set {i + 1}</p>
-                      <p className={cn(
-                        "text-lg font-mono",
-                        set.completed ? "text-emerald-400" : "text-white/50"
-                      )}>
-                        {String(repsLabel)}
-                      </p>
+                      <p className={cn("text-lg font-mono", set.completed ? "text-emerald-400" : "text-white/50")}>{String(repsLabel)}</p>
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Next Exercise Preview */}
             {nextEx && (
               <div className="mt-4 rounded-xl border border-white/5 bg-white/[0.02] p-6">
                 <p className="text-xs text-white/30 uppercase tracking-wider mb-2">Up Next</p>
                 <h4 className="text-2xl font-semibold text-white/70">{nextEx.name}</h4>
-                <p className="text-white/40 text-sm mt-1">
-                  {nextEx.sets.length} sets · {nextEx.sets[0]?.targetReps} reps
-                </p>
+                <p className="text-white/40 text-sm mt-1">{nextEx.sets.length} sets · {nextEx.sets[0]?.targetReps} reps</p>
               </div>
             )}
           </motion.div>
@@ -637,15 +652,7 @@ export default function DisplayScreen() {
             const allDone = ex.sets.every(s => s.completed);
             const isCurrent = i === workoutState!.currentExerciseIndex;
             return (
-              <div
-                key={i}
-                className={cn(
-                  "shrink-0 rounded-lg px-3 py-2 text-sm border transition-all",
-                  isCurrent ? "bg-white/10 border-white/30 font-semibold" :
-                  allDone ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" :
-                  "bg-white/[0.02] border-white/5 text-white/40"
-                )}
-              >
+              <div key={i} className={cn("shrink-0 rounded-lg px-3 py-2 text-sm border transition-all", isCurrent ? "bg-white/10 border-white/30 font-semibold" : allDone ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-white/[0.02] border-white/5 text-white/40")}>
                 {ex.name.length > 20 ? ex.name.substring(0, 20) + "…" : ex.name}
               </div>
             );

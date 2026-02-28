@@ -9,6 +9,11 @@ export interface Display {
   name: string;
   is_active: boolean;
   display_token: string;
+  show_join_code: boolean;
+  show_join_qr: boolean;
+  join_placement: string;
+  signage_enabled: boolean;
+  signage_show_during_active_session: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -82,7 +87,7 @@ export function useDisplays(ownerType: "gym" | "coach", ownerId: string | null) 
     }
   };
 
-  const updateDisplay = async (id: string, updates: Partial<Pick<Display, "name" | "is_active">>) => {
+  const updateDisplay = async (id: string, updates: Partial<Pick<Display, "name" | "is_active" | "show_join_code" | "show_join_qr" | "join_placement" | "signage_enabled" | "signage_show_during_active_session">>) => {
     try {
       const { error } = await supabase.from("displays").update(updates).eq("id", id);
       if (error) throw error;

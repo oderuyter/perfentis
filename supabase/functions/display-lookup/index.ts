@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
 
     if (token) {
       const dRes = await fetch(
-        `${restUrl}/displays?select=id,name,owner_type,owner_id,is_active&display_token=eq.${encodeURIComponent(token)}`,
+        `${restUrl}/displays?select=id,name,owner_type,owner_id,is_active,show_join_code,show_join_qr,join_placement,signage_enabled,signage_show_during_active_session&display_token=eq.${encodeURIComponent(token)}`,
         { headers: { ...baseHeaders, "Accept": "application/vnd.pgrst.object+json" } }
       );
 
@@ -164,7 +164,12 @@ Deno.serve(async (req) => {
       }
 
       return new Response(JSON.stringify({
-        display: { id: display.id, name: display.name, owner_type: display.owner_type, owner_name: ownerName },
+        display: {
+          id: display.id, name: display.name, owner_type: display.owner_type, owner_name: ownerName,
+          show_join_code: display.show_join_code, show_join_qr: display.show_join_qr,
+          join_placement: display.join_placement, signage_enabled: display.signage_enabled,
+          signage_show_during_active_session: display.signage_show_during_active_session,
+        },
         session,
         participant_count: participantCount,
       }), { status: 200, headers: openHeaders });

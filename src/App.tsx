@@ -123,6 +123,8 @@ import AdminRewards from "./pages/admin-portal/AdminRewards";
 import AdminSupplierSubmissions from "./pages/admin-portal/AdminSupplierSubmissions";
 import GymOffers from "./pages/gym-portal/GymOffers";
 import GymDisplays from "./pages/gym-portal/GymDisplays";
+import GymSignage from "./pages/gym-portal/GymSignage";
+import CoachSignage from "./pages/coach-portal/CoachSignage";
 import Rewards from "./pages/Rewards";
 import ImportWizard from "./pages/ImportWizard";
 import AdminExerciseSubmissions from "./pages/admin-portal/AdminExerciseSubmissions";
@@ -238,6 +240,7 @@ function AppRoutes() {
         <Route path="crm" element={<GymCRM />} />
         <Route path="offers" element={<GymOffers />} />
         <Route path="displays" element={<GymDisplays />} />
+        <Route path="signage" element={<GymSignage />} />
       </Route>
       <Route path="/coach-portal" element={<ProtectedRoute><CoachPortalLayout /></ProtectedRoute>}>
         <Route index element={<CoachDashboard />} />
@@ -257,6 +260,7 @@ function AppRoutes() {
         <Route path="inbox" element={<CoachInbox />} />
         <Route path="crm" element={<CoachCRM />} />
         <Route path="displays" element={<CoachDisplays />} />
+        <Route path="signage" element={<CoachSignage />} />
       </Route>
       <Route path="/event-portal" element={<ProtectedRoute><EventPortalLayout /></ProtectedRoute>}>
         <Route index element={<EventDashboard />} />
